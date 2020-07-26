@@ -1,0 +1,7 @@
+bin/
+old/
+*.sublime-workspace
+*.exe
+*.gch
+game_save.json
+
