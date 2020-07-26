@@ -155,6 +155,7 @@
 		// draw layers back-to-front (painters algorithm)
 		for (int i = renderQueue->count - 1; i >= 0; i--) {
 			sfRenderWindow_drawVertexArray(renderWindow, renderQueue->vertexArrays[i].vertexArray, renderStates);
+			sfVertexArray_resize(renderQueue->vertexArrays[i].vertexArray, 0);
 		}
 	}
 	bool jeRenderQueue_create(jeRenderQueue* renderQueue) {
@@ -184,6 +185,7 @@
 	#define JE_WINDOW_WIDTH 640
 	#define JE_WINDOW_HEIGHT 480
 	#define JE_WINDOW_SCALE 4
+	#define JE_WINDOW_FRAME_RATE 60
 	#define JE_WINDOW_SPRITES "sprites.png"
 
 	typedef struct {
@@ -238,7 +240,7 @@
 			goto cleanup;
 		}
 
-		sfRenderWindow_setFramerateLimit(window->window, 30);
+		sfRenderWindow_setFramerateLimit(window->window, JE_WINDOW_FRAME_RATE);
 		sfRenderWindow_clear(window->window, sfWhite);
 
 		window->renderStates.blendMode = sfBlendAlpha;
@@ -408,33 +410,32 @@
 		lua_getfield(lua, 1, "z");
 		z = (int)luaL_checknumber(lua, -1);
 
-		lua_getfield(lua, 1, "r");
+		lua_getfield(lua, 1, "colorR");
 		r =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "g");
+		lua_getfield(lua, 1, "colorG");
 		g = luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "b");
+		lua_getfield(lua, 1, "colorB");
 		b =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "a");
+		lua_getfield(lua, 1, "colorA");
 		a = luaL_checknumber(lua, -1);
 
-		lua_getfield(lua, 1, "u1");
+		lua_getfield(lua, 1, "spriteU1");
 		u1 =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "v1");
+		lua_getfield(lua, 1, "spriteV1");
 		v1 = luaL_checknumber(lua, -1);
 
-		lua_getfield(lua, 1, "u2");
+		lua_getfield(lua, 1, "spriteU2");
 		u2 = luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "v2");
+		lua_getfield(lua, 1, "spriteV2");
 		v2 = luaL_checknumber(lua, -1);
 
 		if ((a == 0)
 			|| (x1 > screenX2)
 			|| (y1 > screenY2)
-			|| (y2 <= screenY1)
 			|| (x2 <= screenX1)
 			|| (y2 <= screenY1)
 			|| (u1 == u2)
-			|| (v1 == u2)
+			|| (v1 == v2)
 			|| (x1 == x2)
 			|| (y1 == y2)) {
 			goto cleanup;
