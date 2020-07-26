@@ -345,7 +345,7 @@
 
 		lua_pushboolean(lua, isRunning);
 
-		return 1;  // num return values
+		return 1;
 	}
 	int jeLuaClient_step(lua_State* lua) {
 		JE_MAYBE_UNUSED(lua);
@@ -354,7 +354,40 @@
 			jeWindow_step(jeWindow_get());
 		#endif  // END !defined(JE_HEADLESS)
 
-		return 0;  // num return values
+		return 0;
+	}
+	int jeLuaClient_updateInputs(lua_State* lua) {
+		luaL_checktype(lua, 1, LUA_TTABLE);
+
+		lua_pushstring(lua, "left");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyLeft) || sfKeyboard_isKeyPressed(sfKeyA));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "right");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyRight) || sfKeyboard_isKeyPressed(sfKeyD));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "up");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyUp) || sfKeyboard_isKeyPressed(sfKeyW));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "down");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyDown) || sfKeyboard_isKeyPressed(sfKeyS));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "a");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyEnter) || sfKeyboard_isKeyPressed(sfKeyZ));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "b");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyBackspace) || sfKeyboard_isKeyPressed(sfKeyX));
+		lua_settable(lua, 1);
+
+		lua_pushstring(lua, "restart");
+		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyR));
+		lua_settable(lua, 1);
+
+		return 1;
 	}
 	int jeLuaClient_drawSprite(lua_State* lua) {
 		#if !defined(JE_HEADLESS)
@@ -471,7 +504,7 @@
 
 		}
 
-		return 0;  // num return values
+		return 0;
 	}
 
 // Game
@@ -489,6 +522,7 @@
 			JE_LUA_CLIENT_BINDING(isRunning),
 			JE_LUA_CLIENT_BINDING(step),
 			JE_LUA_CLIENT_BINDING(drawSprite),
+			JE_LUA_CLIENT_BINDING(updateInputs),
 			{NULL, NULL}  // sentinel value
 		};
 
@@ -581,7 +615,6 @@
 		return success;
 	}
 
-// ----------------- Main -----------------
 // Main
 	int main(int argc, char** argv) {
 		bool success = true;

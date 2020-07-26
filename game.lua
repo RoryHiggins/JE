@@ -303,6 +303,23 @@
 		end
 	end
 
+-- Input
+	local InputSys = {}
+	InputSys.inputs = {
+		["left"] = false,
+		["right"] = false,
+		["up"] = false,
+		["down"] = false,
+
+		["a"] = false,
+		["b"] = false,
+
+		["restart"] = false,
+	}
+	table.insert(SimulationSys.stepEvents, function()
+		ClientSys.updateInputs(InputSys.inputs)
+	end)
+
 -- World
 	local WorldSys = {}
 	WorldSys.createEvents = {}
@@ -509,7 +526,7 @@
 
 		return entities
 	end
-	function EntitySys.findInBounds(x, y, w, h, filterTag, filterOutEntityId, getAll)
+	function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 		local seenResults = nil
 		local results = nil
 		if getAll then
@@ -564,8 +581,57 @@
 
 		return results
 	end
-	function EntitySys.findAllInBounds(x, y, w, h, filterTag, filterOutEntityId)
-		return EntitySys.findInBounds(x, y, w, h, filterTag, filterOutEntityId, true)
+	function EntitySys.findAllBounded(x, y, w, h, filterTag, filterOutEntityId)
+		return EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, true)
+	end
+	function EntitySys.findRelative(entity, signX, signY, filterTag)
+		local relativeX = entity.x + (signX or 0)
+		local relativeY = entity.y + (signY or 0)
+
+		return EntitySys.findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
+	end
+	function EntitySys.findBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId, getAll)
+		local seenResults = nil
+		local results = nil
+		if getAll then
+			results = {}
+			seenResults = {}
+		end
+
+		local entitiesCount = #entities
+		for i = 1, entitiesCount do
+			local entityId = entities[i]
+			if (filterOutEntityId == nil) or (entityId ~= filterOutEntityId) then
+				local entity = entities[i]
+				if (((filterTag == nil) or (entity.tags[filterTag] ~= nil))
+					and util.rectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h)) then
+					-- if filterOutEntityId == 1 then
+					-- 	print("Collision: ", entity.id, "@", entity.x, entity.y, entity.w, entity.h, util.toComparable(entity.tags),
+					-- 		  " against", filterOutEntityId, "@", x, y, w, h)
+					-- end
+					if not getAll then
+						return entity
+					end
+
+					local entityIdString = tostring(entityId)
+					if not seenResults[entityIdString] then
+						results[#results + 1] = entity
+						seenResults[entityIdString] = true
+					end
+				end
+			end
+		end
+
+		return results
+	end
+	function EntitySys.findAllBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId)
+		return EntitySys.findBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId, --[[getAll--]] true)
+	end
+	function EntitySys.findRelativeInArray(entities, entity, signX, signY, filterTag)
+		local relativeX = entity.x + signX
+		local relativeY = entity.y + signY
+
+		return EntitySys.findBoundedInArray(entities, relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
 	end
 	function EntitySys.destroy(entity)
 		if entity.destroyed then
@@ -667,19 +733,21 @@
 		assert((entity.x == 0) and (entity.y == 0) and (entity.w == 0) and (entity.h == 0))
 		assert(util.setEquality(util.getKeys(entity.chunks), {}))
 		EntitySys.tag(entity, "yolo")
-		assert(EntitySys.findInBounds(0, 0, 100, 100, "yolo") == nil)
-		assert(#EntitySys.findAllInBounds(0, 0, 100, 100, "yolo") == 0)
+		assert(EntitySys.findBounded(0, 0, 100, 100, "yolo") == nil)
+		assert(#EntitySys.findAllBounded(0, 0, 100, 100, "yolo") == 0)
 
 		EntitySys.setBounds(entity, 64, 96, 16, 32)
 		assert(entity.x == 64 and entity.y == 96 and entity.w == 16 and entity.h == 32)
 		assert(util.setEquality(util.getKeys(entity.chunks), {"1,1"}))
 		assert(world.chunkEntities["1,1"][entity.chunks["1,1"]] == entity.id)
-		assert(#EntitySys.findAllInBounds(0, 0, 100, 100, "yolo") == 1)
-		assert(EntitySys.findInBounds(0, 0, 100, 100, "yolo"))
-		assert(EntitySys.findInBounds(0, 0, 64, 96, "yolo") == nil)
-		assert(EntitySys.findInBounds(0, 0, 65, 97, "yolo"))
-		assert(EntitySys.findInBounds(80, 128, 1, 1, "yolo") == nil)
-		assert(EntitySys.findInBounds(79, 127, 1, 1, "yolo"))
+		assert(#EntitySys.findAllBounded(0, 0, 100, 100, "yolo") == 1)
+		assert(EntitySys.findBounded(0, 0, 100, 100, "yolo"))
+		assert(EntitySys.findBounded(0, 0, 64, 96, "yolo") == nil)
+		assert(EntitySys.findBounded(0, 0, 65, 97, "yolo"))
+		assert(EntitySys.findBounded(80, 128, 1, 1, "yolo") == nil)
+		assert(EntitySys.findBounded(79, 127, 1, 1, "yolo"))
+
+		assert(EntitySys.findRelative(entity) == nil)
 
 		EntitySys.setBounds(entity, 0, 0, 0, 0)
 		assert(util.setEquality(util.getKeys(entity.chunks), {}))
@@ -707,7 +775,7 @@
 
 		local entities = {}
 		local numEntities = 5
-		assert(#EntitySys.findAllInBounds(0, 0, 100, 100, "ysg") == 0)
+		assert(#EntitySys.findAllBounded(0, 0, 100, 100, "ysg") == 0)
 		for i = 1, numEntities do
 			entity = EntitySys.create()
 			EntitySys.setBounds(entity, i, i, 1, 1)
@@ -720,7 +788,9 @@
 		end
 
 		assert(util.setEquality(EntitySys.findAll("ysg"), entities))
-		assert(#EntitySys.findAllInBounds(0, 0, 100, 100, "ysg") == numEntities)
+		assert(util.setEquality(EntitySys.findAllBoundedInArray(EntitySys.findAll("ysg"), 0, 0, 101, 101, "ysg"),
+								EntitySys.findAll("ysg")))
+		assert(#EntitySys.findAllBounded(0, 0, 100, 100, "ysg") == numEntities)
 
 		for _, entityToDestroy in ipairs(entities) do
 			EntitySys.destroy(entityToDestroy)
@@ -737,64 +807,6 @@
 		world.chunkEntities = {}
 		world.destroyedEntities = {}
 	end)
-
--- Collision
-	local CollisionSys = {}
-	function CollisionSys.searchWorld(x, y, w, h, filterTag, filterOutEntityId, getAll)
-		return EntitySys.findInBounds(x, y, w, h, filterTag, filterOutEntityId, getAll)
-	end
-	function CollisionSys.searchWorldAll(x, y, w, h, filterTag, filterOutEntityId)
-		return CollisionSys.searchWorld(x, y, w, h, filterTag, filterOutEntityId, --[[getAll--]] true)
-	end
-	function CollisionSys.searchWorldRelativeToEntity(entity, signX, signY, filterTag, filterOutEntityId)
-		local relativeX = entity.x + (signX or 0)
-		local relativeY = entity.y + (signY or 0)
-
-		return CollisionSys.searchWorld(relativeX, relativeY, entity.w, entity.h, filterTag, filterOutEntityId)
-	end
-	function CollisionSys.search(entities, x, y, w, h, filterTag, filterOutEntityId, getAll)
-		local seenResults = nil
-		local results = nil
-		if getAll then
-			results = {}
-			seenResults = {}
-		end
-
-		local entitiesCount = #entities
-		for i = 1, entitiesCount do
-			local entityId = entities[i]
-			if (filterOutEntityId == nil) or (entityId ~= filterOutEntityId) then
-				local entity = entities[i]
-				if (((filterTag == nil) or (entity.tags[filterTag] ~= nil))
-					and util.rectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h)) then
-					-- if filterOutEntityId == 1 then
-					-- 	print("Collision: ", entity.id, "@", entity.x, entity.y, entity.w, entity.h, util.toComparable(entity.tags),
-					-- 		  " against", filterOutEntityId, "@", x, y, w, h)
-					-- end
-					if not getAll then
-						return entity
-					end
-
-					local entityIdString = tostring(entityId)
-					if not seenResults[entityIdString] then
-						results[#results + 1] = entity
-						seenResults[entityIdString] = true
-					end
-				end
-			end
-		end
-
-		return results
-	end
-	function CollisionSys.searchAll(entities, x, y, w, h, filterTag, filterOutEntityId)
-		return CollisionSys.search(entities, x, y, w, h, filterTag, filterOutEntityId, --[[getAll--]] true)
-	end
-	function CollisionSys.searchRelativeToEntity(entities, entity, signX, signY, filterTag, filterOutEntityId)
-		local relativeX = entity.x + signX
-		local relativeY = entity.y + signY
-
-		return CollisionSys.search(entities, relativeX, relativeY, entity.w, entity.h, filterTag, filterOutEntityId)
-	end
 
 -- Template
 	local TemplateSys = {}
@@ -925,7 +937,6 @@
 		["SimulationSys"] = SimulationSys,
 		["WorldSys"] = WorldSys,
 		["EntitySys"] = EntitySys,
-		["CollisionSys"] = CollisionSys,
 		["TemplateSys"] = TemplateSys,
 		["ScreenSys"] = ScreenSys,
 		["SpriteSys"] = SpriteSys,
@@ -974,57 +985,53 @@
 		entity.overflowY = 0
 	end
 	function PhysicsSys.tickEntity(entity)
-		local mathMin = math.min
-		local mathMax = math.max
-		local mathModf = math.modf
-		local mathAbs = math.abs
-		local utilSign = util.sign
-
+		-- apply gravity to force
 		local worldPhysics = SimulationSys.simulation.world.physics
-
 		entity.forceX = entity.forceX + worldPhysics.gravityX
 		entity.forceY = entity.forceY + worldPhysics.gravityY
 
+		-- apply force to speed
 		entity.speedX = entity.speedX + entity.forceX
 		entity.speedY = entity.speedY + entity.forceY
-
 		entity.forceX = 0
 		entity.forceY = 0
 
-		local speedX = entity.speedX
-		local speedY = entity.speedY
-		local entityId = entity.id
-
-		-- the fractional part of speed is carried over to the next tick
-		local moveX, overflowX = mathModf(speedX)
-		local moveY, overflowY = mathModf(speedY)
-		local overflowCarryX, overflowRemainderX = mathModf(overflowX + entity.overflowX)
-		local overflowCarryY, overflowRemainderY = mathModf(overflowY + entity.overflowY)
+		-- compute amount to move (integer values).  the fractional movement component is accumulated for subsequent ticks
+		local moveX, overflowX = math.modf(entity.speedX)
+		local moveY, overflowY = math.modf(entity.speedY)
+		local overflowCarryX, overflowRemainderX = math.modf(overflowX + entity.overflowX)
+		local overflowCarryY, overflowRemainderY = math.modf(overflowY + entity.overflowY)
 		entity.overflowX = overflowRemainderX
 		entity.overflowY = overflowRemainderY
 		moveX = moveX + overflowCarryX
 		moveY = moveY + overflowCarryY
 
-		local signX = utilSign(moveX)
-		local signY = utilSign(moveY)
-		moveX = mathAbs(moveX)
-		moveY = mathAbs(moveY)
+		local signX = util.sign(moveX)
+		local signY = util.sign(moveY)
+		local absMoveX = math.abs(moveX)
+		local absMoveY = math.abs(moveY)
 
-		local searchX = entity.x + mathMin(moveX, 0) - 1
-		local searchY = entity.y + mathMin(moveY, 0) - 1
-		local searchW = entity.w + mathMax(moveX, 0) + 2
-		local searchH = entity.h + mathMax(moveY, 0) + 2
-		local materialEntities = CollisionSys.searchWorldAll(
+		-- fetch array of nearby collision candidates once, to reduce subsequent collision check costs
+		local searchOffsetX = math.max(-moveX, 0) + 1
+		local searchOffsetY = math.max(-moveY, 0) + 1
+		local searchOffsetW = math.max(moveX, 0) + 1
+		local searchOffsetH = math.max(moveY, 0) + 1
+		local searchX = entity.x - searchOffsetX
+		local searchY = entity.y - searchOffsetY
+		local searchW = entity.w + searchOffsetX + searchOffsetW
+		local searchH = entity.h + searchOffsetY + searchOffsetH
+		local collidables = EntitySys.findAllBounded(
 			searchX,
 			searchY,
 			searchW,
 			searchH,
 			"material",
-			entityId
+			entity.id
 		)
 
-		for _ = 1, moveX do
-			if CollisionSys.searchRelativeToEntity(materialEntities, entity, signX, 0, "solid", entityId) then
+		-- move horizontally
+		for _ = 1, absMoveX do
+			if EntitySys.findRelativeInArray(collidables, entity, signX, 0, "solid", entity.id) then
 				PhysicsSys.stopEntityHorizontal(entity)
 				break
 			else
@@ -1032,8 +1039,9 @@
 			end
 		end
 
-		for _ = 1, moveY do
-			if CollisionSys.searchRelativeToEntity(materialEntities, entity, 0, signY, "solid", entityId) then
+		-- move vertically
+		for _ = 1, absMoveY do
+			if EntitySys.findRelativeInArray(collidables, entity, 0, signY, "solid", entity.id) then
 				PhysicsSys.stopEntityVertical(entity)
 				break
 			else
@@ -1091,6 +1099,19 @@
 
 -- Player
 	local PlayerSys = {}
+	function PlayerSys.tickEntity(entity)
+		if InputSys.inputs.left then
+			entity.forceX = entity.forceX - 0.1
+		end
+
+		if InputSys.inputs.right then
+			entity.forceX = entity.forceX + 0.1
+		end
+
+		if InputSys.inputs.up and EntitySys.findRelative(entity, 0, 1, "solid") then
+			entity.forceY = entity.forceY - 4
+		end
+	end
 	table.insert(SimulationSys.createEvents, function()
 		SpriteSys.add("playerLeft", 9, 2, 6, 6)
 		PlayerSys.template = TemplateSys.add("player", {
@@ -1109,6 +1130,11 @@
 				["player"] = true,
 			}
 		})
+	end)
+	table.insert(SimulationSys.stepEvents, function()
+		for _, player in pairs(EntitySys.findAll("player")) do
+			PlayerSys.tickEntity(player)
+		end
 	end)
 
 -- Game
@@ -1152,29 +1178,47 @@
 			EntitySys.setBounds(physicsObject, 16 + math.floor(math.random(120)), math.floor(math.random(64)), 5, 5)
 			physicsObject.speedX = math.random(3) - 1.5
 			physicsObject.speedY = math.random(3) - 1.5
-			if CollisionSys.searchWorldRelativeToEntity(physicsObject, 0, 0, nil, physicsObject.id) then
+			if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
 				EntitySys.destroy(physicsObject)
 			end
 		end
 	end
-	function GameSys.run()
+	function GameSys.isRunning()
+		return SimulationSys.isRunning()
+	end
+	function GameSys.step()
+		SimulationSys.step()
+
+		if InputSys.inputs.restart then
+			WorldSys.create()
+			GameSys.populateTestWorld()
+		end
+	end
+	function GameSys.create()
 		SimulationSys.create()
 		GameSys.populateTestWorld()
-
-		while SimulationSys.isRunning() do
-			SimulationSys.step()
-		end
-
+	end
+	function GameSys.destroy()
 		SimulationSys.dump(GameSys.DUMP_FILE)
 		SimulationSys.save(GameSys.SAVE_FILE)
 		SimulationSys.destroy()
 	end
+	function GameSys.runTests()
+		EngineSys.runTests()
+	end
+	function GameSys.run()
+		GameSys.create()
 
+		while GameSys.isRunning() do
+			GameSys.step()
+		end
 
--- ----------------- Main -----------------
+		GameSys.destroy()
+	end
+
 -- Main
 	local function main()
-		EngineSys.runTests()
+		GameSys.runTests()
 		GameSys.run()
 	end
 
