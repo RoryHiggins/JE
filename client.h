@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <zlib.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif  // END defined(__cplusplus)
@@ -30,5 +32,3 @@ extern "C" {
 #include <SFML/Window/Event.h>
 #include <SFML/Window/Keyboard.h>
 #include <SFML/Window/VideoMode.h>
-
-#include <zlib.h>

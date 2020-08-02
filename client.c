@@ -1,12 +1,7 @@
-// ---------------- Client ----------------
+//////////////// Client ////////////////
 // Includes
 	// precompiled header
 	#include "client.h"
-
-	#if defined(__cplusplus)
-	extern "C" {
-	#endif  // END defined(__cplusplus)
-
 // Logging
 	#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
 
@@ -179,7 +174,6 @@
 		}
 	}
 	#endif  // END !defined(JE_HEADLESS)
-
 // Window
 	#if !defined(JE_HEADLESS)
 	#define JE_WINDOW_WIDTH 640
@@ -313,7 +307,6 @@
 		}
 	}
 	#endif  // END !defined(JE_HEADLESS)
-
 // Lua
 	// https://www.lua.org/manual/5.3/manual.html
 	#define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
@@ -354,6 +347,8 @@
 
 		return error;
 	}
+
+// Lua-C API
 	int jeLuaClient_writeData(lua_State* lua) {
 		bool success;
 		char const* filename;
@@ -601,7 +596,7 @@
 
 		return 0;
 	}
-	int jeLuaClient_drawText(lua_State* lua) {
+	int jeLuaClient_drawSpriteText(lua_State* lua) {
 		// screen
 		float screenX1;
 		float screenY1;
@@ -619,8 +614,8 @@
 
 		int charW;
 		int charH;
-		char charFirst;
-		char charLast;
+		const char* charFirst;
+		const char* charLast;
 		int charColumns;
 
 		// text
@@ -668,9 +663,9 @@
 		charH = luaL_checknumber(lua, -1);
 
 		lua_getfield(lua, 2, "charFirst");
-		charFirst = (char)luaL_checknumber(lua, -1);
+		charFirst = luaL_checkstring(lua, -1);
 		lua_getfield(lua, 2, "charLast");
-		charLast = (char)luaL_checknumber(lua, -1);
+		charLast = luaL_checkstring(lua, -1);
 		lua_getfield(lua, 2, "charColumns");
 		charColumns = luaL_checknumber(lua, -1);
 
@@ -746,15 +741,7 @@
 
 		return 0;
 	}
-
-// Game
-	#define JE_GAME_FILENAME "game.lua"
-
-	typedef struct {
-		lua_State* lua;
-	} jeGame;
-
-	bool jeGame_registerLuaClientBindings(jeGame* game) {
+	bool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 		bool success = false;
 		int created = 0;
 
@@ -769,33 +756,40 @@
 			{NULL, NULL}  // sentinel value
 		};
 
-		JE_LOG("jeGame_registerLuaClientBindings()");
+		JE_LOG("jeLuaClient_registerLuaClientBindings()");
 
-		created = luaL_newmetatable(game->lua, "jeGameMetatable");
+		created = luaL_newmetatable(lua, "jeClientMetatable");
 		if (created != 1) {
-			JE_ERR("jeGame_registerLuaClientBindings(): luaL_newmetatable() failed, result=%d, metatableName=%s", created, JE_LUA_CLIENT_BINDINGS_KEY);
+			JE_ERR("jeLuaClient_registerLuaClientBindings(): luaL_newmetatable() failed, result=%d, metatableName=%s", created, JE_LUA_CLIENT_BINDINGS_KEY);
 			goto cleanup;
 		}
 
-		luaL_setfuncs(game->lua, clientBindings, /* num upvalues */ 0);
-		lua_pushvalue(game->lua, -1);
-		lua_setfield(game->lua, -1, "__index");
-		lua_setglobal(game->lua, JE_LUA_CLIENT_BINDINGS_KEY);
+		luaL_setfuncs(lua, clientBindings, /* num upvalues */ 0);
+		lua_pushvalue(lua, -1);
+		lua_setfield(lua, -1, "__index");
+		lua_setglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
 
 
 		success = true;
 		cleanup: {
-			lua_settop(game->lua, 0);
+			lua_settop(lua, 0);
 		}
 
 		return success;
 	}
-	bool jeGame_create(jeGame* game) {
+
+// Client
+	#define JE_CLIENT_GAME_FILENAME "game.lua"
+
+	typedef struct {
+		lua_State* lua;
+	} jeClient;
+	bool jeClient_create(jeClient* client) {
 		bool success = false;
 
-		JE_LOG("jeGame_create()");
+		JE_LOG("jeClient_create()");
 
-		game->lua = NULL;
+		client->lua = NULL;
 
 		#if !defined(JE_HEADLESS)
 			if (!jeWindow_create(jeWindow_get())) {
@@ -803,15 +797,15 @@
 			}
 		#endif  // END !defined(JE_HEADLESS)
 
-		game->lua = luaL_newstate();
-		if (game->lua == NULL) {
-			JE_ERR("jeGame_create(): luaL_newstate() failed");
+		client->lua = luaL_newstate();
+		if (client->lua == NULL) {
+			JE_ERR("jeClient_create(): luaL_newstate() failed");
 			goto cleanup;
 		}
 
-		luaL_openlibs(game->lua);
+		luaL_openlibs(client->lua);
 
-		if (!jeGame_registerLuaClientBindings(game)) {
+		if (!jeLuaClient_registerLuaClientBindings(client->lua)) {
 			goto cleanup;
 		}
 
@@ -820,60 +814,52 @@
 		}
 		return success;
 	}
-	void jeGame_destroy(jeGame* game) {
-		if (game->lua != NULL) {
-			lua_close(game->lua);
-			game->lua = NULL;
+	void jeClient_destroy(jeClient* client) {
+		if (client->lua != NULL) {
+			lua_close(client->lua);
+			client->lua = NULL;
 		}
 
 		#if !defined(JE_HEADLESS)
 			jeWindow_destroy(jeWindow_get());
 		#endif  // END !defined(JE_HEADLESS)
 	}
-	bool jeGame_run(jeGame* game) {
+	bool jeClient_run(jeClient* client) {
 		bool success = false;
 		int response = 0;
 
-		if (!jeGame_create(game)) {
+		if (!jeClient_create(client)) {
 			goto cleanup;
 		}
 
-		response = luaL_loadfile(game->lua, JE_GAME_FILENAME);
+		response = luaL_loadfile(client->lua, JE_CLIENT_GAME_FILENAME);
 		if (response != 0) {
-			JE_ERR("jeGame_create(): luaL_loadfile() failed, filename=%s response=%d error=%s", JE_GAME_FILENAME, response, jeLua_getError(game->lua));
+			JE_ERR("jeClient_create(): luaL_loadfile() failed, filename=%s response=%d error=%s", JE_CLIENT_GAME_FILENAME, response, jeLua_getError(client->lua));
 			goto cleanup;
 		}
 
-		response = lua_pcall(game->lua, /* num args */ 0, /* num return vals */ LUA_MULTRET, /* err func */ 0);
+		response = lua_pcall(client->lua, /* num args */ 0, /* num return vals */ LUA_MULTRET, /* err func */ 0);
 		if (response != 0) {
-			JE_ERR("jeGame_create(): lua_pcall() failed, filename=%s response=%d error=%s", JE_GAME_FILENAME, response, jeLua_getError(game->lua));
+			JE_ERR("jeClient_create(): lua_pcall() failed, filename=%s response=%d error=%s", JE_CLIENT_GAME_FILENAME, response, jeLua_getError(client->lua));
 			goto cleanup;
 		}
 
 		success = true;
 		cleanup: {
-			jeGame_destroy(game);
+			jeClient_destroy(client);
 		}
 
 		return success;
 	}
 
-// Main
 	int main(int argc, char** argv) {
 		bool success = true;
-		jeGame game;
+		jeClient game;
 
 		JE_MAYBE_UNUSED(argc);
 		JE_MAYBE_UNUSED(argv);
 
-		success = jeGame_run(&game);
+		success = jeClient_run(&game);
 
 		return success ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
-	void jeMain(int argc, char** argv) {
-		main(argc, argv);
-	}
-
-	#if defined(__cplusplus)
-	}  // END extern "C"
-	#endif  // END defined(__cplusplus)

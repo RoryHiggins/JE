@@ -1,7 +1,6 @@
--- ---------------- Engine ----------------
+---------------- Engine ----------------
 -- Dependencies
 	local json = require("json")
-
 -- Utilities (TODO split up)
 	local util = {}
 	function util.log(format, ...)
@@ -202,7 +201,6 @@
 		ClientSys.isRunning()
 		ClientSys.step()
 	end
-
 -- Simulation
 	local SimulationSys = {}
 	SimulationSys.SAVE_VERSION = 1
@@ -327,7 +325,6 @@
 						  gameBeforeSave, gameAfterLoad)
 		end
 	end
-
 -- Input
 	local InputSys = {}
 	InputSys.inputs = {
@@ -344,7 +341,6 @@
 	table.insert(SimulationSys.stepEvents, function()
 		ClientSys.updateInputs(InputSys.inputs)
 	end)
-
 -- World
 	local WorldSys = {}
 	WorldSys.createEvents = {}
@@ -656,7 +652,7 @@
 		local relativeX = entity.x + signX
 		local relativeY = entity.y + signY
 
-		return EntitySys.findBoundedInArray(entities, relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
+		return EntitySys.findBoundedInArray(entities,  relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
 	end
 	function EntitySys.destroy(entity)
 		if entity.destroyed then
@@ -832,7 +828,6 @@
 		world.chunkEntities = {}
 		world.destroyedEntities = {}
 	end)
-
 -- Template
 	local TemplateSys = {}
 	function TemplateSys.add(templateId, template)
@@ -856,7 +851,6 @@
 	table.insert(SimulationSys.createEvents, function()
 		SimulationSys.simulation.templates = {}
 	end)
-
 -- Screen
 	local ScreenSys = {}
 	ScreenSys.drawEvents = {}
@@ -882,7 +876,6 @@
 			events[i](screen)
 		end
 	end)
-
 -- Sprite
 	local SpriteSys = {}
 	function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
@@ -908,20 +901,15 @@
 	function SpriteSys.getSprite(spriteId)
 		return SimulationSys.simulation.sprites[spriteId]
 	end
-	function SpriteSys.set(entity, sprite)
+	function SpriteSys.attach(entity, sprite)
 		local spriteId = sprite.spriteId
 
 		entity.spriteId = spriteId
-		entity.spriteU1 = sprite.u1
-		entity.spriteV1 = sprite.v1
-		entity.spriteU2 = sprite.u2
-		entity.spriteV2 = sprite.v2
 		EntitySys.tag(entity, "sprite")
 	end
-	function SpriteSys.unset(entity)
+	function SpriteSys.detach(entity)
+		EntitySys.untag(entity, "sprite")
 		entity.spriteId = nil
-		entity.u = nil
-		entity.v = nil
 	end
 	function SpriteSys.runTests()
 		SimulationSys.create()
@@ -929,23 +917,25 @@
 		local entity = EntitySys.create()
 		local testSprite = SpriteSys.addSprite("test", 40, 0, 8, 8)
 
-		SpriteSys.set(entity, testSprite)
-		assert(entity.spriteU1 == 40)
-		assert(entity.spriteU2 == 48)
-		assert(entity.spriteId == "test")
+		assert(SpriteSys.getSprite("test") == testSprite)
 
-		SpriteSys.unset(entity, testSprite)
+		SpriteSys.attach(entity, testSprite)
+		assert(entity.spriteId == "test")
+		assert(entity.tags.sprite)
+
+		SpriteSys.detach(entity, testSprite)
 		assert(entity.spriteId == nil)
+		assert(entity.tags.sprite == nil)
 	end
 	table.insert(SimulationSys.createEvents, function()
 		SimulationSys.simulation.sprites = {}
-		SpriteSys.addSprite("invalid", 0, 0, 8, 8)
 	end)
 	table.insert(ScreenSys.drawEvents, function(screen)
 		local simulation = SimulationSys.simulation
-		local world = simulation.world
 		local sprites = simulation.sprites
+		local world = simulation.world
 		local entities = world.entities
+
 		local spriteEntityIds = world.tagEntities["sprite"] or {}
 		local spriteEntityIdsCount = #spriteEntityIds
 
@@ -955,6 +945,52 @@
 			ClientSys.drawSprite(entity, sprite, screen)
 		end
 	end)
+-- Sprite Text
+	-- local SpriteTextSys = {}
+	-- function SpriteTextSys.addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
+	-- 	local spriteFonts = SimulationSys.simulation.spriteFonts
+	-- 	local spriteFont = spriteFonts[fontId]
+	-- 	if spriteFont == nil then
+	-- 		spriteFont = {
+	-- 			["fontId"] = fontId,
+	-- 			["u"] = u,
+	-- 			["v"] = v,
+	-- 			["charW"] = charW,
+	-- 			["charH"] = charH,
+	-- 			["charFirst"] = charFirst,
+	-- 			["charLast"] = charLast,
+	-- 			["charColumns"] = charColumns,
+	-- 		}
+	-- 		spriteFonts[fontId] = spriteFont
+	-- 	end
+
+	-- 	return spriteFont
+	-- end
+	-- function SpriteTextSys.attach(entity, spriteFont, text)
+	-- 	local spriteFontId = spriteFont.spriteFontId
+
+	-- 	entity.spriteFontId = spriteFontId
+	-- 	entity.text = text
+	-- 	EntitySys.tag(entity, "text")
+	-- end
+	-- table.insert(SimulationSys.createEvents, function()
+	-- 	SimulationSys.simulation.spriteFonts = {}
+	-- end)
+	-- table.insert(ScreenSys.drawEvents, function(screen)
+	-- 	local simulation = SimulationSys.simulation
+	-- 	local spriteFonts = simulation.spriteFonts
+	-- 	local world = simulation.world
+	-- 	local entities = world.entities
+
+	-- 	local spriteTextEntityIds = world.tagEntities["sprite"] or {}
+	-- 	local spriteTextEntityIdsCount = #spriteTextEntityIds
+
+	-- 	for i = 1, spriteTextEntityIdsCount do
+	-- 		local entity = entities[spriteTextEntityIds[i]]
+	-- 		local font = spriteFonts[entity.spriteFontId]
+	-- 		ClientSys.drawSprite(entity, font, screen)
+	-- 	end
+	-- end)
 
 -- Engine
 	local EngineSys = {}
@@ -967,6 +1003,7 @@
 		["TemplateSys"] = TemplateSys,
 		["ScreenSys"] = ScreenSys,
 		["SpriteSys"] = SpriteSys,
+		["TextSys"] = TextSys,
 	}
 	function EngineSys.runTests()
 		util.log("EngineSys.runTests(): Running automated tests")
@@ -982,12 +1019,9 @@
 	end
 
 
--- ----------------- Game -----------------
+----------------- Game -----------------
 -- Material
 	local MaterialSys = {}
-	function MaterialSys.set(entity)
-		EntitySys.tag(entity, "material")
-	end
 	table.insert(SimulationSys.createEvents, function()
 		SimulationSys.simulation.materials = {
 			"air",
@@ -1009,12 +1043,8 @@
 			end
 		end
 	end)
-
 -- Physics
 	local PhysicsSys = {}
-	function PhysicsSys.set(entity)
-		EntitySys.tag(entity, "physics")
-	end
 	function PhysicsSys.stopEntityX(entity)
 		entity.forceX = 0
 		entity.speedX = 0
@@ -1234,11 +1264,9 @@
 				["sprite"] = true,
 				["material"] = true,
 				["solid"] = true,
-				["wall"] = true,
 			}
 		})
 	end)
-
 -- Player
 	local PlayerSys = {}
 	function PlayerSys.tickEntity(entity)
@@ -1264,41 +1292,47 @@
 		local fallingX = (simulationPhysics.gravityX ~= 0) and (entity.speedX * util.sign(simulationPhysics.gravityX) >= 0)
 		local fallingY = (simulationPhysics.gravityY ~= 0) and (entity.speedY * util.sign(simulationPhysics.gravityY) >= 0)
 		local falling = fallingX or fallingY
+		if not InputSys.inputs.up or onGround or falling then
+			entity.playerJumpFrames = 0
+		end
+
 		if InputSys.inputs.up then
 			if onGround then
+				if simulationPhysics.gravityX ~= 0 then
+					PhysicsSys.stopEntityX(entity)
+				end
+				if simulationPhysics.gravityY ~= 0 then
+					PhysicsSys.stopEntityY(entity)
+				end
 				local jumpForce = simulationPlayer.jumpForce * materialPhysics.jumpForceStrength
 				entity.forceX = entity.forceX - (util.sign(simulationPhysics.gravityX) * jumpForce)
 				entity.forceY = entity.forceY - (util.sign(simulationPhysics.gravityY) * jumpForce)
 				entity.playerJumpFrames = simulationPlayer.jumpFrames
 			elseif entity.playerJumpFrames > 0 then
-				if onGround or falling then
-					entity.playerJumpFrames = 0
-				else
-					local jumpFrameForce = simulationPlayer.jumpFrameForce * materialPhysics.jumpForceStrength
-					entity.forceX = entity.forceX - (util.sign(simulationPhysics.gravityX) * jumpFrameForce)
-					entity.forceY = entity.forceY - (util.sign(simulationPhysics.gravityY) * jumpFrameForce)
-					entity.playerJumpFrames = entity.playerJumpFrames - 1
-				end
+				local jumpFrameForce = simulationPlayer.jumpFrameForce * materialPhysics.jumpForceStrength
+				entity.forceX = entity.forceX - (util.sign(simulationPhysics.gravityX) * jumpFrameForce)
+				entity.forceY = entity.forceY - (util.sign(simulationPhysics.gravityY) * jumpFrameForce)
+				entity.playerJumpFrames = entity.playerJumpFrames - 1
 			end
 		end
 
 		if entity.speedY < 0 then
-			SpriteSys.set(entity, SpriteSys.getSprite("playerUp"))
+			SpriteSys.attach(entity, SpriteSys.getSprite("playerUp"))
 		else
 			if entity.speedX < 0 then
-				SpriteSys.set(entity, SpriteSys.getSprite("playerLeft"))
+				SpriteSys.attach(entity, SpriteSys.getSprite("playerLeft"))
 			elseif entity.speedX > 0 then
-				SpriteSys.set(entity, SpriteSys.getSprite("playerRight"))
+				SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
 			elseif entity.spriteId == "playerUp" then
-				SpriteSys.set(entity, SpriteSys.getSprite("playerRight"))
+				SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
 			end
 		end
 	end
 	table.insert(SimulationSys.createEvents, function()
 		SimulationSys.simulation.player = {
-			["jumpForce"] = 7,
-			["jumpFrameForce"] = 0.6,
-			["jumpFrames"] = 8,
+			["jumpForce"] = 5,
+			["jumpFrameForce"] = 0.7,
+			["jumpFrames"] = 15,
 			["moveForce"] = 0.6,
 		}
 		SpriteSys.addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
@@ -1359,7 +1393,6 @@
 				["material"] = true,
 				["solid"] = true,
 				["physics"] = true,
-				["physicsObject"] = true,
 			}
 		}
 		local createdPhysicsObjectCount = 0
@@ -1376,39 +1409,39 @@
 		end
 		util.log("GameSys.populateTestWorld(): createdPhysicsObjectCount=%d", createdPhysicsObjectCount)
 	end
-	function GameSys.isRunning()
-		return SimulationSys.isRunning()
-	end
-	function GameSys.step()
-		SimulationSys.step()
+	function GameSys.runTests()
+		util.log("GameSys.runTests(): Running automated tests")
 
-		if InputSys.inputs.restart then
-			WorldSys.create()
-			GameSys.populateTestWorld()
+		EngineSys.runTests()
+
+		for systemName, system in pairs(GameSys.systems) do
+			if system.runTests then
+				util.log("GameSys.runTests(): Running tests for %s", systemName)
+				system.runTests()
+			else
+				util.log("GameSys.runTests(): No tests for %s", systemName)
+			end
 		end
 	end
-	function GameSys.create()
+	function GameSys.run()
+		GameSys.runTests()
+
 		SimulationSys.create()
 		GameSys.populateTestWorld()
-	end
-	function GameSys.destroy()
+
+		while SimulationSys.isRunning() do
+			SimulationSys.step()
+
+			if InputSys.inputs.restart then
+				WorldSys.create()
+				GameSys.populateTestWorld()
+			end
+		end
+
 		SimulationSys.dump(GameSys.DUMP_FILE)
 		SimulationSys.save(GameSys.SAVE_FILE)
 		SimulationSys.destroy()
 	end
-	function GameSys.runTests()
-		EngineSys.runTests()
-	end
-	function GameSys.run()
-		GameSys.create()
-
-		while GameSys.isRunning() do
-			GameSys.step()
-		end
-
-		GameSys.destroy()
-	end
-
 -- Main
 	local function main()
 		GameSys.runTests()
