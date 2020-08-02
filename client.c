@@ -316,9 +316,9 @@
 
 // Lua
 	// https://www.lua.org/manual/5.3/manual.html
+	#define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
 	#define JE_LUA_CLIENT_BINDINGS_KEY "jeClientBindings"
 	#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLuaClient_##BINDING_NAME}
-	#define JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE 4 * 1024 * 1024
 
 	// Adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119
 	#if LUA_VERSION_NUM < 520
@@ -360,37 +360,34 @@
 		char const* data;
 		size_t dataSize;
 
-		FILE* fd;
-		int writes;
+		gzFile file;
+		int dataSizeWritten;
 
 		success = false;
 
 		filename = luaL_checkstring(lua, 1);
 
 		data = luaL_checkstring(lua, 2);
-		dataSize = lua_objlen(lua, 2);
+		dataSize = lua_objlen(lua, 2) + 1;
 
-		fd = fopen(filename, "w");
-		if (fd == NULL) {
-			JE_ERR("jeLuaClient_writeData(): fopen() failed with filename=%s, errno=%d err=%s",
+		file = gzopen(filename, "wb");
+		if (file == NULL) {
+			JE_ERR("jeLuaClient_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
 				   filename, errno, strerror(errno));
 			goto cleanup;
 		}
 
-		writes = fwrite(data, dataSize, 1, fd);
-		if (writes == 0) {
-			JE_ERR("jeLuaClient_writeData(): fwrite() failed to write data");
+		dataSizeWritten = gzwrite(file, data, dataSize);
+		if (dataSizeWritten == 0) {
+			JE_ERR("jeLuaClient_writeData(): gzwrite() failed to write data");
 			goto cleanup;
 		}
 
 		success = true;
-		JE_LOG("jeLuaClient_writeData(): fwrite() wrote bytes=%d to filename=%s", dataSize, filename);
+		JE_LOG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
 
 		cleanup: {
-			if (fd) {
-				fclose(fd);
-				fd = NULL;
-			}
+			gzclose(file);
 		}
 
 		lua_pushboolean(lua, success);
@@ -398,34 +395,31 @@
 		return 1;
 	}
 	int jeLuaClient_readData(lua_State* lua) {
-		static char data[JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE];
+		static char data[JE_LUA_DATA_BUFFER_SIZE];
 
 		char const* filename;
 		int dataSize;
 
-		FILE* fd;
+		gzFile file;
 
 		filename = luaL_checkstring(lua, 1);
 		dataSize = 0;
 
-		fd = fopen(filename, "r");
-		if (fd == NULL) {
-			JE_ERR("jeLuaClient_readData(): fopen() failed with filename=%s, errno=%d err=%s",
+		file = gzopen(filename, "rb");
+		if (file == NULL) {
+			JE_ERR("jeLuaClient_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
 				   filename, errno, strerror(errno));
 			goto cleanup;
 		}
 
-		dataSize = fread(data, 1, JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE, fd);
-		JE_LOG("jeLuaClient_readData(): fread() read bytes=%d from filename=%s", dataSize, filename);
+		dataSize = gzread(file, data, JE_LUA_DATA_BUFFER_SIZE);
+		JE_LOG("jeLuaClient_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
 
 		cleanup: {
-			if (fd) {
-				fclose(fd);
-				fd = NULL;
-			}
+			gzclose(file);
 		}
 
-		lua_pushlstring(lua, data, dataSize);
+		lua_pushlstring(lua, data, dataSize - 1);
 
 		return 1;
 	}

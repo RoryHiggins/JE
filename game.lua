@@ -271,7 +271,7 @@
 	function SimulationSys.dump(filename)
 		util.log("SimulationSys.dump(): filename=%s", filename)
 
-		local success = ClientSys.writeData(filename, util.toComparable(SimulationSys.simulation))
+		local success = HeadlessClientSys.writeData(filename, util.toComparable(SimulationSys.simulation))
 
 		if not success then
 			util.log("SimulationSys.dump(): ClientSys.writeData() failed")

@@ -30,3 +30,5 @@ extern "C" {
 #include <SFML/Window/Event.h>
 #include <SFML/Window/Keyboard.h>
 #include <SFML/Window/VideoMode.h>
+
+#include <zlib.h>

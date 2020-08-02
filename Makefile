@@ -1,15 +1,15 @@
 CC := gcc
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla -Winvalid-pch -fno-exceptions -O0
 CFLAGS_HEADLESS := $(CFLAGS) -D JE_HEADLESS
-LFLAGS := -lcsfml-system -lcsfml-window -lcsfml-graphics -lluajit-5.1
-LFLAGS_HEADLESS := -lluajit-5.1
+LFLAGS := -lcsfml-system -lcsfml-window -lcsfml-graphics -lluajit-5.1 -lz
+LFLAGS_HEADLESS := -lluajit-5.1 -lz
 
-client: client.h.gch client.c
+client: Makefile client.h.gch client.c
 	$(CC) $(CFLAGS) client.c $(LFLAGS) -o client
-client_headless: client.c
+client_headless: Makefile client.h client.c
 	$(CC) $(CFLAGS_HEADLESS) client.c $(LFLAGS_HEADLESS) -o client_headless
 
-client.h.gch: client.h
+client.h.gch: Makefile client.h
 	$(CC) $(CFLAGS) client.h
 
 run: client
