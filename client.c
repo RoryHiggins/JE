@@ -1,7 +1,7 @@
 // ---------------- Client ----------------
 // Includes
 	// precompiled header
-	#include "stdafx.h"
+	#include "client.h"
 
 	#if defined(__cplusplus)
 	extern "C" {
@@ -185,7 +185,7 @@
 	#define JE_WINDOW_WIDTH 640
 	#define JE_WINDOW_HEIGHT 480
 	#define JE_WINDOW_SCALE 4
-	#define JE_WINDOW_FRAME_RATE 60
+	#define JE_WINDOW_FRAME_RATE 30
 	#define JE_WINDOW_SPRITES "sprites.png"
 
 	typedef struct {
@@ -195,6 +195,10 @@
 		// TODO remove in favor of a render queue
 		sfSprite* sprite;
 		jeRenderQueue renderQueue;
+
+		time_t lastSecond;
+		unsigned framesThisSecond;
+		unsigned framesLastSecond;
 
 		bool closing;
 	} jeWindow;
@@ -266,6 +270,10 @@
 			goto cleanup;
 		}
 
+		time(&window->lastSecond);
+		window->framesThisSecond = 0;
+		window->framesLastSecond = 0;
+
 		window->closing = false;
 
 		success = true;
@@ -279,6 +287,7 @@
 	}
 	void jeWindow_step(jeWindow* window) {
 		sfEvent event;
+		time_t timeNow;
 
 		while (sfRenderWindow_pollEvent(window->window, &event)) {
 			if (event.type == sfEvtClosed) {
@@ -294,6 +303,14 @@
 
 		sfRenderWindow_display(window->window);
 		sfRenderWindow_clear(window->window, sfWhite);
+
+		window->framesThisSecond++;
+		time(&timeNow);
+		if (difftime(timeNow, window->lastSecond) >= 1.0) {
+			window->lastSecond = timeNow;
+			window->framesLastSecond = window->framesThisSecond;
+			window->framesThisSecond = 0;
+		}
 	}
 	#endif  // END !defined(JE_HEADLESS)
 
@@ -301,6 +318,7 @@
 	// https://www.lua.org/manual/5.3/manual.html
 	#define JE_LUA_CLIENT_BINDINGS_KEY "jeClientBindings"
 	#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLuaClient_##BINDING_NAME}
+	#define JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE 4 * 1024 * 1024
 
 	// Adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119
 	#if LUA_VERSION_NUM < 520
@@ -336,6 +354,81 @@
 
 		return error;
 	}
+	int jeLuaClient_writeData(lua_State* lua) {
+		bool success;
+		char const* filename;
+		char const* data;
+		size_t dataSize;
+
+		FILE* fd;
+		int writes;
+
+		success = false;
+
+		filename = luaL_checkstring(lua, 1);
+
+		data = luaL_checkstring(lua, 2);
+		dataSize = lua_objlen(lua, 2);
+
+		fd = fopen(filename, "w");
+		if (fd == NULL) {
+			JE_ERR("jeLuaClient_writeData(): fopen() failed with filename=%s, errno=%d err=%s",
+				   filename, errno, strerror(errno));
+			goto cleanup;
+		}
+
+		writes = fwrite(data, dataSize, 1, fd);
+		if (writes == 0) {
+			JE_ERR("jeLuaClient_writeData(): fwrite() failed to write data");
+			goto cleanup;
+		}
+
+		success = true;
+		JE_LOG("jeLuaClient_writeData(): fwrite() wrote bytes=%d to filename=%s", dataSize, filename);
+
+		cleanup: {
+			if (fd) {
+				fclose(fd);
+				fd = NULL;
+			}
+		}
+
+		lua_pushboolean(lua, success);
+
+		return 1;
+	}
+	int jeLuaClient_readData(lua_State* lua) {
+		static char data[JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE];
+
+		char const* filename;
+		int dataSize;
+
+		FILE* fd;
+
+		filename = luaL_checkstring(lua, 1);
+		dataSize = 0;
+
+		fd = fopen(filename, "r");
+		if (fd == NULL) {
+			JE_ERR("jeLuaClient_readData(): fopen() failed with filename=%s, errno=%d err=%s",
+				   filename, errno, strerror(errno));
+			goto cleanup;
+		}
+
+		dataSize = fread(data, 1, JE_LUA_CLIENT_READ_DATA_BUFFER_SIZE, fd);
+		JE_LOG("jeLuaClient_readData(): fread() read bytes=%d from filename=%s", dataSize, filename);
+
+		cleanup: {
+			if (fd) {
+				fclose(fd);
+				fd = NULL;
+			}
+		}
+
+		lua_pushlstring(lua, data, dataSize);
+
+		return 1;
+	}
 	int jeLuaClient_isRunning(lua_State* lua) {
 		bool isRunning = false;
 
@@ -359,46 +452,65 @@
 	int jeLuaClient_updateInputs(lua_State* lua) {
 		luaL_checktype(lua, 1, LUA_TTABLE);
 
-		lua_pushstring(lua, "left");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyLeft) || sfKeyboard_isKeyPressed(sfKeyA));
-		lua_settable(lua, 1);
+		#if !defined(JE_HEADLESS)
+			lua_pushstring(lua, "left");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyLeft) || sfKeyboard_isKeyPressed(sfKeyA));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "right");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyRight) || sfKeyboard_isKeyPressed(sfKeyD));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "right");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyRight) || sfKeyboard_isKeyPressed(sfKeyD));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "up");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyUp) || sfKeyboard_isKeyPressed(sfKeyW));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "up");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyUp) || sfKeyboard_isKeyPressed(sfKeyW));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "down");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyDown) || sfKeyboard_isKeyPressed(sfKeyS));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "down");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyDown) || sfKeyboard_isKeyPressed(sfKeyS));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "a");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyEnter) || sfKeyboard_isKeyPressed(sfKeyZ));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "a");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyEnter) || sfKeyboard_isKeyPressed(sfKeyZ));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "b");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyBackspace) || sfKeyboard_isKeyPressed(sfKeyX));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "b");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyBackspace) || sfKeyboard_isKeyPressed(sfKeyX));
+			lua_settable(lua, 1);
 
-		lua_pushstring(lua, "restart");
-		lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyR));
-		lua_settable(lua, 1);
+			lua_pushstring(lua, "restart");
+			lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyR));
+			lua_settable(lua, 1);
+		#endif  // END !defined(JE_HEADLESS)
 
+		return 0;
+	}
+	int jeLuaClient_getCurrentFPS(lua_State* lua) {
+		unsigned fps = 0;
+
+		#if !defined(JE_HEADLESS)
+			fps = jeWindow_get()->framesLastSecond;
+		#endif  // END !defined(JE_HEADLESS)
+
+		lua_pushnumber(lua, (lua_Number)fps);
 		return 1;
 	}
 	int jeLuaClient_drawSprite(lua_State* lua) {
-		#if !defined(JE_HEADLESS)
-			jeWindow* window;
-		#endif  // END !defined(JE_HEADLESS)
-
 		// screen
 		float screenX1;
 		float screenY1;
 		float screenX2;
 		float screenY2;
+
+		// sprite template
+		float r;
+		float g;
+		float b;
+		float a;
+
+		float u1;
+		float v1;
+		float u2;
+		float v2;
 
 		// sprite
 		float x1;
@@ -406,61 +518,51 @@
 		float x2;
 		float y2;
 		int z;
-		float r;
-		float g;
-		float b;
-		float a;
-		float u1;
-		float v1;
-		float u2;
-		float v2;
 
 
 		// screen
-		luaL_checktype(lua, 2, LUA_TTABLE);
-		lua_getfield(lua, 2, "x");
+		luaL_checktype(lua, 3, LUA_TTABLE);
+		lua_getfield(lua, 3, "x");
 		screenX1 = luaL_checknumber(lua, -1);
-		lua_getfield(lua, 2, "y");
+		lua_getfield(lua, 3, "y");
 		screenY1 = luaL_checknumber(lua, -1);
-
-		lua_getfield(lua, 2, "w");
+		lua_getfield(lua, 3, "w");
 		screenX2 = screenX1 + luaL_checknumber(lua, -1);
-		lua_getfield(lua, 2, "h");
+		lua_getfield(lua, 3, "h");
 		screenY2 = screenY1 + luaL_checknumber(lua, -1);
 
 		// sprite
+		// TODO make sprite a seprate object fetched in lua code!
+		lua_getfield(lua, 2, "r");
+		r =  luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "g");
+		g = luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "b");
+		b =  luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "a");
+		a = luaL_optnumber(lua, -1, 255.0f);
+
+		lua_getfield(lua, 2, "u1");
+		u1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "v1");
+		v1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "u2");
+		u2 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "v2");
+		v2 = luaL_checknumber(lua, -1);
+
+		// render object
 		luaL_checktype(lua, 1, LUA_TTABLE);
 		lua_getfield(lua, 1, "x");
 		x1 = luaL_checknumber(lua, -1);
 		lua_getfield(lua, 1, "y");
 		y1 = luaL_checknumber(lua, -1);
-
 		lua_getfield(lua, 1, "w");
 		x2 = x1 + luaL_checknumber(lua, -1);
 		lua_getfield(lua, 1, "h");
 		y2 = y1 + luaL_checknumber(lua, -1);
-
 		lua_getfield(lua, 1, "z");
-		z = (int)luaL_checknumber(lua, -1);
-
-		lua_getfield(lua, 1, "colorR");
-		r =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "colorG");
-		g = luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "colorB");
-		b =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "colorA");
-		a = luaL_checknumber(lua, -1);
-
-		lua_getfield(lua, 1, "spriteU1");
-		u1 =  luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "spriteV1");
-		v1 = luaL_checknumber(lua, -1);
-
-		lua_getfield(lua, 1, "spriteU2");
-		u2 = luaL_checknumber(lua, -1);
-		lua_getfield(lua, 1, "spriteV2");
-		v2 = luaL_checknumber(lua, -1);
+		z = (int)luaL_optnumber(lua, -1, 0.0);
 
 		if ((a == 0)
 			|| (x1 > screenX2)
@@ -474,14 +576,13 @@
 			goto cleanup;
 		}
 
-		x1 += screenX1;
-		x2 += screenX1;
-		y1 += screenY1;
-		y2 += screenY1;
+		x1 -= screenX1;
+		x2 -= screenX1;
+		y1 -= screenY1;
+		y2 -= screenY1;
 
 		#if !defined(JE_HEADLESS)
-			window = jeWindow_get();
-			jeRenderQueue_queueSprite(&window->renderQueue, z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
+			jeRenderQueue_queueSprite(&(jeWindow_get()->renderQueue), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 		#else  // END !defined(JE_HEADLESS)
 			JE_MAYBE_UNUSED(screenX1);
 			JE_MAYBE_UNUSED(screenY1);
@@ -506,6 +607,151 @@
 
 		return 0;
 	}
+	int jeLuaClient_drawText(lua_State* lua) {
+		// screen
+		float screenX1;
+		float screenY1;
+		float screenX2;
+		float screenY2;
+
+		// font
+		float r;
+		float g;
+		float b;
+		float a;
+
+		float u;
+		float v;
+
+		int charW;
+		int charH;
+		char charFirst;
+		char charLast;
+		int charColumns;
+
+		// text
+		float x1;
+		float y1;
+		float x2;
+		float y2;
+		int z;
+
+		const char* text;
+
+
+		// screen
+		luaL_checktype(lua, 3, LUA_TTABLE);
+
+		lua_getfield(lua, 3, "x");
+		screenX1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 3, "y");
+		screenY1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 3, "w");
+		screenX2 = screenX1 + luaL_checknumber(lua, -1);
+		lua_getfield(lua, 3, "h");
+		screenY2 = screenY1 + luaL_checknumber(lua, -1);
+
+		// font
+		luaL_checktype(lua, 2, LUA_TTABLE);
+
+		lua_getfield(lua, 2, "r");
+		r = luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "g");
+		g = luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "b");
+		b = luaL_optnumber(lua, -1, 255.0f);
+		lua_getfield(lua, 2, "a");
+		a = luaL_optnumber(lua, -1, 255.0f);
+
+		lua_getfield(lua, 2, "u");
+		u = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "v");
+		v = luaL_checknumber(lua, -1);
+
+		lua_getfield(lua, 2, "charW");
+		charW = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "charH");
+		charH = luaL_checknumber(lua, -1);
+
+		lua_getfield(lua, 2, "charFirst");
+		charFirst = (char)luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "charLast");
+		charLast = (char)luaL_checknumber(lua, -1);
+		lua_getfield(lua, 2, "charColumns");
+		charColumns = luaL_checknumber(lua, -1);
+
+		// render object
+		luaL_checktype(lua, 1, LUA_TTABLE);
+
+		lua_getfield(lua, 1, "x");
+		x1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 1, "y");
+		y1 = luaL_checknumber(lua, -1);
+		lua_getfield(lua, 1, "w");
+		x2 = x1 + luaL_checknumber(lua, -1);
+		lua_getfield(lua, 1, "h");
+		y2 = y1 + luaL_checknumber(lua, -1);
+		lua_getfield(lua, 1, "z");
+		z = (int)luaL_optnumber(lua, -1, 0.0f);
+
+		lua_getfield(lua, 1, "text");
+		text = luaL_checkstring(lua, -1);
+
+		if ((a == 0)
+			|| (x1 > screenX2)
+			|| (y1 > screenY2)
+			|| (x2 <= screenX1)
+			|| (y2 <= screenY1)
+			|| (x1 == x2)
+			|| (y1 == y2)) {
+			goto cleanup;
+		}
+
+		x1 -= screenX1;
+		x2 -= screenX1;
+		y1 -= screenY1;
+		y2 -= screenY1;
+
+		// // TODO
+		// #if !defined(JE_HEADLESS)
+		// 	// jeRenderQueue_queueSprite(jeWindow_get()->renderQueue, z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
+		// #else  // END !defined(JE_HEADLESS)
+			// screen
+			JE_MAYBE_UNUSED(screenX1);
+			JE_MAYBE_UNUSED(screenY1);
+			JE_MAYBE_UNUSED(screenX2);
+			JE_MAYBE_UNUSED(screenY2);
+
+			// font
+			JE_MAYBE_UNUSED(r);
+			JE_MAYBE_UNUSED(g);
+			JE_MAYBE_UNUSED(b);
+			JE_MAYBE_UNUSED(a);
+
+			JE_MAYBE_UNUSED(u);
+			JE_MAYBE_UNUSED(v);
+
+			JE_MAYBE_UNUSED(charW);
+			JE_MAYBE_UNUSED(charH);
+			JE_MAYBE_UNUSED(charFirst);
+			JE_MAYBE_UNUSED(charLast);
+			JE_MAYBE_UNUSED(charColumns);
+
+			// text
+			JE_MAYBE_UNUSED(x1);
+			JE_MAYBE_UNUSED(y1);
+			JE_MAYBE_UNUSED(x2);
+			JE_MAYBE_UNUSED(y2);
+			JE_MAYBE_UNUSED(z);
+
+			JE_MAYBE_UNUSED(text);
+		// #endif
+
+		cleanup: {
+		}
+
+		return 0;
+	}
 
 // Game
 	#define JE_GAME_FILENAME "game.lua"
@@ -523,6 +769,9 @@
 			JE_LUA_CLIENT_BINDING(step),
 			JE_LUA_CLIENT_BINDING(drawSprite),
 			JE_LUA_CLIENT_BINDING(updateInputs),
+			JE_LUA_CLIENT_BINDING(getCurrentFPS),
+			JE_LUA_CLIENT_BINDING(readData),
+			JE_LUA_CLIENT_BINDING(writeData),
 			{NULL, NULL}  // sentinel value
 		};
 

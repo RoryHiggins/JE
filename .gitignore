@@ -1,8 +1,14 @@
 bin/
 old/
-*.sublime-workspace
+
 *.exe
 *.gch
-game_save.json
-game_dump.json
 
+client
+client_headless
+game_save
+game_dump
+
+
+*.sublime-project
+*.sublime-workspace

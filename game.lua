@@ -144,6 +144,17 @@
 
 		return 0
 	end
+	function util.tableExtend(dest, ...)
+		local arg = {...}
+		for _, overrides in ipairs(arg) do
+			overrides = util.deepcopy(overrides)
+			for key, val in pairs(overrides) do
+				dest[key] = val
+			end
+		end
+
+		return dest
+	end
 
 -- Client
 	local HeadlessClientMetatable = {}
@@ -155,6 +166,33 @@
 	function HeadlessClientSys.isRunning()
 		return false
 	end
+	function HeadlessClientSys.getCurrentFPS()
+		return 0
+	end
+	function HeadlessClientSys.writeData(filename, dataStr)
+		local file, errMsg = io.open(filename, "w")
+		if file == nil then
+			util.err("HeadlessClientSys.writeData(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+			return false
+		end
+
+		file:write(dataStr)
+		file:close()
+
+		return true
+	end
+	function HeadlessClientSys.readData(filename)
+		local file, errMsg = io.open(filename, "r")
+		if file == nil then
+			util.err("SimulationSys.load(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+			return
+		end
+
+		local dataStr = file:read("*all")
+		file:close()
+
+		return dataStr
+	end
 
 	-- injected by the c client in main.c:jeGame_registerLuaClientBindings()
 	local ClientSys = jeClientBindings or HeadlessClientSys  -- luacheck: globals jeClientBindings
@@ -165,7 +203,7 @@
 		ClientSys.step()
 	end
 
--- simulation
+-- Simulation
 	local SimulationSys = {}
 	SimulationSys.SAVE_VERSION = 1
 	SimulationSys.createEvents = {}
@@ -233,53 +271,40 @@
 	function SimulationSys.dump(filename)
 		util.log("SimulationSys.dump(): filename=%s", filename)
 
-		local saveStr = util.toComparable(SimulationSys.simulation)
+		local success = ClientSys.writeData(filename, util.toComparable(SimulationSys.simulation))
 
-		local file, errMsg = io.open(filename, "w")
-		if file == nil then
-			util.err("SimulationSys.dump(): io.open() failed, filename=%s, error=%s", filename, errMsg)
-			return
+		if not success then
+			util.log("SimulationSys.dump(): ClientSys.writeData() failed")
 		end
-
-		file:write(saveStr)
-		file:close()
 	end
 	function SimulationSys.save(filename)
 		util.log("SimulationSys.save(): filename=%s", filename)
 
-		local saveStr = json.encode(SimulationSys.simulation)
+		local success = ClientSys.writeData(filename, json.encode(SimulationSys.simulation))
 
-		local file, errMsg = io.open(filename, "w")
-		if file == nil then
-			util.err("SimulationSys.save(): io.open() failed, filename=%s, error=%s", filename, errMsg)
-			return
+		if not success then
+			util.log("SimulationSys.save(): ClientSys.writeData() failed")
 		end
-
-		file:write(saveStr)
-		file:close()
 	end
 	function SimulationSys.load(filename)
 		util.log("SimulationSys.load(): filename=%s", filename)
 
-		local file, errMsg = io.open(filename, "r")
-		if file == nil then
-			util.err("SimulationSys.load(): io.open() failed, filename=%s, error=%s", filename, errMsg)
-			return
-		end
+		local loadedSimulation = json.decode(ClientSys.readData(filename))
 
-		local gameStr = file:read("*all")
-		file:close()
-
-		SimulationSys.simulation = json.decode(gameStr)
-
-		if SimulationSys.simulation.saveVersion > SimulationSys.SAVE_VERSION then
+		if loadedSimulation.saveVersion > SimulationSys.SAVE_VERSION then
 			util.err("SimulationSys.load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
-					   SimulationSys.SAVE_VERSION, SimulationSys.simulation.saveVersion)
+					   SimulationSys.SAVE_VERSION, loadedSimulation.saveVersion)
 			return
 		end
-		if SimulationSys.simulation.saveVersion < SimulationSys.SAVE_VERSION then
+		if loadedSimulation.saveVersion < SimulationSys.SAVE_VERSION then
 			util.log("SimulationSys.load(): save version is older, saveVersion=%d, save.saveVersion=%d",
-					   SimulationSys.SAVE_VERSION, SimulationSys.simulation.saveVersion)
+					   SimulationSys.SAVE_VERSION, loadedSimulation.saveVersion)
+		end
+
+		SimulationSys.create()
+		local simulation = SimulationSys.simulation
+		for key, val in pairs(loadedSimulation) do
+			simulation[key] = val
 		end
 	end
 	function SimulationSys.runTests()
@@ -840,11 +865,16 @@
 			["x"] = 0,
 			["y"] = 0,
 			["w"] = ClientSys.width,
-			["h"] = ClientSys.height,
+			["h"] = ClientSys.height
 		}
 	end)
 	table.insert(SimulationSys.drawEvents, function()
 		local screen = SimulationSys.simulation.screen
+		local screenTarget = EntitySys.find("screenTarget")
+		if screenTarget then
+			screen.x = math.floor(screenTarget.x - (screen.w / 2.5))
+			screen.y = math.floor(screenTarget.y - (screen.h / 2.5))
+		end
 
 		local events = ScreenSys.drawEvents
 		local eventsCount = #events
@@ -855,7 +885,7 @@
 
 -- Sprite
 	local SpriteSys = {}
-	function SpriteSys.add(spriteId, u, v, w, h)
+	function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
 		local sprites = SimulationSys.simulation.sprites
 		local sprite = sprites[spriteId]
 		if sprite == nil then
@@ -865,13 +895,20 @@
 				["v1"] = v,
 				["u2"] = u + w,
 				["v2"] = v + h,
+				["r"] = r or 255,
+				["g"] = g or 255,
+				["b"] = b or 255,
+				["a"] = a or 255,
 			}
 			sprites[spriteId] = sprite
 		end
 
 		return sprite
 	end
-	function SpriteSys.attach(entity, sprite)
+	function SpriteSys.getSprite(spriteId)
+		return SimulationSys.simulation.sprites[spriteId]
+	end
+	function SpriteSys.set(entity, sprite)
 		local spriteId = sprite.spriteId
 
 		entity.spriteId = spriteId
@@ -881,7 +918,7 @@
 		entity.spriteV2 = sprite.v2
 		EntitySys.tag(entity, "sprite")
 	end
-	function SpriteSys.detach(entity)
+	function SpriteSys.unset(entity)
 		entity.spriteId = nil
 		entity.u = nil
 		entity.v = nil
@@ -890,42 +927,32 @@
 		SimulationSys.create()
 
 		local entity = EntitySys.create()
-		local testSprite = SpriteSys.add("test", 40, 0, 8, 8)
+		local testSprite = SpriteSys.addSprite("test", 40, 0, 8, 8)
 
-		SpriteSys.attach(entity, testSprite)
+		SpriteSys.set(entity, testSprite)
 		assert(entity.spriteU1 == 40)
 		assert(entity.spriteU2 == 48)
 		assert(entity.spriteId == "test")
 
-		SpriteSys.detach(entity, testSprite)
+		SpriteSys.unset(entity, testSprite)
 		assert(entity.spriteId == nil)
 	end
 	table.insert(SimulationSys.createEvents, function()
 		SimulationSys.simulation.sprites = {}
-		SpriteSys.add("invalid", 0, 0, 8, 8)
-	end)
-	table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
-		if tagId ~= nil and tag == "sprite" then
-			local sprite = SimulationSys.simulation.sprites[entity.spriteId]
-			entity.z = entity.z or 0
-			entity.spriteU1 = sprite.u1
-			entity.spriteV1 = sprite.v1
-			entity.spriteU2 = sprite.u2
-			entity.spriteV2 = sprite.v2
-			entity.colorR = entity.colorR or 255
-			entity.colorG = entity.colorG or 255
-			entity.colorB = entity.colorB or 255
-			entity.colorA = entity.colorA or 255
-		end
+		SpriteSys.addSprite("invalid", 0, 0, 8, 8)
 	end)
 	table.insert(ScreenSys.drawEvents, function(screen)
-		local world = SimulationSys.simulation.world
+		local simulation = SimulationSys.simulation
+		local world = simulation.world
+		local sprites = simulation.sprites
 		local entities = world.entities
 		local spriteEntityIds = world.tagEntities["sprite"] or {}
 		local spriteEntityIdsCount = #spriteEntityIds
 
 		for i = 1, spriteEntityIdsCount do
-			ClientSys.drawSprite(entities[spriteEntityIds[i]], screen)
+			local entity = entities[spriteEntityIds[i]]
+			local sprite = sprites[entity.spriteId]
+			ClientSys.drawSprite(entity, sprite, screen)
 		end
 	end)
 
@@ -958,37 +985,124 @@
 -- ----------------- Game -----------------
 -- Material
 	local MaterialSys = {}
-	function MaterialSys.attach(entity)
+	function MaterialSys.set(entity)
 		EntitySys.tag(entity, "material")
 	end
+	table.insert(SimulationSys.createEvents, function()
+		SimulationSys.simulation.materials = {
+			"air",
+			"solid",
+			"ice",
+			"water",
+			"death",
+		}
+	end)
 	table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
-		if ((tagId ~= nil)
-			and ((tag == "solid")
-				 or (tag == "death")
-				 or (tag == "ice")
-				 or (tag == "water"))) then
-			EntitySys.tag(entity, "material")
+		if tagId ~= nil then
+			local materials = SimulationSys.simulation.materials
+			local materialsCount = #materials
+			for i = 1, materialsCount do
+				if tag == materials[i] then
+					EntitySys.tag(entity, "material")
+					return
+				end
+			end
 		end
 	end)
 
 -- Physics
 	local PhysicsSys = {}
-	function PhysicsSys.attach(entity)
+	function PhysicsSys.set(entity)
 		EntitySys.tag(entity, "physics")
 	end
-	function PhysicsSys.stopEntityHorizontal(entity)
+	function PhysicsSys.stopEntityX(entity)
+		entity.forceX = 0
 		entity.speedX = 0
 		entity.overflowX = 0
 	end
-	function PhysicsSys.stopEntityVertical(entity)
+	function PhysicsSys.stopEntityY(entity)
+		entity.forceY = 0
 		entity.speedY = 0
 		entity.overflowY = 0
 	end
+	function PhysicsSys.getEntityCollidablesArray(entity)
+		local maxSpeed = SimulationSys.simulation.physics.maxSpeed
+
+		return EntitySys.findAllBounded(
+			entity.x - maxSpeed - 1,
+			entity.y - maxSpeed - 1,
+			entity.w + maxSpeed + maxSpeed + 2,
+			entity.h + maxSpeed + maxSpeed + 2,
+			"material",
+			entity.id
+		)
+	end
+	function PhysicsSys.getEntityMaterialPhysics(entity)
+		local simulationPhysics = SimulationSys.simulation.physics
+		local gravitySignX = util.sign(simulationPhysics.gravityX)
+		local gravitySignY = util.sign(simulationPhysics.gravityY)
+		local materialEntity = EntitySys.findBounded(
+			entity.x + math.min(0, gravitySignX),
+			entity.y + math.min(0, gravitySignY),
+			entity.w + math.max(0, gravitySignX),
+			entity.h + math.max(0, gravitySignY),
+			"material",
+			entity.id
+		)
+
+		local materialsPhysics = simulationPhysics.materials
+		local materialPhysics = materialsPhysics.air
+		if materialEntity then
+			local entityTags = materialEntity.tags
+
+			local materials = SimulationSys.simulation.materials
+			local materialsCount = #materials
+			for i = 1, materialsCount do
+				local material = materials[i]
+				local candidateMaterialPhysics = materialsPhysics[material]
+				if entityTags[material] and candidateMaterialPhysics then
+					materialPhysics = candidateMaterialPhysics
+					break
+				end
+			end
+		end
+		return materialPhysics
+	end
+	function PhysicsSys.getEntityMaterialPhysicsInArray(entities, entity)
+		local simulationPhysics = SimulationSys.simulation.physics
+		local gravitySignX = util.sign(simulationPhysics.gravityX)
+		local gravitySignY = util.sign(simulationPhysics.gravityY)
+		local materialEntity = EntitySys.findBoundedInArray(
+			entities,
+			entity.x + math.min(0, gravitySignX),
+			entity.y + math.min(0, gravitySignY),
+			entity.w + math.max(0, gravitySignX),
+			entity.h + math.max(0, gravitySignY),
+			"material",
+			entity.id
+		)
+
+		local materialsPhysics = simulationPhysics.materials
+		local materialPhysics = materialsPhysics.air
+		if materialEntity then
+			local entityTags = materialEntity.tags
+
+			local materials = SimulationSys.simulation.materials
+			local materialsCount = #materials
+			for i = 1, materialsCount do
+				local material = materials[i]
+				local candidateMaterialPhysics = materialsPhysics[material]
+				if entityTags[material] and candidateMaterialPhysics then
+					materialPhysics = candidateMaterialPhysics
+					break
+				end
+			end
+		end
+		return materialPhysics
+	end
 	function PhysicsSys.tickEntity(entity)
-		-- apply gravity to force
-		local worldPhysics = SimulationSys.simulation.world.physics
-		entity.forceX = entity.forceX + worldPhysics.gravityX
-		entity.forceY = entity.forceY + worldPhysics.gravityY
+		-- fetch array of nearby collision candidates once, to reduce subsequent collision check costs
+		local collidables = PhysicsSys.getEntityCollidablesArray(entity)
 
 		-- apply force to speed
 		entity.speedX = entity.speedX + entity.forceX
@@ -996,7 +1110,31 @@
 		entity.forceX = 0
 		entity.forceY = 0
 
-		-- compute amount to move (integer values).  the fractional movement component is accumulated for subsequent ticks
+		-- get material physics to apply
+		local materialPhysics = PhysicsSys.getEntityMaterialPhysicsInArray(collidables, entity)
+
+		-- apply gravity to force
+		local simulationPhysics = SimulationSys.simulation.physics
+		entity.forceX = entity.forceX + simulationPhysics.gravityX
+		entity.forceY = entity.forceY + simulationPhysics.gravityY
+
+		-- apply "friction" to speed
+		local speedSignX = util.sign(entity.speedX)
+		local speedSignY = util.sign(entity.speedY)
+		entity.speedX = entity.speedX - (materialPhysics.friction * util.sign(entity.speedX))
+		entity.speedY = entity.speedY - (materialPhysics.friction * util.sign(entity.speedY))
+		if util.sign(entity.speedX) ~= speedSignX then
+			PhysicsSys.stopEntityX(entity)
+		end
+		if util.sign(entity.speedY) ~= speedSignY then
+			PhysicsSys.stopEntityY(entity)
+		end
+
+		-- apply speed limit to speed
+		entity.speedX = math.max(-simulationPhysics.maxSpeed, math.min(simulationPhysics.maxSpeed, entity.speedX))
+		entity.speedY = math.max(-simulationPhysics.maxSpeed, math.min(simulationPhysics.maxSpeed, entity.speedY))
+
+		-- compute amount to move (integer values).  the fractional movement component is accumulated for later ticks
 		local moveX, overflowX = math.modf(entity.speedX)
 		local moveY, overflowY = math.modf(entity.speedY)
 		local overflowCarryX, overflowRemainderX = math.modf(overflowX + entity.overflowX)
@@ -1011,28 +1149,14 @@
 		local absMoveX = math.abs(moveX)
 		local absMoveY = math.abs(moveY)
 
-		-- fetch array of nearby collision candidates once, to reduce subsequent collision check costs
-		local searchOffsetX = math.max(-moveX, 0) + 1
-		local searchOffsetY = math.max(-moveY, 0) + 1
-		local searchOffsetW = math.max(moveX, 0) + 1
-		local searchOffsetH = math.max(moveY, 0) + 1
-		local searchX = entity.x - searchOffsetX
-		local searchY = entity.y - searchOffsetY
-		local searchW = entity.w + searchOffsetX + searchOffsetW
-		local searchH = entity.h + searchOffsetY + searchOffsetH
-		local collidables = EntitySys.findAllBounded(
-			searchX,
-			searchY,
-			searchW,
-			searchH,
-			"material",
-			entity.id
-		)
+		-- apply speed limit to movement
+		absMoveX = math.min(simulationPhysics.maxSpeed, absMoveX)
+		absMoveY = math.min(simulationPhysics.maxSpeed, absMoveY)
 
 		-- move horizontally
 		for _ = 1, absMoveX do
 			if EntitySys.findRelativeInArray(collidables, entity, signX, 0, "solid", entity.id) then
-				PhysicsSys.stopEntityHorizontal(entity)
+				PhysicsSys.stopEntityX(entity)
 				break
 			else
 				EntitySys.setBounds(entity, entity.x + signX, entity.y, entity.w, entity.h)
@@ -1042,17 +1166,36 @@
 		-- move vertically
 		for _ = 1, absMoveY do
 			if EntitySys.findRelativeInArray(collidables, entity, 0, signY, "solid", entity.id) then
-				PhysicsSys.stopEntityVertical(entity)
+				PhysicsSys.stopEntityY(entity)
 				break
 			else
 				EntitySys.setBounds(entity, entity.x, entity.y + signY, entity.w, entity.h)
 			end
 		end
 	end
-	table.insert(WorldSys.createEvents, function()
-		SimulationSys.simulation.world.physics = {
+	table.insert(SimulationSys.createEvents, function()
+		local defaultPhysics = {
+			["friction"] = 0.2,
+			["moveForceStrength"] = 1,
+			["jumpForceStrength"] = 1,
+		}
+		SimulationSys.simulation.physics = {
 			["gravityX"] = 0,
-			["gravityY"] = 0.2,
+			["gravityY"] = 0.8,
+			["maxSpeed"] = 8,
+			["materials"] = {
+				["air"] = util.tableExtend({}, defaultPhysics, {
+					["moveForceStrength"] = 0.6,
+				}),
+				["solid"] = util.tableExtend({}, defaultPhysics, {
+				}),
+				["water"] = util.tableExtend({}, defaultPhysics, {
+					-- TODO water physics
+				}),
+				["ice"] = util.tableExtend({}, defaultPhysics, {
+					-- TODO ice physics
+				}),
+			}
 		}
 	end)
 	table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
@@ -1082,12 +1225,11 @@
 -- Wall
 	local WallSys = {}
 	table.insert(SimulationSys.createEvents, function()
-		SpriteSys.add("wallBlack", 0, 40, 8, 8)
+		SpriteSys.addSprite("wallBlack", 0, 40, 8, 8)
 		WallSys.template = TemplateSys.add("wall", {
 			["w"] = 8,
 			["h"] = 8,
 			["spriteId"] = "wallBlack",
-			["solid"] = true,
 			["tags"] = {
 				["sprite"] = true,
 				["material"] = true,
@@ -1100,30 +1242,77 @@
 -- Player
 	local PlayerSys = {}
 	function PlayerSys.tickEntity(entity)
+		local simulationPlayer = SimulationSys.simulation.player
+		local simulationPhysics = SimulationSys.simulation.physics
+		local materialPhysics = PhysicsSys.getEntityMaterialPhysics(entity)
+
+		local moveForce = simulationPlayer.moveForce * materialPhysics.moveForceStrength
 		if InputSys.inputs.left then
-			entity.forceX = entity.forceX - 0.1
+			entity.forceX = entity.forceX - moveForce
 		end
 
 		if InputSys.inputs.right then
-			entity.forceX = entity.forceX + 0.1
+			entity.forceX = entity.forceX + moveForce
 		end
 
-		if InputSys.inputs.up and EntitySys.findRelative(entity, 0, 1, "solid") then
-			entity.forceY = entity.forceY - 4
+		local onGround = EntitySys.findRelative(
+			entity,
+			util.sign(simulationPhysics.gravityX),
+			util.sign(simulationPhysics.gravityY),
+			"solid"
+		)
+		local fallingX = (simulationPhysics.gravityX ~= 0) and (entity.speedX * util.sign(simulationPhysics.gravityX) >= 0)
+		local fallingY = (simulationPhysics.gravityY ~= 0) and (entity.speedY * util.sign(simulationPhysics.gravityY) >= 0)
+		local falling = fallingX or fallingY
+		if InputSys.inputs.up then
+			if onGround then
+				local jumpForce = simulationPlayer.jumpForce * materialPhysics.jumpForceStrength
+				entity.forceX = entity.forceX - (util.sign(simulationPhysics.gravityX) * jumpForce)
+				entity.forceY = entity.forceY - (util.sign(simulationPhysics.gravityY) * jumpForce)
+				entity.playerJumpFrames = simulationPlayer.jumpFrames
+			elseif entity.playerJumpFrames > 0 then
+				if onGround or falling then
+					entity.playerJumpFrames = 0
+				else
+					local jumpFrameForce = simulationPlayer.jumpFrameForce * materialPhysics.jumpForceStrength
+					entity.forceX = entity.forceX - (util.sign(simulationPhysics.gravityX) * jumpFrameForce)
+					entity.forceY = entity.forceY - (util.sign(simulationPhysics.gravityY) * jumpFrameForce)
+					entity.playerJumpFrames = entity.playerJumpFrames - 1
+				end
+			end
+		end
+
+		if entity.speedY < 0 then
+			SpriteSys.set(entity, SpriteSys.getSprite("playerUp"))
+		else
+			if entity.speedX < 0 then
+				SpriteSys.set(entity, SpriteSys.getSprite("playerLeft"))
+			elseif entity.speedX > 0 then
+				SpriteSys.set(entity, SpriteSys.getSprite("playerRight"))
+			elseif entity.spriteId == "playerUp" then
+				SpriteSys.set(entity, SpriteSys.getSprite("playerRight"))
+			end
 		end
 	end
 	table.insert(SimulationSys.createEvents, function()
-		SpriteSys.add("playerLeft", 9, 2, 6, 6)
+		SimulationSys.simulation.player = {
+			["jumpForce"] = 7,
+			["jumpFrameForce"] = 0.6,
+			["jumpFrames"] = 8,
+			["moveForce"] = 0.6,
+		}
+		SpriteSys.addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
+		SpriteSys.addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
+		SpriteSys.addSprite("playerUp", 24 + 1, 0 + 2, 6, 6)
 		PlayerSys.template = TemplateSys.add("player", {
 			["w"] = 6,
 			["h"] = 6,
-			["spriteId"] = "playerLeft",
-			-- ["animationId"] = "playerLeft",
-			-- ["animationPos"] = 0,
-			-- ["animationSpeed"] = 0.1,
+			["spriteId"] = "playerRight",
+			["playerJumpFrames"] = 0,
 			["tags"] = {
 				["sprite"] = true,
 				-- ["animation"] = true,
+				["screenTarget"] = true,
 				["material"] = true,
 				["solid"] = true,
 				["physics"] = true,
@@ -1139,8 +1328,8 @@
 
 -- Game
 	local GameSys = {}
-	GameSys.DUMP_FILE = ".\\game_dump.json"
-	GameSys.SAVE_FILE = ".\\game_save.json"
+	GameSys.DUMP_FILE = ".\\game_dump"
+	GameSys.SAVE_FILE = ".\\game_save"
 	GameSys.systems = {
 		["MaterialSys"] = MaterialSys,
 		["PhysicsSys"] = PhysicsSys,
@@ -1149,7 +1338,7 @@
 	}
 	function GameSys.populateTestWorld()
 		local player = EntitySys.create(PlayerSys.template)
-		EntitySys.setPos(player, 120, 0)
+		EntitySys.setPos(player, 120, -32)
 
 		for i = 1, 3 do
 			local wall = EntitySys.create(WallSys.template)
@@ -1162,7 +1351,7 @@
 		local wallRight = EntitySys.create(WallSys.template)
 		EntitySys.setBounds(wallRight, ClientSys.width - 8, 0, 8, ClientSys.height)
 
-		SpriteSys.add("physicsObject", 1, 10, 6, 6)
+		SpriteSys.addSprite("physicsObject", 1, 10, 6, 6)
 		local physicsTemplate = {
 			["spriteId"] = "physicsObject",
 			["tags"] = {
@@ -1173,15 +1362,19 @@
 				["physicsObject"] = true,
 			}
 		}
-		for _ = 1, 4000 do
+		local createdPhysicsObjectCount = 0
+		for _ = 1, 100 do
 			local physicsObject = EntitySys.create(physicsTemplate)
-			EntitySys.setBounds(physicsObject, 16 + math.floor(math.random(120)), math.floor(math.random(64)), 5, 5)
+			EntitySys.setBounds(physicsObject, 8 + math.floor(math.random(140)), math.floor(math.random(64)), 6, 6)
 			physicsObject.speedX = math.random(3) - 1.5
 			physicsObject.speedY = math.random(3) - 1.5
 			if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
 				EntitySys.destroy(physicsObject)
+			else
+				createdPhysicsObjectCount = createdPhysicsObjectCount + 1
 			end
 		end
+		util.log("GameSys.populateTestWorld(): createdPhysicsObjectCount=%d", createdPhysicsObjectCount)
 	end
 	function GameSys.isRunning()
 		return SimulationSys.isRunning()
