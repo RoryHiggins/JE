@@ -1,3 +1,5 @@
+// precompiled header
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
