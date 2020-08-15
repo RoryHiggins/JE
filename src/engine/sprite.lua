@@ -3,6 +3,8 @@ local SimulationSys = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 local ScreenSys = require("src/engine/screen")
 
+local ClientSysDrawSprite = ClientSys.drawSprite
+
 local static = SimulationSys.static
 static.sprites = {}
 
@@ -59,8 +61,12 @@ end
 table.insert(ScreenSys.drawEvents, function(screen)
 	local sprites = SimulationSys.static.sprites
 
-	for _, entity in ipairs(EntitySys.findAll("sprite")) do
-		ClientSys.drawSprite(entity, sprites[entity.spriteId], screen)
+	local entities = EntitySys.findAll("sprite")
+	local entitiesCount = #entities
+	for i = 1, entitiesCount do
+		local entity = entities[i]
+		local sprite = sprites[entity.spriteId]
+		ClientSysDrawSprite(entity, sprite, screen)
 	end
 end)
 

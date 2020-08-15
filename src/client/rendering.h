@@ -122,7 +122,7 @@ void jeRenderQueue_draw(jeRenderQueue* renderQueue, sfRenderWindow *renderWindow
 	// draw layers back-to-front (painters algorithm)
 	for (int i = renderQueue->count - 1; i >= 0; i--) {
 		sfRenderWindow_drawVertexArray(renderWindow, renderQueue->vertexArrays[i].vertexArray, renderStates);
-		sfVertexArray_resize(renderQueue->vertexArrays[i].vertexArray, 0);
+		sfVertexArray_clear(renderQueue->vertexArrays[i].vertexArray);
 	}
 }
 bool jeRenderQueue_create(jeRenderQueue* renderQueue) {

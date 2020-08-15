@@ -26,7 +26,7 @@ function GameSys.populateTestWorld()
 
 	TemplateSys.instantiate("player", 120, -32)
 
-	-- step floors
+	-- steps
 	for i = 1, 3 do
 		TemplateSys.instantiate("wall", 24 + ((i - 1) * 32), 24 + ((i - 1) * 32), 48, 8)
 	end
@@ -45,17 +45,18 @@ function GameSys.populateTestWorld()
 			["material"] = true,
 			["solid"] = true,
 			["physics"] = true,
+			["pushable"] = true,
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 15000 do
+	for _ = 1, 50 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject, 8 + math.floor(math.random(140)), math.floor(math.random(64)), 6, 6)
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
-		-- if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
-		-- 	EntitySys.destroy(physicsObject)
-		-- end
+		if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
+			EntitySys.destroy(physicsObject)
+		end
 	end
 	UtilSys.log("GameSys.populateTestWorld(): physicsObjectCount=%d", #EntitySys.findAll("physicsObject"))
 end
@@ -74,8 +75,10 @@ function GameSys.runTests()
 	end
 end
 function GameSys.run()
+	-- jit.off()
 	jit.on()
 	require("jit.opt").start(3)
+
 	GameSys.runTests()
 
 	SimulationSys.create()

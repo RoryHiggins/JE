@@ -10,7 +10,7 @@ LFLAGS_RELEASE := -mwindows -lmingw32 -static-libstdc++ -static-libgcc -Wl,-Bsta
 client: Makefile bin stdafx.h.gch src/client/main.c src/client/*.h
 	$(CC) $(CFLAGS_DEVELOPMENT) src/client/main.c $(LFLAGS_DEVELOPMENT) -o client
 stdafx.h.gch: Makefile src/client/stdafx.h
-	$(CC) $(CFLAGS_DEVELOPMENT) src/client/stdafx.h
+	$(CC) $(CFLAGS_DEVELOPMENT) src/client/stdafx.h -o stdafx.h.gch
 bin:
 	mkdir -p bin
 

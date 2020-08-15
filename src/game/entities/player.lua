@@ -32,7 +32,7 @@ PlayerSys.template = TemplateSys.add("player", {
 	}
 })
 function PlayerSys.tickEntity(entity)
-	local materialPhysics = PhysicsSys.getEntityMaterialPhysics(entity)
+	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
 
 	local moveForce = entity.playerMoveForce * materialPhysics.moveForceStrength
 	if SimulationSys.inputs.left then
@@ -59,10 +59,10 @@ function PlayerSys.tickEntity(entity)
 	if SimulationSys.inputs.up then
 		if onGround then
 			if static.gravityX ~= 0 then
-				PhysicsSys.stopEntityX(entity)
+				PhysicsSys.stopX(entity)
 			end
 			if static.gravityY ~= 0 then
-				PhysicsSys.stopEntityY(entity)
+				PhysicsSys.stopY(entity)
 			end
 			local jumpForce = entity.playerJumpForce * materialPhysics.jumpForceStrength
 			entity.forceX = entity.forceX - (UtilSys.sign(static.gravityX) * jumpForce)
