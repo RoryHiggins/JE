@@ -1,9 +1,13 @@
 /bin/
+/release/
 /old/
 
 *.exe
 *.sav
 *.gch
+*.a
+*.obj
+*.gcda
 
 *.sublime-project
 *.sublime-workspace
