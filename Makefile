@@ -2,9 +2,9 @@ CC := gcc
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla
 
 CFLAGS_DEVELOPMENT := $(CFLAGS) -Winvalid-pch -O0
-LFLAGS_DEVELOPMENT := -lz -lluajit-5.1 -lcsfml-system -lcsfml-window -lcsfml-graphics
+LFLAGS_DEVELOPMENT := -lluajit-5.1 -lz -lcsfml-system -lcsfml-window -lcsfml-graphics
 
-CFLAGS_RELEASE := $(CFLAGS)  -fno-exceptions -Os -s -ffast-math -flto -fwhole-program
+CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program
 LFLAGS_RELEASE := -mwindows -lmingw32 -static-libstdc++ -static-libgcc -Wl,-Bstatic -lz -lluajit-5.1 -Wl,-Bdynamic -lcsfml-system -lcsfml-window -lcsfml-graphics
 
 client: Makefile bin stdafx.h.gch src/client/main.c src/client/*.h

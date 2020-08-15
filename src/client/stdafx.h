@@ -14,9 +14,11 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif  // END defined(__cplusplus)
+
 #include <luajit-2.0/lua.h>
 #include <luajit-2.0/lualib.h>
 #include <luajit-2.0/lauxlib.h>
+
 #if defined(__cplusplus)
 }  // END extern "C"
 #endif  // END defined(__cplusplus)

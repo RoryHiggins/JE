@@ -28,7 +28,11 @@ void luaL_setfuncs(lua_State *L, const luaL_Reg *l, int nup) {
 	}
 	lua_pop(L, nup);  /* remove upvalues */
 }
-#endif  // END LUA_VERSION_NUM < 520
+#else  // END LUA_VERSION_NUM < 520
+size_t lua_objlen(lua_State *L, int index) {
+	return lua_rawlen(l, int index)
+}
+#endif  // END LUA_VERSION_NUM >= 520
 
 const char* jeLua_getError(lua_State* lua) {
 	const char* error = "";

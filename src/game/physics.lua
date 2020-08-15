@@ -3,6 +3,13 @@ local UtilSys = EngineSys.components.UtilSys
 local SimulationSys = EngineSys.components.SimulationSys
 local EntitySys = EngineSys.components.EntitySys
 
+local UtilSysSign = UtilSys.sign
+local mathAbs = math.abs
+local mathMin = math.min
+local mathMax = math.max
+local mathModf = math.modf
+
+
 local defaultMaterialPhysics = {
 	["friction"] = 0.2,
 	["moveForceStrength"] = 1,
@@ -45,44 +52,13 @@ function PhysicsSys.getEntityCollidablesArray(entity)
 	)
 end
 function PhysicsSys.getEntityMaterialPhysics(entity)
-	local gravitySignX = UtilSys.sign(static.gravityX)
-	local gravitySignY = UtilSys.sign(static.gravityY)
+	local gravitySignX = UtilSysSign(static.gravityX)
+	local gravitySignY = UtilSysSign(static.gravityY)
 	local materialEntity = EntitySys.findBounded(
-		entity.x + math.min(0, gravitySignX),
-		entity.y + math.min(0, gravitySignY),
-		entity.w + math.max(0, gravitySignX),
-		entity.h + math.max(0, gravitySignY),
-		"material",
-		entity.id
-	)
-
-	local materialsPhysics = static.materialsPhysics
-	local materialPhysics = materialsPhysics.air
-	if materialEntity then
-		local entityTags = materialEntity.tags
-
-		local materials = SimulationSys.static.materials
-		local materialsCount = #materials
-		for i = 1, materialsCount do
-			local material = materials[i]
-			local candidateMaterialPhysics = materialsPhysics[material]
-			if entityTags[material] and candidateMaterialPhysics then
-				materialPhysics = candidateMaterialPhysics
-				break
-			end
-		end
-	end
-	return materialPhysics
-end
-function PhysicsSys.getEntityMaterialPhysicsInArray(entities, entity)
-	local gravitySignX = UtilSys.sign(static.gravityX)
-	local gravitySignY = UtilSys.sign(static.gravityY)
-	local materialEntity = EntitySys.findBoundedInArray(
-		entities,
-		entity.x + math.min(0, gravitySignX),
-		entity.y + math.min(0, gravitySignY),
-		entity.w + math.max(0, gravitySignX),
-		entity.h + math.max(0, gravitySignY),
+		entity.x + mathMin(0, gravitySignX),
+		entity.y + mathMin(0, gravitySignY),
+		entity.w + mathMax(0, gravitySignX),
+		entity.h + mathMax(0, gravitySignY),
 		"material",
 		entity.id
 	)
@@ -107,7 +83,7 @@ function PhysicsSys.getEntityMaterialPhysicsInArray(entities, entity)
 end
 function PhysicsSys.tickEntity(entity)
 	-- fetch array of nearby collision candidates once, to reduce subsequent collision check costs
-	local collidables = PhysicsSys.getEntityCollidablesArray(entity)
+	-- local collidables = PhysicsSys.getEntityCollidablesArray(entity)
 
 	-- apply force to speed
 	entity.speedX = entity.speedX + entity.forceX
@@ -116,50 +92,63 @@ function PhysicsSys.tickEntity(entity)
 	entity.forceY = 0
 
 	-- get material physics to apply
-	local materialPhysics = PhysicsSys.getEntityMaterialPhysicsInArray(collidables, entity)
+	local materialPhysics = PhysicsSys.getEntityMaterialPhysics(entity)
 
 	-- apply gravity to force
 	entity.forceX = entity.forceX + static.gravityX
 	entity.forceY = entity.forceY + static.gravityY
 
 	-- apply "friction" to speed
-	local speedSignX = UtilSys.sign(entity.speedX)
-	local speedSignY = UtilSys.sign(entity.speedY)
-	entity.speedX = entity.speedX - (materialPhysics.friction * UtilSys.sign(entity.speedX))
-	entity.speedY = entity.speedY - (materialPhysics.friction * UtilSys.sign(entity.speedY))
-	if UtilSys.sign(entity.speedX) ~= speedSignX then
+	local speedSignX = UtilSysSign(entity.speedX)
+	local speedSignY = UtilSysSign(entity.speedY)
+	entity.speedX = entity.speedX - (materialPhysics.friction * UtilSysSign(entity.speedX))
+	entity.speedY = entity.speedY - (materialPhysics.friction * UtilSysSign(entity.speedY))
+	if UtilSysSign(entity.speedX) ~= speedSignX then
 		PhysicsSys.stopEntityX(entity)
 	end
-	if UtilSys.sign(entity.speedY) ~= speedSignY then
+	if UtilSysSign(entity.speedY) ~= speedSignY then
 		PhysicsSys.stopEntityY(entity)
 	end
 
 	-- apply speed limit to speed
-	entity.speedX = math.max(-static.maxSpeed, math.min(static.maxSpeed, entity.speedX))
-	entity.speedY = math.max(-static.maxSpeed, math.min(static.maxSpeed, entity.speedY))
+	entity.speedX = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedX))
+	entity.speedY = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedY))
 
 	-- compute amount to move (integer values).  the fractional movement component is accumulated for later ticks
-	local moveX, overflowX = math.modf(entity.speedX)
-	local moveY, overflowY = math.modf(entity.speedY)
-	local overflowCarryX, overflowRemainderX = math.modf(overflowX + entity.overflowX)
-	local overflowCarryY, overflowRemainderY = math.modf(overflowY + entity.overflowY)
+	local moveX, overflowX = mathModf(entity.speedX)
+	local moveY, overflowY = mathModf(entity.speedY)
+	local overflowCarryX, overflowRemainderX = mathModf(overflowX + entity.overflowX)
+	local overflowCarryY, overflowRemainderY = mathModf(overflowY + entity.overflowY)
 	entity.overflowX = overflowRemainderX
 	entity.overflowY = overflowRemainderY
 	moveX = moveX + overflowCarryX
 	moveY = moveY + overflowCarryY
 
-	local signX = UtilSys.sign(moveX)
-	local signY = UtilSys.sign(moveY)
-	local absMoveX = math.abs(moveX)
-	local absMoveY = math.abs(moveY)
+	local signX = UtilSysSign(moveX)
+	local signY = UtilSysSign(moveY)
+	local absMoveX = mathAbs(moveX)
+	local absMoveY = mathAbs(moveY)
 
 	-- apply speed limit to movement
-	absMoveX = math.min(static.maxSpeed, absMoveX)
-	absMoveY = math.min(static.maxSpeed, absMoveY)
+	absMoveX = mathMin(static.maxSpeed, absMoveX)
+	absMoveY = mathMin(static.maxSpeed, absMoveY)
 
-	-- move horizontally
+	-- skip if not moving
+	if (absMoveX == 0) and (absMoveY == 0) then
+		return
+	end
+
+	-- see if we can move all in one go
+	local tryQuickMove = (absMoveX <= entity.w) and (absMoveY <= entity.h)
+	if tryQuickMove and not EntitySys.findBounded(entity.x, entity.y,
+									entity.w + absMoveX, entity.h + absMoveY, "solid", entity.id) then
+		EntitySys.setBounds(entity, entity.x + (absMoveX * signX), entity.y + (absMoveY * signY), entity.w, entity.h)
+		return
+	end
+
+	-- fallback: move horizontally, pixel by pixel
 	for _ = 1, absMoveX do
-		if EntitySys.findRelativeInArray(collidables, entity, signX, 0, "solid", entity.id) then
+		if EntitySys.findRelative(entity, signX, 0, "solid", entity.id) then
 			PhysicsSys.stopEntityX(entity)
 			break
 		else
@@ -167,9 +156,9 @@ function PhysicsSys.tickEntity(entity)
 		end
 	end
 
-	-- move vertically
+	-- fallback: move vertically, pixel by pixel
 	for _ = 1, absMoveY do
-		if EntitySys.findRelativeInArray(collidables, entity, 0, signY, "solid", entity.id) then
+		if EntitySys.findRelative(entity, 0, signY, "solid", entity.id) then
 			PhysicsSys.stopEntityY(entity)
 			break
 		else

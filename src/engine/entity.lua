@@ -4,6 +4,9 @@ local SimulationSys = require("src/engine/simulation")
 local WorldSys = require("src/engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
+local UtilSysRectCollides = UtilSys.rectCollides
+local mathFloor = math.floor
+local stringFormat = string.format
 
 local EntitySys = {}
 EntitySys.destroyEvents = {}
@@ -22,7 +25,6 @@ function EntitySys.setBounds(entity, x, y, w, h)
 	end
 
 	local entityChunkSize = EntitySys.ENTITY_CHUNK_SIZE
-	local mathFloor = math.floor
 	local oldChunkX1 = mathFloor(oldEntityX / entityChunkSize)
 	local oldChunkY1 = mathFloor(oldEntityY / entityChunkSize)
 	local oldChunkX2 = mathFloor((oldEntityX + oldEntityW - FLOAT_EPSILON) / entityChunkSize)
@@ -60,7 +62,7 @@ function EntitySys.setBounds(entity, x, y, w, h)
 				or (oldChunkY > chunkY2)
 			)
 			if outsideNewBounds then
-				local chunkKey = string.format("%d,%d", oldChunkX, oldChunkY)
+				local chunkKey = stringFormat("%d,%d", oldChunkX, oldChunkY)
 				local chunkId = entityChunks[chunkKey]
 
 				-- swap and pop entity from chunks array
@@ -87,7 +89,7 @@ function EntitySys.setBounds(entity, x, y, w, h)
 				or (chunkY > oldChunkY2)
 			)
 			if outsideOldBounds then
-				local chunkKey = string.format("%d,%d", chunkX, chunkY)
+				local chunkKey = stringFormat("%d,%d", chunkX, chunkY)
 				local chunk = worldChunks[chunkKey]
 				if chunk == nil then
 					chunk = {}
@@ -195,7 +197,6 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 	end
 
 	local entityChunkSize = EntitySys.ENTITY_CHUNK_SIZE
-	local mathFloor = math.floor
 	local chunkX1 = mathFloor(x / entityChunkSize)
 	local chunkY1 = mathFloor(y / entityChunkSize)
 	local chunkX2 = mathFloor((x + w - FLOAT_EPSILON) / entityChunkSize)
@@ -206,7 +207,7 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 	local entities = world.entities
 	for chunkY = chunkY1, chunkY2 do
 		for chunkX = chunkX1, chunkX2 do
-			local chunkKey = string.format("%d,%d", chunkX, chunkY)
+			local chunkKey = stringFormat("%d,%d", chunkX, chunkY)
 			local chunkEntities = worldChunks[chunkKey]
 			if chunkEntities == nil then
 				chunkEntities = {}
@@ -217,7 +218,7 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 				local entityId = chunkEntities[i]
 				if (filterOutEntityId == nil) or (entityId ~= filterOutEntityId) then
 					local entity = entities[entityId]
-					if UtilSys.rectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h) then
+					if UtilSysRectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h) then
 						if (filterTag == nil) or (entity.tags[filterTag] ~= nil) then
 							if not getAll then
 								return entity
@@ -245,49 +246,6 @@ function EntitySys.findRelative(entity, signX, signY, filterTag)
 	local relativeY = entity.y + (signY or 0)
 
 	return EntitySys.findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
-end
-function EntitySys.findBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId, getAll)
-	local seenResults = nil
-	local results = nil
-	if getAll then
-		results = {}
-		seenResults = {}
-	end
-
-	local entitiesCount = #entities
-	for i = 1, entitiesCount do
-		local entityId = entities[i]
-		if (filterOutEntityId == nil) or (entityId ~= filterOutEntityId) then
-			local entity = entities[i]
-			if (((filterTag == nil) or (entity.tags[filterTag] ~= nil))
-				and UtilSys.rectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h)) then
-				-- if filterOutEntityId == 1 then
-				-- 	print("Collision: ", entity.id, "@", entity.x, entity.y, entity.w, entity.h, UtilSys.toComparable(entity.tags),
-				-- 		  " against", filterOutEntityId, "@", x, y, w, h)
-				-- end
-				if not getAll then
-					return entity
-				end
-
-				local entityIdString = tostring(entityId)
-				if not seenResults[entityIdString] then
-					results[#results + 1] = entity
-					seenResults[entityIdString] = true
-				end
-			end
-		end
-	end
-
-	return results
-end
-function EntitySys.findAllBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId)
-	return EntitySys.findBoundedInArray(entities, x, y, w, h, filterTag, filterOutEntityId, --[[getAll--]] true)
-end
-function EntitySys.findRelativeInArray(entities, entity, signX, signY, filterTag)
-	local relativeX = entity.x + signX
-	local relativeY = entity.y + signY
-
-	return EntitySys.findBoundedInArray(entities,  relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
 end
 function EntitySys.destroy(entity)
 	if entity.destroyed then
@@ -444,8 +402,6 @@ function EntitySys.runTests()
 	end
 
 	assert(UtilSys.setEquality(EntitySys.findAll("ysg"), entities))
-	assert(UtilSys.setEquality(EntitySys.findAllBoundedInArray(EntitySys.findAll("ysg"), 0, 0, 101, 101, "ysg"),
-							EntitySys.findAll("ysg")))
 	assert(#EntitySys.findAllBounded(0, 0, 100, 100, "ysg") == numEntities)
 
 	for _, entityToDestroy in ipairs(entities) do

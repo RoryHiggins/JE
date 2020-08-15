@@ -48,14 +48,14 @@ function GameSys.populateTestWorld()
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 100 do
+	for _ = 1, 15000 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
-		EntitySys.setBounds(physicsObject, 8 +math.floor(math.random(140)), math.floor(math.random(64)), 6, 6)
+		EntitySys.setBounds(physicsObject, 8 + math.floor(math.random(140)), math.floor(math.random(64)), 6, 6)
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
-		if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
-			EntitySys.destroy(physicsObject)
-		end
+		-- if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
+		-- 	EntitySys.destroy(physicsObject)
+		-- end
 	end
 	UtilSys.log("GameSys.populateTestWorld(): physicsObjectCount=%d", #EntitySys.findAll("physicsObject"))
 end
@@ -74,6 +74,8 @@ function GameSys.runTests()
 	end
 end
 function GameSys.run()
+	jit.on()
+	require("jit.opt").start(3)
 	GameSys.runTests()
 
 	SimulationSys.create()
@@ -88,8 +90,8 @@ function GameSys.run()
 		end
 	end
 
-	SimulationSys.dump(GameSys.DUMP_FILE)
-	SimulationSys.save(GameSys.SAVE_FILE)
+	-- SimulationSys.dump(GameSys.DUMP_FILE)
+	-- SimulationSys.save(GameSys.SAVE_FILE)
 	SimulationSys.destroy()
 end
 
