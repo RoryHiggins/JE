@@ -1,9 +1,9 @@
 local EngineSys = require("src/engine/engine")
-local UtilSys = EngineSys.components.UtilSys
-local SimulationSys = EngineSys.components.SimulationSys
-local EntitySys = EngineSys.components.EntitySys
-local SpriteSys = EngineSys.components.SpriteSys
-local TemplateSys = EngineSys.components.TemplateSys
+local UtilSys = require("src/engine/util")
+local SimulationSys = require("src/engine/simulation")
+local EntitySys = require("src/engine/entity")
+local SpriteSys = require("src/engine/sprite")
+local TemplateSys = require("src/engine/template")
 
 local PhysicsSys = require("src/game/physics")
 
@@ -22,6 +22,7 @@ PlayerSys.template = TemplateSys.add("player", {
 	["playerJumpFrameForce"] = 0.7,
 	["playerJumpFrames"] = 15,
 	["playerMoveForce"] = 0.6,
+	["canPush"] = true,
 	["tags"] = {
 		["sprite"] = true,
 		["screenTarget"] = true,

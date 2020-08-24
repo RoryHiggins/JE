@@ -1,5 +1,3 @@
-// precompiled header
-
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,15 +11,15 @@
 
 #if defined(__cplusplus)
 extern "C" {
-#endif  // END defined(__cplusplus)
+#endif
 
 #include <luajit-2.0/lua.h>
 #include <luajit-2.0/lualib.h>
 #include <luajit-2.0/lauxlib.h>
 
 #if defined(__cplusplus)
-}  // END extern "C"
-#endif  // END defined(__cplusplus)
+}
+#endif
 
 #include <SFML/System/Vector2.h>
 #include <SFML/Graphics/Rect.h>

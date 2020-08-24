@@ -1,28 +1,23 @@
 local EngineSys = require("src/engine/engine")
-local UtilSys = EngineSys.components.UtilSys
-local ClientSys = EngineSys.components.ClientSys
-local SimulationSys = EngineSys.components.SimulationSys
-local WorldSys = EngineSys.components.WorldSys
-local EntitySys = EngineSys.components.EntitySys
-local SpriteSys = EngineSys.components.SpriteSys
-local TemplateSys = EngineSys.components.TemplateSys
-
-local MaterialSys = require("src/game/material")
-local PhysicsSys = require("src/game/physics")
-local WallSys = require("src/game/entities/wall")
-local PlayerSys = require("src/game/entities/player")
+local UtilSys = require("src/engine/util")
+local ClientSys = require("src/engine/client")
+local SimulationSys = require("src/engine/simulation")
 
 local GameSys = {}
 GameSys.DUMP_FILE = ".\\game_dump.sav"
 GameSys.SAVE_FILE = ".\\game_save.sav"
 GameSys.components = {
-	["MaterialSys"] = MaterialSys,
-	["PhysicsSys"] = PhysicsSys,
-	["WallSys"] = WallSys,
-	["PlayerSys"] = PlayerSys,
+	["MaterialSys"] = require("src/game/material"),
+	["PhysicsSys"] = require("src/game/physics"),
+	["WallSys"] = require("src/game/entities/wall"),
+	["PlayerSys"] = require("src/game/entities/player"),
 }
 function GameSys.populateTestWorld()
 	UtilSys.log("GameSys.populateTestWorld()")
+
+	local EntitySys = require("src/engine/entity")
+	local TemplateSys = require("src/engine/template")
+	local SpriteSys = require("src/engine/sprite")
 
 	TemplateSys.instantiate("player", 120, -32)
 
@@ -34,6 +29,7 @@ function GameSys.populateTestWorld()
 	-- side walls
 	TemplateSys.instantiate("wall", 0, 0, 8, ClientSys.height)
 	TemplateSys.instantiate("wall", ClientSys.width - 8, 0, 8, ClientSys.height)
+	TemplateSys.instantiate("wall", 0, ClientSys.height - 8, ClientSys.width, 8)
 
 	SpriteSys.addSprite("physicsObject", 1, 10, 6, 6)
 	TemplateSys.add("physicsObject", {
@@ -45,20 +41,41 @@ function GameSys.populateTestWorld()
 			["material"] = true,
 			["solid"] = true,
 			["physics"] = true,
-			["pushable"] = true,
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 50 do
+	for _ = 1, 100 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject, 8 + math.floor(math.random(140)), math.floor(math.random(64)), 6, 6)
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
-		if EntitySys.findRelative(physicsObject, 0, 0, nil, physicsObject.id) then
+		if EntitySys.findRelative(physicsObject, 0, 0, "solid") then
 			EntitySys.destroy(physicsObject)
 		end
 	end
 	UtilSys.log("GameSys.populateTestWorld(): physicsObjectCount=%d", #EntitySys.findAll("physicsObject"))
+end
+function GameSys.isRunning()
+	return SimulationSys.isRunning()
+end
+function GameSys.destroy()
+	-- SimulationSys.dump(GameSys.DUMP_FILE)
+	-- SimulationSys.save(GameSys.SAVE_FILE)
+	SimulationSys.destroy()
+end
+function GameSys.create()
+	GameSys.destroy()
+
+	SimulationSys.create()
+	GameSys.populateTestWorld()
+end
+function GameSys.step()
+	ClientSys.step()
+	SimulationSys.step()
+
+	if SimulationSys.inputs.restart then
+		GameSys.create()
+	end
 end
 function GameSys.runTests()
 	UtilSys.log("GameSys.runTests(): Running automated tests")
@@ -75,27 +92,15 @@ function GameSys.runTests()
 	end
 end
 function GameSys.run()
-	-- jit.off()
-	jit.on()
-	require("jit.opt").start(3)
-
 	GameSys.runTests()
 
-	SimulationSys.create()
-	GameSys.populateTestWorld()
+	GameSys.create()
 
-	while SimulationSys.isRunning() do
-		SimulationSys.step()
-
-		if SimulationSys.inputs.restart then
-			WorldSys.create()
-			GameSys.populateTestWorld()
-		end
+	while GameSys.isRunning() do
+		GameSys.step()
 	end
 
-	-- SimulationSys.dump(GameSys.DUMP_FILE)
-	-- SimulationSys.save(GameSys.SAVE_FILE)
-	SimulationSys.destroy()
+	GameSys.destroy()
 end
 
 return GameSys

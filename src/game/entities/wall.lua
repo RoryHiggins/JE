@@ -1,6 +1,6 @@
 local EngineSys = require("src/engine/engine")
-local SpriteSys = EngineSys.components.SpriteSys
-local TemplateSys = EngineSys.components.TemplateSys
+local SpriteSys = require("src/engine/sprite")
+local TemplateSys = require("src/engine/template")
 
 local WallSys = {}
 SpriteSys.addSprite("wallBlack", 0, 40, 8, 8)

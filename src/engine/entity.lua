@@ -163,30 +163,30 @@ function EntitySys.untag(entity, tag)
 		events[i](entity, tag, nil)
 	end
 end
-function EntitySys.find(tag)
+function EntitySys.find(tag, getAll)
 	local world = SimulationSys.state.world
-	local tagEntities = world.tagEntities[tag]
-	if tagEntities == nil then
-		return nil
+
+	local worldEntities = world.entities
+	local tagEntities = world.tagEntities[tag] or {}
+	if not getAll then
+		local entityId = tagEntities[1]
+		if entityId == nil then
+			return nil
+		end
+		return worldEntities[entityId]
 	end
 
-	local entityId = tagEntities[1]
-	if entityId == nil then
-		return nil
+	local tagEntitiesCount = #tagEntities
+	local results = {}
+
+	for i = 1, tagEntitiesCount do
+		results[#results + 1] = worldEntities[tagEntities[i]]
 	end
 
-	return world.entities[entityId]
+	return results
 end
 function EntitySys.findAll(tag)
-	local world = SimulationSys.state.world
-	local worldEntities = world.entities
-
-	local entities = {}
-	for _, entityId in pairs(SimulationSys.state.world.tagEntities[tag] or {}) do
-		entities[#entities + 1] = worldEntities[entityId]
-	end
-
-	return entities
+	return EntitySys.find(tag, true)
 end
 function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 	local seenResults = nil
@@ -241,11 +241,14 @@ end
 function EntitySys.findAllBounded(x, y, w, h, filterTag, filterOutEntityId)
 	return EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, true)
 end
-function EntitySys.findRelative(entity, signX, signY, filterTag)
+function EntitySys.findRelative(entity, signX, signY, filterTag, getAll)
 	local relativeX = entity.x + (signX or 0)
 	local relativeY = entity.y + (signY or 0)
 
-	return EntitySys.findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id)
+	return EntitySys.findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id, getAll)
+end
+function EntitySys.findAllRelative(entity, signX, signY, filterTag)
+	return EntitySys.findRelative(entity, signX, signY, filterTag, true)
 end
 function EntitySys.destroy(entity)
 	if entity.destroyed then

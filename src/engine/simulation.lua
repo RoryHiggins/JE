@@ -32,11 +32,9 @@ function SimulationSys.step()
 		events[i]()
 	end
 
-	ClientSys.updateInputs(SimulationSys.inputs)
-
 	SimulationSys.draw()
 
-	ClientSys.step()
+	ClientSys.updateInputs(SimulationSys.inputs)
 end
 function SimulationSys.draw()
 	local events = SimulationSys.drawEvents
@@ -87,30 +85,37 @@ function SimulationSys.dump(filename)
 		["state"] = SimulationSys.state,
 		["static"] = SimulationSys.static,
 	}
-	local success = ClientSys.writeDataRaw(filename, UtilSys.toComparable(dump))
-
-	if not success then
+	if not ClientSys.writeDataUncompressed(filename, UtilSys.toComparable(dump)) then
 		UtilSys.log("SimulationSys.dump(): ClientSys.writeData() failed")
+		return false
 	end
+
+	return true
 end
 function SimulationSys.save(filename)
 	UtilSys.log("SimulationSys.save(): filename=%s", filename)
 
-	local success = ClientSys.writeData(filename, json.encode(SimulationSys.state))
-
-	if not success then
+	if not ClientSys.writeData(filename, json.encode(SimulationSys.state)) then
 		UtilSys.log("SimulationSys.save(): ClientSys.writeData() failed")
+		return false
 	end
+
+	return true
 end
 function SimulationSys.load(filename)
 	UtilSys.log("SimulationSys.load(): filename=%s", filename)
 
-	local loadedSimulation = json.decode(ClientSys.readData(filename))
+	local loadedSimulationStr = ClientSys.readData(filename)
+	if not loadedSimulationStr then
+		return false
+	end
+
+	local loadedSimulation = json.decode(loadedSimulationStr)
 
 	if loadedSimulation.saveVersion > SimulationSys.SAVE_VERSION then
 		UtilSys.err("SimulationSys.load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
 				   SimulationSys.SAVE_VERSION, loadedSimulation.saveVersion)
-		return
+		return false
 	end
 	if loadedSimulation.saveVersion < SimulationSys.SAVE_VERSION then
 		UtilSys.log("SimulationSys.load(): save version is older, saveVersion=%d, save.saveVersion=%d",
@@ -122,6 +127,8 @@ function SimulationSys.load(filename)
 	for key, val in pairs(loadedSimulation) do
 		state[key] = val
 	end
+
+	return true
 end
 function SimulationSys.runTests()
 	SimulationSys.destroy()
@@ -131,11 +138,11 @@ function SimulationSys.runTests()
 	SimulationSys.draw()
 
 	local gameBeforeSave = UtilSys.toComparable(SimulationSys.state)
-	SimulationSys.dump("test_dump.json")
-	SimulationSys.save("test_save.json")
-	SimulationSys.load("test_save.json")
-	os.remove("test_dump.json")
-	os.remove("test_save.json")
+	assert(SimulationSys.dump("test_dump.sav"))
+	assert(SimulationSys.save("test_save.sav"))
+	assert(SimulationSys.load("test_save.sav"))
+	os.remove("test_dump.sav")
+	os.remove("test_save.sav")
 
 	local gameAfterLoad = UtilSys.toComparable(SimulationSys.state)
 	if gameBeforeSave ~= gameAfterLoad then

@@ -1,6 +1,6 @@
 local EngineSys = require("src/engine/engine")
-local SimulationSys = EngineSys.components.SimulationSys
-local EntitySys = EngineSys.components.EntitySys
+local SimulationSys = require("src/engine/simulation")
+local EntitySys = require("src/engine/entity")
 
 local MaterialSys = {}
 SimulationSys.static.materials = {

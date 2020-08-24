@@ -1,13 +1,12 @@
 local EngineSys = require("src/engine/engine")
-local UtilSys = EngineSys.components.UtilSys
-local SimulationSys = EngineSys.components.SimulationSys
-local EntitySys = EngineSys.components.EntitySys
+local UtilSys = require("src/engine/util")
+local SimulationSys = require("src/engine/simulation")
+local EntitySys = require("src/engine/entity")
 
 local mathAbs = math.abs
 local mathMin = math.min
 local mathMax = math.max
 local mathModf = math.modf
-local mathFloor = math.floor
 local UtilSysSign = UtilSys.sign
 local EntitySysFindRelative = EntitySys.findRelative
 local EntitySysSetBounds = EntitySys.setBounds
@@ -72,7 +71,33 @@ function PhysicsSys.stopY(entity)
 	entity.speedY = 0
 	entity.overflowY = 0
 end
-function PhysicsSys.move(entity, moveX, moveY)
+function PhysicsSys.tryPushX(entity, signX)
+	if not entity.tags.physics then
+		return false
+	end
+
+	PhysicsSys.stopX(entity)
+
+	if not PhysicsSys.tryMove(entity, signX, 0) then
+		return false
+	end
+
+	return true
+end
+function PhysicsSys.tryPushY(entity, signY)
+	if not entity.tags.physics then
+		return false
+	end
+
+	PhysicsSys.stopY(entity)
+
+	if not PhysicsSys.tryMove(entity, 0, signY) then
+		return false
+	end
+
+	return true
+end
+function PhysicsSys.tryMove(entity, moveX, moveY)
 	local signX = UtilSysSign(moveX)
 	local signY = UtilSysSign(moveY)
 
@@ -82,19 +107,6 @@ function PhysicsSys.move(entity, moveX, moveY)
 	absMoveX = mathMin(static.maxSpeed, absMoveX)
 	absMoveY = mathMin(static.maxSpeed, absMoveY)
 
-	-- skip if not moving
-	if (absMoveX == 0) and (absMoveY == 0) then
-		return true
-	end
-
-	-- if possible, move all in one go
-	if ((absMoveX < entity.w) and (absMoveY < entity.h)
-		and not EntitySysFindRelative(entity, moveX, moveY, "solid")) then
-		EntitySysSetBounds(entity, entity.x + moveX, entity.y + moveY, entity.w, entity.h)
-		return true
-	end
-
-	-- compute the amount to move horizontally, pixel by pixel
 	local moveSuccessful = true
 
 	local curMoveX = 0
@@ -102,33 +114,32 @@ function PhysicsSys.move(entity, moveX, moveY)
 		local nextMoveX = curMoveX + signX
 
 		local obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
+		while obstacle and entity.canPush and PhysicsSys.tryPushX(obstacle, signX) do
+			entity.forceX = entity.forceX - (signX * 0.2)
+			obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
+		end
 		if obstacle then
-			if not entity.tags.pushable and obstacle.tags.pushable and PhysicsSys.move(obstacle, signX, 0) then
-				entity.forceX = (entity.forceX - signX) * 0.5
-			else
-				PhysicsSys.stopX(entity)
-				moveSuccessful = false
-				break
-			end
+			PhysicsSys.stopX(entity)
+			moveSuccessful = false
+			break
 		end
 
 		curMoveX = nextMoveX
 	end
 
-	-- compute the amount to move vertically, pixel by pixel
 	local curMoveY = 0
 	for _ = 1, absMoveY do
 		local nextMoveY = curMoveY + signY
 
 		local obstacle = EntitySysFindRelative(entity, curMoveX, nextMoveY, "solid")
+		while obstacle and entity.canPush and PhysicsSys.tryPushY(obstacle, signY) do
+			entity.forceY = entity.forceY - (signY * 0.2)
+			obstacle = EntitySysFindRelative(entity, curMoveX, nextMoveY, "solid")
+		end
 		if obstacle then
-			if not entity.tags.pushable and obstacle.tags.pushable and PhysicsSys.move(obstacle, 0, signY) then
-				entity.forceY = (entity.forceY - signY) * 0.5
-			else
-				PhysicsSys.stopY(entity)
-				moveSuccessful = false
-				break
-			end
+			PhysicsSys.stopY(entity)
+			moveSuccessful = false
+			break
 		end
 
 		curMoveY = nextMoveY
@@ -165,6 +176,7 @@ function PhysicsSys.tickForces(entity)
 	end
 end
 function PhysicsSys.tickMovement(entity)
+	-- clamp speed to max speed
 	entity.speedX = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedX))
 	entity.speedY = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedY))
 
@@ -178,7 +190,7 @@ function PhysicsSys.tickMovement(entity)
 	moveX = moveX + overflowCarryX
 	moveY = moveY + overflowCarryY
 
-	PhysicsSys.move(entity, moveX, moveY)
+	PhysicsSys.tryMove(entity, moveX, moveY)
 end
 function PhysicsSys.tick(entity)
 	PhysicsSys.tickForces(entity)
@@ -194,6 +206,8 @@ table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
 		-- overflow from last physics tick.  an artefact of locking x, y to integer values
 		entity.overflowX = entity.overflowX or 0
 		entity.overflowY = entity.overflowY or 0
+
+		entity.canPush = entity.canPush or false
 	end
 end)
 table.insert(SimulationSys.stepEvents, function()
