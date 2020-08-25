@@ -1,4 +1,3 @@
-local EngineSys = require("src/engine/engine")
 local UtilSys = require("src/engine/util")
 local SimulationSys = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
@@ -22,7 +21,10 @@ PlayerSys.template = TemplateSys.add("player", {
 	["playerJumpFrameForce"] = 0.7,
 	["playerJumpFrames"] = 15,
 	["playerMoveForce"] = 0.6,
-	["canPush"] = true,
+	["physicsCanBePushed"] = false,
+	["physicsCanPush"] = true,
+	["physicsCanBeCarried"] = true,
+	["physicsCanCarry"] = true,
 	["tags"] = {
 		["sprite"] = true,
 		["screenTarget"] = true,
@@ -35,14 +37,19 @@ PlayerSys.template = TemplateSys.add("player", {
 function PlayerSys.tickEntity(entity)
 	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
 
-	local moveForce = entity.playerMoveForce * materialPhysics.moveForceStrength
-	if SimulationSys.inputs.left then
-		entity.forceX = entity.forceX - moveForce
-	end
+	local inputDirX = UtilSys.boolToNumber(SimulationSys.inputs.right) - UtilSys.boolToNumber(SimulationSys.inputs.left)
+	local inputDirY = UtilSys.boolToNumber(SimulationSys.inputs.down) - UtilSys.boolToNumber(SimulationSys.inputs.up)
 
-	if SimulationSys.inputs.right then
-		entity.forceX = entity.forceX + moveForce
-	end
+	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
+	local gravityLength = math.sqrt((static.gravityX * static.gravityX) + (static.gravityY * static.gravityY))
+	local moveDirX = inputDirX * (math.abs(static.gravityY) / gravityLength)
+	local moveDirY = inputDirY * (math.abs(static.gravityX) / gravityLength)
+
+	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
+	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
+
+	entity.forceX = entity.forceX + moveForceX
+	entity.forceY = entity.forceY + moveForceY
 
 	local onGround = EntitySys.findRelative(
 		entity,
@@ -50,14 +57,19 @@ function PlayerSys.tickEntity(entity)
 		UtilSys.sign(static.gravityY),
 		"solid"
 	)
+	local tryingToJump = (
+		((UtilSys.sign(static.gravityX) ~= 0) and (UtilSys.sign(inputDirX) == -UtilSys.sign(static.gravityX)))
+		or ((UtilSys.sign(static.gravityY) ~= 0) and (UtilSys.sign(inputDirY) == -UtilSys.sign(static.gravityY)))
+	)
+
 	local fallingX = (static.gravityX ~= 0) and (entity.speedX * UtilSys.sign(static.gravityX) >= 0)
 	local fallingY = (static.gravityY ~= 0) and (entity.speedY * UtilSys.sign(static.gravityY) >= 0)
 	local falling = fallingX or fallingY
-	if not SimulationSys.inputs.up or onGround or falling then
+	if not tryingToJump or onGround or falling then
 		entity.playerJumpFramesCur = 0
 	end
 
-	if SimulationSys.inputs.up then
+	if tryingToJump then
 		if onGround then
 			if static.gravityX ~= 0 then
 				PhysicsSys.stopX(entity)
@@ -77,16 +89,12 @@ function PlayerSys.tickEntity(entity)
 		end
 	end
 
-	if entity.speedY < 0 then
+	if inputDirY < 0 then
 		SpriteSys.attach(entity, SpriteSys.getSprite("playerUp"))
+	elseif inputDirX > 0 then
+		SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
 	else
-		if entity.speedX < 0 then
-			SpriteSys.attach(entity, SpriteSys.getSprite("playerLeft"))
-		elseif entity.speedX > 0 then
-			SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
-		elseif entity.spriteId == "playerUp" then
-			SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
-		end
+		SpriteSys.attach(entity, SpriteSys.getSprite("playerLeft"))
 	end
 end
 table.insert(SimulationSys.stepEvents, function()

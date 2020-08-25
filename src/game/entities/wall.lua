@@ -1,4 +1,3 @@
-local EngineSys = require("src/engine/engine")
 local SpriteSys = require("src/engine/sprite")
 local TemplateSys = require("src/engine/template")
 

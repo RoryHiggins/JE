@@ -11,6 +11,46 @@ function UtilSys.err(format, ...)
 end
 function UtilSys.noop()
 end
+
+function UtilSys.sign(x)
+	if x > 0 then
+		return 1
+	elseif x < 0 then
+		return -1
+	end
+
+	return 0
+end
+function UtilSys.boolToNumber(boolVal)
+	-- it's truly astonishing there is nothing builtin for this...
+	if boolVal then
+		return 1
+	else
+		return 0
+	end
+end
+
+function UtilSys.deepcopy(data)
+	return json.decode(json.encode(data))
+end
+function UtilSys.tableExtend(dest, ...)
+	local arg = {...}
+	for _, overrides in ipairs(arg) do
+		overrides = UtilSys.deepcopy(overrides)
+		for key, val in pairs(overrides) do
+			dest[key] = val
+		end
+	end
+
+	return dest
+end
+function UtilSys.arrayConcat(a, b)
+	local bCount = #b
+	for i = 1, bCount do
+		a[#a + 1] = b[i]
+	end
+end
+
 function UtilSys.getKeys(input)
 	local keys = {}
 
@@ -95,6 +135,12 @@ end
 function UtilSys.setEquality(a, b)
 	return UtilSys.toComparable(UtilSys.getValues(a)) == UtilSys.toComparable(UtilSys.getValues(b))
 end
+function UtilSys.rectCollides(ax, ay, aw, ah, bx, by, bw, bh)
+	return ((ax < (bx + bw)) and ((ax + aw) > bx)
+	        and (ay < (by + bh)) and ((ay + ah) > by)
+	        and (aw > 0) and (ah > 0) and (bw > 0) and (bh > 0))
+end
+
 function UtilSys.runTests()
 	UtilSys.noop()
 	assert(UtilSys.getKeys({["a"] = 1})[1] == "a")
@@ -117,40 +163,6 @@ function UtilSys.runTests()
 	assert(not UtilSys.setEquality({["c"] = {["d"] = 1}}, {["c"] = {["d"] = 2}}))
 	assert(not UtilSys.setEquality({1, 2, ["a"] = "b"}, {1, 2}))
 	assert(not UtilSys.setEquality({1, 2, ["a"] = "b"}, {1, ["a"] = "b"}))
-end
-function UtilSys.deepcopy(data)
-	return json.decode(json.encode(data))
-end
-function UtilSys.arrayConcat(a, b)
-	local bCount = #b
-	for i = 1, bCount do
-		a[#a + 1] = b[i]
-	end
-end
-function UtilSys.rectCollides(ax, ay, aw, ah, bx, by, bw, bh)
-	return ((ax < (bx + bw)) and ((ax + aw) > bx)
-	        and (ay < (by + bh)) and ((ay + ah) > by)
-	        and (aw > 0) and (ah > 0) and (bw > 0) and (bh > 0))
-end
-function UtilSys.sign(x)
-	if x > 0 then
-		return 1
-	elseif x < 0 then
-		return -1
-	end
-
-	return 0
-end
-function UtilSys.tableExtend(dest, ...)
-	local arg = {...}
-	for _, overrides in ipairs(arg) do
-		overrides = UtilSys.deepcopy(overrides)
-		for key, val in pairs(overrides) do
-			dest[key] = val
-		end
-	end
-
-	return dest
 end
 
 return UtilSys

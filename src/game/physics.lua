@@ -1,4 +1,3 @@
-local EngineSys = require("src/engine/engine")
 local UtilSys = require("src/engine/util")
 local SimulationSys = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
@@ -11,16 +10,18 @@ local UtilSysSign = UtilSys.sign
 local EntitySysFindRelative = EntitySys.findRelative
 local EntitySysSetBounds = EntitySys.setBounds
 
+local static = SimulationSys.static
+
 
 local defaultMaterialPhysics = {
 	["friction"] = 0.2,
 	["moveForceStrength"] = 1,
 	["jumpForceStrength"] = 1,
 }
-local static = SimulationSys.static
 static.gravityX = 0
 static.gravityY = 0.8
 static.maxSpeed = 8
+static.moveMaxStackDepth = 50
 static.materialsPhysics = {
 	["air"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {
 		["moveForceStrength"] = 0.6,
@@ -28,6 +29,7 @@ static.materialsPhysics = {
 	["solid"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
 	["water"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
 	["ice"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
+	["death"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
 }
 
 local PhysicsSys = {}
@@ -71,42 +73,58 @@ function PhysicsSys.stopY(entity)
 	entity.speedY = 0
 	entity.overflowY = 0
 end
-function PhysicsSys.tryPushX(entity, signX)
+function PhysicsSys.tryPushX(entity, signX, stackDepth)
+	stackDepth = stackDepth or 0
+	if (stackDepth > static.moveMaxStackDepth) then
+		return false
+	end
+
 	if not entity.tags.physics then
+		return false
+	end
+
+	if not entity.physicsCanBePushed then
 		return false
 	end
 
 	PhysicsSys.stopX(entity)
 
-	if not PhysicsSys.tryMove(entity, signX, 0) then
+	if not PhysicsSys.tryMoveX(entity, signX, stackDepth + 1) then
 		return false
 	end
 
 	return true
 end
-function PhysicsSys.tryPushY(entity, signY)
+function PhysicsSys.tryPushY(entity, signY, stackDepth)
+	stackDepth = stackDepth or 0
+	if (stackDepth > static.moveMaxStackDepth) then
+		return false
+	end
+
 	if not entity.tags.physics then
+		return false
+	end
+
+	if not entity.physicsCanBePushed then
 		return false
 	end
 
 	PhysicsSys.stopY(entity)
 
-	if not PhysicsSys.tryMove(entity, 0, signY) then
+	if not PhysicsSys.tryMoveY(entity, signY, stackDepth + 1) then
 		return false
 	end
 
 	return true
 end
-function PhysicsSys.tryMove(entity, moveX, moveY)
+function PhysicsSys.tryMoveX(entity, moveX, stackDepth)
+	stackDepth = stackDepth or 0
+	if (stackDepth > static.moveMaxStackDepth) then
+		return false
+	end
+
 	local signX = UtilSysSign(moveX)
-	local signY = UtilSysSign(moveY)
-
-	local absMoveX = mathAbs(moveX)
-	local absMoveY = mathAbs(moveY)
-
-	absMoveX = mathMin(static.maxSpeed, absMoveX)
-	absMoveY = mathMin(static.maxSpeed, absMoveY)
-
+	local absMoveX = mathMin(static.maxSpeed, mathAbs(moveX))
 	local moveSuccessful = true
 
 	local curMoveX = 0
@@ -114,7 +132,7 @@ function PhysicsSys.tryMove(entity, moveX, moveY)
 		local nextMoveX = curMoveX + signX
 
 		local obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
-		while obstacle and entity.canPush and PhysicsSys.tryPushX(obstacle, signX) do
+		while obstacle and PhysicsSys.tryPushX(obstacle, signX, stackDepth + 1) do
 			entity.forceX = entity.forceX - (signX * 0.2)
 			obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
 		end
@@ -127,14 +145,28 @@ function PhysicsSys.tryMove(entity, moveX, moveY)
 		curMoveX = nextMoveX
 	end
 
+	EntitySysSetBounds(entity, entity.x + curMoveX, entity.y, entity.w, entity.h)
+
+	return moveSuccessful
+end
+function PhysicsSys.tryMoveY(entity, moveY, stackDepth)
+	stackDepth = stackDepth or 0
+	if (stackDepth > static.moveMaxStackDepth) then
+		return false
+	end
+
+	local signY = UtilSysSign(moveY)
+	local absMoveY = mathMin(static.maxSpeed, mathAbs(moveY))
+	local moveSuccessful = true
+
 	local curMoveY = 0
 	for _ = 1, absMoveY do
 		local nextMoveY = curMoveY + signY
 
-		local obstacle = EntitySysFindRelative(entity, curMoveX, nextMoveY, "solid")
-		while obstacle and entity.canPush and PhysicsSys.tryPushY(obstacle, signY) do
+		local obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
+		while obstacle and PhysicsSys.tryPushY(obstacle, signY, stackDepth + 1) do
 			entity.forceY = entity.forceY - (signY * 0.2)
-			obstacle = EntitySysFindRelative(entity, curMoveX, nextMoveY, "solid")
+			obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
 		end
 		if obstacle then
 			PhysicsSys.stopY(entity)
@@ -145,7 +177,7 @@ function PhysicsSys.tryMove(entity, moveX, moveY)
 		curMoveY = nextMoveY
 	end
 
-	EntitySysSetBounds(entity, entity.x + curMoveX, entity.y + curMoveY, entity.w, entity.h)
+	EntitySysSetBounds(entity, entity.x, entity.y + curMoveY, entity.w, entity.h)
 
 	return moveSuccessful
 end
@@ -190,7 +222,8 @@ function PhysicsSys.tickMovement(entity)
 	moveX = moveX + overflowCarryX
 	moveY = moveY + overflowCarryY
 
-	PhysicsSys.tryMove(entity, moveX, moveY)
+	PhysicsSys.tryMoveX(entity, moveX)
+	PhysicsSys.tryMoveY(entity, moveY)
 end
 function PhysicsSys.tick(entity)
 	PhysicsSys.tickForces(entity)
@@ -207,7 +240,11 @@ table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
 		entity.overflowX = entity.overflowX or 0
 		entity.overflowY = entity.overflowY or 0
 
-		entity.canPush = entity.canPush or false
+		entity.physicsCanPush = entity.physicsCanPush or false
+		entity.physicsCanBePushed = entity.physicsCanBePushed or false
+
+		entity.physicsCanCarry = entity.physicsCanCarry or false
+		entity.physicsCanBeCarried = entity.physicsCanBeCarried or false
 	end
 end)
 table.insert(SimulationSys.stepEvents, function()

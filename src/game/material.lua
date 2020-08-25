@@ -1,4 +1,3 @@
-local EngineSys = require("src/engine/engine")
 local SimulationSys = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 
