@@ -8,6 +8,7 @@ local mathMax = math.max
 local mathModf = math.modf
 local UtilSysSign = UtilSys.sign
 local EntitySysFindRelative = EntitySys.findRelative
+local EntitySysFindAllRelative = EntitySys.findAllRelative
 local EntitySysSetBounds = EntitySys.setBounds
 
 local static = SimulationSys.static
@@ -21,7 +22,7 @@ local defaultMaterialPhysics = {
 static.gravityX = 0
 static.gravityY = 0.8
 static.maxSpeed = 8
-static.moveMaxStackDepth = 50
+static.physicsMaxRecursionDepth = 50
 static.materialsPhysics = {
 	["air"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {
 		["moveForceStrength"] = 0.6,
@@ -63,6 +64,28 @@ function PhysicsSys.getMaterialPhysics(entity)
 	end
 	return materialPhysics
 end
+function PhysicsSys.getCarryablesRecursive(entity, outCarryables, recursionDepth)
+	outCarryables = outCarryables or {}
+
+	recursionDepth = recursionDepth or 0
+	if (recursionDepth > static.physicsMaxRecursionDepth) then
+		return outCarryables
+	end
+
+	local candidates = EntitySysFindAllRelative(entity, 0, -UtilSysSign(static.gravityY), "physicsCarryable")
+	local candidatesCount = #candidates
+
+	for i = 1, candidatesCount do
+		local candidate = candidates[i]
+		local entityId = candidate.id
+		if outCarryables[entityId] == nil then
+			outCarryables[entityId] = candidate
+			PhysicsSys.getCarryablesRecursive(candidate, outCarryables, recursionDepth + 1)
+		end
+	end
+
+	return outCarryables
+end
 function PhysicsSys.stopX(entity)
 	entity.forceX = 0
 	entity.speedX = 0
@@ -73,9 +96,9 @@ function PhysicsSys.stopY(entity)
 	entity.speedY = 0
 	entity.overflowY = 0
 end
-function PhysicsSys.tryPushX(entity, signX, stackDepth)
-	stackDepth = stackDepth or 0
-	if (stackDepth > static.moveMaxStackDepth) then
+function PhysicsSys.tryPushX(entity, signX, recursionDepth)
+	recursionDepth = recursionDepth or 0
+	if (recursionDepth > static.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -83,21 +106,21 @@ function PhysicsSys.tryPushX(entity, signX, stackDepth)
 		return false
 	end
 
-	if not entity.physicsCanBePushed then
+	if not entity.tags.physicsPushable then
 		return false
 	end
 
 	PhysicsSys.stopX(entity)
 
-	if not PhysicsSys.tryMoveX(entity, signX, stackDepth + 1) then
+	if not PhysicsSys.tryMoveX(entity, signX, recursionDepth + 1, true) then
 		return false
 	end
 
 	return true
 end
-function PhysicsSys.tryPushY(entity, signY, stackDepth)
-	stackDepth = stackDepth or 0
-	if (stackDepth > static.moveMaxStackDepth) then
+function PhysicsSys.tryPushY(entity, signY, recursionDepth)
+	recursionDepth = recursionDepth or 0
+	if (recursionDepth > static.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -105,21 +128,21 @@ function PhysicsSys.tryPushY(entity, signY, stackDepth)
 		return false
 	end
 
-	if not entity.physicsCanBePushed then
+	if not entity.tags.physicsPushable then
 		return false
 	end
 
 	PhysicsSys.stopY(entity)
 
-	if not PhysicsSys.tryMoveY(entity, signY, stackDepth + 1) then
+	if not PhysicsSys.tryMoveY(entity, signY, recursionDepth + 1, true) then
 		return false
 	end
 
 	return true
 end
-function PhysicsSys.tryMoveX(entity, moveX, stackDepth)
-	stackDepth = stackDepth or 0
-	if (stackDepth > static.moveMaxStackDepth) then
+function PhysicsSys.tryMoveX(entity, moveX, recursionDepth, innerMove)
+	recursionDepth = recursionDepth or 0
+	if (recursionDepth > static.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -132,9 +155,11 @@ function PhysicsSys.tryMoveX(entity, moveX, stackDepth)
 		local nextMoveX = curMoveX + signX
 
 		local obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
-		while obstacle and PhysicsSys.tryPushX(obstacle, signX, stackDepth + 1) do
+		while obstacle and entity.physicsCanPush and PhysicsSys.tryPushX(obstacle, signX, recursionDepth + 1) do
+			recursionDepth = recursionDepth + 1
 			entity.forceX = entity.forceX - (signX * 0.2)
 			obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
+			recursionDepth = recursionDepth + 1
 		end
 		if obstacle then
 			PhysicsSys.stopX(entity)
@@ -147,11 +172,17 @@ function PhysicsSys.tryMoveX(entity, moveX, stackDepth)
 
 	EntitySysSetBounds(entity, entity.x + curMoveX, entity.y, entity.w, entity.h)
 
+	if curMoveX ~= 0 and entity.physicsCanCarry and not innerMove and static.gravityY ~= 0 then
+		for _, carryable in pairs(PhysicsSys.getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
+			PhysicsSys.tryMoveX(carryable, curMoveX, recursionDepth + 1, true)
+		end
+	end
+
 	return moveSuccessful
 end
-function PhysicsSys.tryMoveY(entity, moveY, stackDepth)
-	stackDepth = stackDepth or 0
-	if (stackDepth > static.moveMaxStackDepth) then
+function PhysicsSys.tryMoveY(entity, moveY, recursionDepth, innerMove)
+	recursionDepth = recursionDepth or 0
+	if (recursionDepth > static.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -164,7 +195,8 @@ function PhysicsSys.tryMoveY(entity, moveY, stackDepth)
 		local nextMoveY = curMoveY + signY
 
 		local obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
-		while obstacle and PhysicsSys.tryPushY(obstacle, signY, stackDepth + 1) do
+		while obstacle and entity.physicsCanPush and PhysicsSys.tryPushY(obstacle, signY, recursionDepth + 1) do
+			recursionDepth = recursionDepth + 1
 			entity.forceY = entity.forceY - (signY * 0.2)
 			obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
 		end
@@ -175,6 +207,12 @@ function PhysicsSys.tryMoveY(entity, moveY, stackDepth)
 		end
 
 		curMoveY = nextMoveY
+	end
+
+	if curMoveY ~= 0 and entity.physicsCanCarry and not innerMove and static.gravityX ~= 0 then
+		for _, carryable in pairs(PhysicsSys.getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
+			PhysicsSys.tryMoveY(carryable, curMoveY, recursionDepth + 1, true)
+		end
 	end
 
 	EntitySysSetBounds(entity, entity.x, entity.y + curMoveY, entity.w, entity.h)
@@ -222,8 +260,24 @@ function PhysicsSys.tickMovement(entity)
 	moveX = moveX + overflowCarryX
 	moveY = moveY + overflowCarryY
 
-	PhysicsSys.tryMoveX(entity, moveX)
-	PhysicsSys.tryMoveY(entity, moveY)
+	local signX = UtilSys.sign(moveX)
+	local signY = UtilSys.sign(moveY)
+	local movingX = (signX ~= 0)
+	local movingY = (signY ~= 0)
+	local absMoveX = math.abs(moveX)
+	local absMoveY = math.abs(moveY)
+	for i = 1, math.max(absMoveX, absMoveY) do
+		if not movingX and not movingY then
+			break
+		end
+
+		if movingX then
+			movingX = PhysicsSys.tryMoveX(entity, signX) and (i < absMoveX)
+		end
+		if movingY then
+			movingY = PhysicsSys.tryMoveY(entity, signY) and (i < absMoveY)
+		end
+	end
 end
 function PhysicsSys.tick(entity)
 	PhysicsSys.tickForces(entity)
@@ -241,10 +295,7 @@ table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
 		entity.overflowY = entity.overflowY or 0
 
 		entity.physicsCanPush = entity.physicsCanPush or false
-		entity.physicsCanBePushed = entity.physicsCanBePushed or false
-
 		entity.physicsCanCarry = entity.physicsCanCarry or false
-		entity.physicsCanBeCarried = entity.physicsCanBeCarried or false
 	end
 end)
 table.insert(SimulationSys.stepEvents, function()

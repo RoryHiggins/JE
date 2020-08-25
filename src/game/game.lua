@@ -21,10 +21,10 @@ function GameSys.populateTestWorld()
 
 	TemplateSys.instantiate("player", 120, -32)
 
-	-- steps
-	-- for i = 1, 7 do
-	-- 	TemplateSys.instantiate("wall", -48 + ((i - 1) * 32), -48 + ((i - 1) * 32), 48, 8)
-	-- end
+	-- step floors
+	for i = 1, 7 do
+		TemplateSys.instantiate("wall", -48 + ((i - 1) * 32), -48 + ((i - 1) * 32), 48, 8)
+	end
 
 	-- side walls
 	TemplateSys.instantiate("wall", -64, -64, 8, ClientSys.height + 128)
@@ -38,19 +38,19 @@ function GameSys.populateTestWorld()
 		["spriteId"] = "physicsObject",
 		["w"] = 6,
 		["h"] = 6,
-		["physicsCanBePushed"] = true,
 		["physicsCanPush"] = true,
-		["physicsCanBeCarried"] = true,
-		["physicsCanCarry"] = false,
+		["physicsCanCarry"] = true,
 		["tags"] = {
 			["sprite"] = true,
 			["material"] = true,
 			["solid"] = true,
 			["physics"] = true,
+			["physicsPushable"] = true,
+			["physicsCarryable"] = true,
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 300 do
+	for _ = 1, 500 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject,
 			-48 + math.floor(math.random(ClientSys.width + 96)),
