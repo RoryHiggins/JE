@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "precompiled.h"
 
 #if !defined(JE_LOGGING_H)
 #define JE_LOGGING_H

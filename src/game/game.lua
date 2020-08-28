@@ -96,7 +96,7 @@ function GameSys.step()
 	ClientSys.step()
 	SimulationSys.step()
 
-	if SimulationSys.inputs.restart then
+	if SimulationSys.inputs.x then
 		GameSys.create()
 	end
 end

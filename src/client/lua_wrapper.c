@@ -1,7 +1,6 @@
-#include "stdafx.h"
+#include "precompiled.h"
 #include "lua_wrapper.h"
 #include "core.h"
-#include "rendering.h"
 #include "window.h"
 
 /*https://www.lua.org/manual/5.3/manual.html*/
@@ -144,40 +143,46 @@ int jeLuaClient_step(lua_State* lua) {
 	return 0;
 }
 int jeLuaClient_updateInputs(lua_State* lua) {
+	jeWindow* window = jeWindow_get();
+
 	luaL_checktype(lua, 1, LUA_TTABLE);
 
 	lua_pushstring(lua, "left");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyLeft) || sfKeyboard_isKeyPressed(sfKeyA));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
 	lua_settable(lua, 1);
 
 	lua_pushstring(lua, "right");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyRight) || sfKeyboard_isKeyPressed(sfKeyD));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
 	lua_settable(lua, 1);
 
 	lua_pushstring(lua, "up");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyUp) || sfKeyboard_isKeyPressed(sfKeyW));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
 	lua_settable(lua, 1);
 
 	lua_pushstring(lua, "down");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyDown) || sfKeyboard_isKeyPressed(sfKeyS));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
 	lua_settable(lua, 1);
 
 	lua_pushstring(lua, "a");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyEnter) || sfKeyboard_isKeyPressed(sfKeyZ));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
 	lua_settable(lua, 1);
 
 	lua_pushstring(lua, "b");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyBackspace) || sfKeyboard_isKeyPressed(sfKeyX));
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "restart");
-	lua_pushboolean(lua, sfKeyboard_isKeyPressed(sfKeyR));
+	lua_pushstring(lua, "x");
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
+	lua_settable(lua, 1);
+
+	lua_pushstring(lua, "y");
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
 	lua_settable(lua, 1);
 
 	return 0;
 }
 int jeLuaClient_getCurrentFPS(lua_State* lua) {
-	lua_pushnumber(lua, (lua_Number)jeWindow_get()->framesLastSecond);
+	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(jeWindow_get()));
 	return 1;
 }
 int jeLuaClient_drawSprite(lua_State* lua) {
@@ -266,7 +271,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	y1 -= screenY1;
 	y2 -= screenY1;
 
-	jeRenderQueue_queueSprite(&(jeWindow_get()->renderQueue), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
+	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 
 	cleanup: {
 	}
@@ -377,7 +382,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	y2 -= screenY1;
 
 	/*TODO*/
-	/*jeRenderQueue_queueSprite(jeWindow_get()->renderQueue, z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);*/
+	/*jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);*/
 
 	/*screen*/
 	JE_MAYBE_UNUSED(screenX1);

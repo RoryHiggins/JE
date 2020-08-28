@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "precompiled.h"
 #include "core.h"
 
 void jeLog_logPrefixImpl(const char* label, const char* file, unsigned line) {

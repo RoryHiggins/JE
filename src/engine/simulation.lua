@@ -20,7 +20,8 @@ SimulationSys.inputs = {
 	["a"] = false,
 	["b"] = false,
 
-	["restart"] = false,
+	["x"] = false,
+	["y"] = false,
 }
 function SimulationSys.isRunning()
 	return SimulationSys.state.created and ClientSys.isRunning()

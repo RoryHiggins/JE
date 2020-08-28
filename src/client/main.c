@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "precompiled.h"
 #include "core.h"
-#include "rendering.h"
 #include "window.h"
 #include "lua_wrapper.h"
 #include "client.h"
+
 
 int main(int argc, char** argv) {
 	bool success = true;

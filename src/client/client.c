@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "precompiled.h"
 #include "client.h"
 #include "core.h"
 #include "window.h"
@@ -6,6 +6,12 @@
 
 #define JE_CLIENT_LUA_MAIN_FILENAME "src/game/main.lua"
 
+
+typedef struct jeClient jeClient;
+
+struct jeClient {
+	lua_State* lua;
+};
 
 void jeClient_destroy(jeClient* client) {
 	JE_LOG("jeClient_destroy()");
