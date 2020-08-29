@@ -1,4 +1,5 @@
-#include "core.h"
+#include "stdafx.h"
+#include "debug.h"
 #include "client.h"
 #include "window.h"
 #include "lua_wrapper.h"
@@ -22,17 +23,17 @@ void jeClient_destroy(jeClient* client) {
 
 	jeWindow_destroy(jeWindow_get());
 
-	memset(client, 0, sizeof(*client));
+	memset((void*)client, 0, sizeof(*client));
 }
-bool jeClient_create(jeClient* client) {
-	bool success = true;
+jeBool jeClient_create(jeClient* client) {
+	jeBool success = JE_TRUE;
 
 	JE_LOG("jeClient_create()");
 
 	memset((void*)client, 0, sizeof(*client));
 
-	if (jeWindow_create(jeWindow_get()) == false) {
-		success = false;
+	if (jeWindow_create(jeWindow_get()) == JE_FALSE) {
+		success = JE_FALSE;
 		goto cleanup;
 	}
 
@@ -40,14 +41,14 @@ bool jeClient_create(jeClient* client) {
 
 	if (client->lua == NULL) {
 		JE_ERR("jeClient_create(): luaL_newstate() failed");
-		success = false;
+		success = JE_FALSE;
 		goto cleanup;
 	}
 
 	luaL_openlibs(client->lua);
 
-	if (jeLuaClient_registerLuaClientBindings(client->lua) == false) {
-		success = false;
+	if (jeLuaClient_registerLuaClientBindings(client->lua) == JE_FALSE) {
+		success = JE_FALSE;
 		goto cleanup;
 	}
 
@@ -56,16 +57,16 @@ bool jeClient_create(jeClient* client) {
 
 	return success;
 }
-bool jeClient_run() {
-	bool success = false;
+jeBool jeClient_run() {
+	jeBool success = JE_FALSE;
 	int luaResponse = 0;
 	jeClient client;
 
-	memset(&client, 0, sizeof(client));
+	memset((void*)&client, 0, sizeof(client));
 
 	JE_LOG("jeClient_run()");
 
-	if (jeClient_create(&client) == false) {
+	if (jeClient_create(&client) == JE_FALSE) {
 		goto cleanup;
 	}
 
@@ -83,7 +84,7 @@ bool jeClient_run() {
 		goto cleanup;
 	}
 
-	success = true;
+	success = JE_TRUE;
 	cleanup: {
 		jeClient_destroy(&client);
 	}

@@ -1,5 +1,6 @@
-#include "core.h"
+#include "stdafx.h"
 #include "lua_wrapper.h"
+#include "debug.h"
 #include "window.h"
 
 /*https://www.lua.org/manual/5.3/manual.html*/
@@ -46,7 +47,7 @@ const char* jeLua_getError(lua_State* lua) {
 }
 
 int jeLuaClient_writeData(lua_State* lua) {
-	bool success = false;
+	jeBool success = JE_FALSE;
 	char const* filename = "";
 	char const* data = "";
 	size_t dataSize = 0;
@@ -74,7 +75,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 
 	JE_LOG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
 
-	success = true;
+	success = JE_TRUE;
 	cleanup: {
 		if (file != NULL) {
 			gzclose(file);
@@ -87,7 +88,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 int jeLuaClient_readData(lua_State* lua) {
 	static char data[JE_LUA_DATA_BUFFER_SIZE] = {0};
 
-	bool success = false;
+	jeBool success = JE_FALSE;
 	int numResponses = 0;
 	char const* filename = "";
 	int dataSize = 0;
@@ -114,9 +115,9 @@ int jeLuaClient_readData(lua_State* lua) {
 
 	JE_LOG("jeLuaClient_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
 
-	success = true;
+	success = JE_TRUE;
 
-	if (success == true) {
+	if (success == JE_TRUE) {
 		lua_pushlstring(lua, data, dataSize);
 		numResponses++;
 	}
@@ -417,7 +418,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 
 	return 0;
 }
-bool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
+jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	static const luaL_Reg clientBindings[] = {
 		JE_LUA_CLIENT_BINDING(isRunning),
 		JE_LUA_CLIENT_BINDING(step),
@@ -429,7 +430,7 @@ bool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 		{NULL, NULL}  /*sentinel value*/
 	};
 
-	bool success = false;
+	jeBool success = JE_FALSE;
 	int createdResult = 0;
 
 	JE_LOG("jeLuaClient_registerLuaClientBindings()");
@@ -445,7 +446,7 @@ bool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	lua_setfield(lua, -1, "__index");
 	lua_setglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
 
-	success = true;
+	success = JE_TRUE;
 	cleanup: {
 		lua_settop(lua, 0);
 	}

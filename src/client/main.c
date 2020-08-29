@@ -1,7 +1,7 @@
-#include "core.h"
+#include "stdafx.h"
 
 /*Unity build*/
-#include "core.c"
+#include "debug.c"
 #include "image.c"
 #include "window.c"
 #include "lua_wrapper.c"
@@ -9,7 +9,7 @@
 
 
 int main(int argc, char** argv) {
-	bool success = true;
+	jeBool success = JE_TRUE;
 
 	success = jeClient_run();
 
@@ -18,3 +18,4 @@ int main(int argc, char** argv) {
 
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+

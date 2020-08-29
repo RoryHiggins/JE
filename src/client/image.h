@@ -1,7 +1,7 @@
 #if !defined(JE_IMAGE_H)
 #define JE_IMAGE_H
 
-#include "core.h"
+#include "stdafx.h"
 
 
 typedef struct jeImage jeImage;
@@ -13,6 +13,6 @@ struct jeImage {
 };
 
 void jeImage_destroy(jeImage* image);
-bool jeImage_createFromFile(jeImage* image, char const* filename);
+jeBool jeImage_createFromFile(jeImage* image, char const* filename);
 
 #endif

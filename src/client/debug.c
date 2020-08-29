@@ -1,10 +1,11 @@
-#include "core.h"
+#include "stdafx.h"
+#include "debug.h"
 
 
-void jeLog_logPrefixImpl(const char* label, const char* file, unsigned line) {
+void jeLogger_logPrefixImpl(const char* label, const char* file, unsigned line) {
 	fprintf(stdout, "[%s %s:%d] ", label, file, line);
 }
-void jeLog_logImpl(const char* formatStr, ...) {
+void jeLogger_logImpl(const char* formatStr, ...) {
 	va_list args;
 
 	va_start(args, formatStr);
@@ -14,6 +15,6 @@ void jeLog_logImpl(const char* formatStr, ...) {
 	fputc('\n', stdout);
 	fflush(stdout);
 }
-void jeLog_discardLogImpl(const char* formatStr, ...) {
+void jeLogger_discardLogImpl(const char* formatStr, ...) {
 	JE_MAYBE_UNUSED(formatStr);
 }

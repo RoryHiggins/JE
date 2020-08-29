@@ -1,9 +1,9 @@
 #if !defined(JE_CLIENT_H)
 #define JE_CLIENT_H
 
-#include "core.h"
+#include "stdafx.h"
 
 
-bool jeClient_run();
+jeBool jeClient_run();
 
 #endif

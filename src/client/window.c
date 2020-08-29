@@ -1,6 +1,7 @@
-#include "core.h"
-#include "image.h"
+#include "stdafx.h"
 #include "window.h"
+#include "debug.h"
+#include "image.h"
 
 #define JE_WINDOW_CAPTION ""
 #define JE_WINDOW_WIDTH 640
@@ -63,7 +64,7 @@ struct jeVertex {
 
 
 struct jeWindow {
-	bool open;
+	jeBool open;
 	Uint32 nextFrameTimeMs;
 	jeImage image;
 	SDL_Window* window;
@@ -84,22 +85,22 @@ jeWindow* jeWindow_get() {
 	static jeWindow window;
 	return &window;
 }
-bool jeWindow_getGlOk(jeWindow* window, const char* file, unsigned line, const char* function) {
-	bool ok = true;
+jeBool jeWindow_getGlOk(jeWindow* window, const char* file, unsigned line, const char* function) {
+	jeBool ok = JE_TRUE;
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
-		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
-		jeLog_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
-		ok = false;
+		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLogger_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
+		ok = JE_FALSE;
 	}
 
 	JE_MAYBE_UNUSED(window);
 
 	return ok;
 }
-bool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* file, unsigned line, const char* function) {
-	bool ok = true;
+jeBool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* file, unsigned line, const char* function) {
+	jeBool ok = JE_TRUE;
 	GLint compileStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
 	void* buffer = NULL;
@@ -112,10 +113,10 @@ bool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* f
 
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
 
-		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
-		jeLog_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
+		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLogger_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
 
-		ok = false;
+		ok = JE_FALSE;
 	}
 
 	/*cleanup:*/ {
@@ -128,8 +129,8 @@ bool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* f
 
 	return ok;
 }
-bool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* file, unsigned line, const char* function) {
-	bool ok = true;
+jeBool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* file, unsigned line, const char* function) {
+	jeBool ok = JE_TRUE;
 	GLint linkStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
 	void* buffer = NULL;
@@ -142,10 +143,10 @@ bool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* f
 
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
 
-		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
-		jeLog_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
+		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLogger_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
 
-		ok = false;
+		ok = JE_FALSE;
 	}
 
 	/*cleanup:*/ {
@@ -158,7 +159,7 @@ bool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* f
 
 	return ok;
 }
-bool jeWindow_isOpen(jeWindow* window) {
+jeBool jeWindow_isOpen(jeWindow* window) {
 	return window->open;
 }
 void jeWindow_destroy(jeWindow* window) {
@@ -217,14 +218,14 @@ void jeWindow_destroy(jeWindow* window) {
 
 	jeImage_destroy(&window->image);
 
-	window->open = false;
+	window->open = JE_FALSE;
 
-	memset(window, 0, sizeof(*window));
+	memset((void*)window, 0, sizeof(*window));
 }
-bool jeWindow_create(jeWindow* window) {
-	bool success = false;
+jeBool jeWindow_create(jeWindow* window) {
+	jeBool success = JE_FALSE;
 
-	memset(window, 0, sizeof(*window));
+	memset((void*)window, 0, sizeof(*window));
 
 	if (!jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME)) {
 		goto cleanup;
@@ -266,7 +267,7 @@ bool jeWindow_create(jeWindow* window) {
 		goto cleanup;
 	}
 
-	glewExperimental = true;
+	glewExperimental = JE_TRUE;
 	if (glewInit() != GLEW_OK) {
 		JE_ERR("jeWindow_create(): glewInit() failed");
 		goto cleanup;
@@ -353,16 +354,16 @@ bool jeWindow_create(jeWindow* window) {
 
 	glBindVertexArray(0);
 
-	window->open = true;
+	window->open = JE_TRUE;
 
-	success = true;
+	success = JE_TRUE;
 	cleanup: {
 	}
 
 	return success;
 }
 
-bool jeWindow_getInput(jeWindow* window, int inputId) {
+jeBool jeWindow_getInput(jeWindow* window, int inputId) {
 	const Uint8* keyState = SDL_GetKeyboardState(NULL);
 
 	switch (inputId) {
@@ -394,7 +395,7 @@ bool jeWindow_getInput(jeWindow* window, int inputId) {
 
 	JE_MAYBE_UNUSED(window);
 
-	return false;
+	return JE_FALSE;
 }
 unsigned jeWindow_getFramesPerSecond(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
@@ -449,7 +450,7 @@ void jeWindow_flushVertexBuffer(jeWindow* window) {
 	jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_flushVertexBuffer()");
 
 	window->vboVertexCount = 0;
-	memset(window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
+	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
 void jeWindow_drawSprite(jeWindow* window, int z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
 
@@ -570,14 +571,14 @@ void jeWindow_step(jeWindow* window) {
 		switch (event.type) {
 			case SDL_QUIT: {
 				JE_LOG("jeWindow_step(): Quit event received");
-				window->open = false;
+				window->open = JE_FALSE;
 				break;
 			}
 			case SDL_KEYUP: {
 				switch (event.key.keysym.sym) {
 					case SDLK_ESCAPE: {
 						JE_LOG("jeWindow_step(): Escape key released");
-						window->open = false;
+						window->open = JE_FALSE;
 						break;
 					}
 					default: break;

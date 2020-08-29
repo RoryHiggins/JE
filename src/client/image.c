@@ -1,5 +1,6 @@
-#include "core.h"
+#include "stdafx.h"
 #include "image.h"
+#include "debug.h"
 
 
 void jeImage_destroy(jeImage* image) {
@@ -8,13 +9,13 @@ void jeImage_destroy(jeImage* image) {
 		image->buffer = NULL;
 	}
 }
-bool jeImage_createFromFile(jeImage* image, char const* filename) {
-	bool success = false;
+jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
+	jeBool success = JE_FALSE;
 	unsigned imageSize = 0;
 	png_image pngImage;
 
-	memset(&pngImage, 0, sizeof(pngImage));
-	memset(image, 0, sizeof(*image));
+	memset((void*)&pngImage, 0, sizeof(pngImage));
+	memset((void*)image, 0, sizeof(*image));
 
 	pngImage.version = PNG_IMAGE_VERSION;
 
@@ -38,7 +39,7 @@ bool jeImage_createFromFile(jeImage* image, char const* filename) {
 
 	JE_ERR("jeImage_createFromFile(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
 
-	success = true;
+	success = JE_TRUE;
 	cleanup: {
 		png_image_free(&pngImage);
 	}
