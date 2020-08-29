@@ -8,6 +8,7 @@
 *.a
 *.obj
 *.gcda
+*j25_*.tar.gz
 
 *.sublime-project
 *.sublime-workspace

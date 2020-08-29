@@ -2,28 +2,28 @@ CC := gcc
 CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
 
 CFLAGS_DEVELOPMENT := $(CFLAGS) -Winvalid-pch -O0
-LFLAGS_DEVELOPMENT := -lluajit-5.1 -lz -lcsfml-system -lcsfml-window -lcsfml-graphics
+LFLAGS_DEVELOPMENT := -lm -lpng -ljpeg -lz `sdl2-config --static-libs` -lopengl32 -lglu32 -lglew32 -lluajit-5.1
 
-CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program
-LFLAGS_RELEASE := -mwindows -lmingw32 -static-libstdc++ -static-libgcc -Wl,-Bstatic -lz -lluajit-5.1 -Wl,-Bdynamic -lcsfml-system -lcsfml-window -lcsfml-graphics
+CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows
+LFLAGS_RELEASE := -static `sdl2-config --static-libs` -lm -lpng -ljpeg -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1 -static-libstdc++ -static-libgcc
 
-client: Makefile precompiled.h.gch src/client/*.c src/client/*.h
-	$(CC) $(CFLAGS_DEVELOPMENT) src/client/*.c $(LFLAGS_DEVELOPMENT) -o client
+bin/client: Makefile core.h.gch src/client/*.c src/client/*.h
+	$(CC) $(CFLAGS_DEVELOPMENT) src/client/main.c $(LFLAGS_DEVELOPMENT) -o bin/client
 release/client:
 	rm -rf release
 	mkdir release
-	$(CC) $(CFLAGS_RELEASE) src/client/*.c $(LFLAGS_RELEASE) -o release/client
-	cp -r src/ lib/ data/ bin/* -- release/
+	$(CC) $(CFLAGS_RELEASE) src/client/main.c $(LFLAGS_RELEASE) -o release/client
+	cp -r src/ lib/ data/ -- release/
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
-precompiled.h.gch: Makefile src/client/precompiled.h
-	$(CC) $(CFLAGS_DEVELOPMENT) src/client/precompiled.h -o precompiled.h.gch
+core.h.gch: Makefile src/client/core.h
+	$(CC) $(CFLAGS_DEVELOPMENT) src/client/core.h -o core.h.gch
 
-run: client
-	./client
+run: bin/client
+	./bin/client
 run_release: release/client
 	release/client
 clean:
-	rm -f client game_dump.sav game_save.sav precompiled.h.gch
+	rm -f bin/client game_dump.sav game_save.sav core.h.gch
 	rm -rf release
 
 .PHONY: release/client run run_release clean

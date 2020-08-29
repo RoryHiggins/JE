@@ -1,5 +1,5 @@
-#include "precompiled.h"
 #include "core.h"
+
 
 void jeLog_logPrefixImpl(const char* label, const char* file, unsigned line) {
 	fprintf(stdout, "[%s %s:%d] ", label, file, line);

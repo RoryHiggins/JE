@@ -1,5 +1,3 @@
-#include "precompiled.h"
-
 #if !defined(JE_LUA_WRAPPER_H)
 #define JE_LUA_WRAPPER_H
 

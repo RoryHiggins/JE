@@ -1,8 +1,11 @@
-#include "precompiled.h"
 #include "core.h"
-#include "window.h"
-#include "lua_wrapper.h"
-#include "client.h"
+
+/*Unity build*/
+#include "core.c"
+#include "image.c"
+#include "window.c"
+#include "lua_wrapper.c"
+#include "client.c"
 
 
 int main(int argc, char** argv) {

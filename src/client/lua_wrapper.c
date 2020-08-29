@@ -1,13 +1,11 @@
-#include "precompiled.h"
-#include "lua_wrapper.h"
 #include "core.h"
+#include "lua_wrapper.h"
 #include "window.h"
 
 /*https://www.lua.org/manual/5.3/manual.html*/
 #define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeClientBindings"
 #define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLuaClient_##BINDING_NAME}
-
 
 /*Adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
 #if LUA_VERSION_NUM < 520
@@ -224,13 +222,13 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
 	lua_getfield(lua, 2, "r");
-	r =  luaL_optnumber(lua, -1, 255.0f);
+	r =  luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 255.0f);
+	g = luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "b");
-	b =  luaL_optnumber(lua, -1, 255.0f);
+	b =  luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 255.0f);
+	a = luaL_optnumber(lua, -1, 256.0f);
 
 	lua_getfield(lua, 2, "u1");
 	u1 = luaL_checknumber(lua, -1);
@@ -266,10 +264,10 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 		goto cleanup;
 	}
 
-	x1 -= screenX1;
-	x2 -= screenX1;
-	y1 -= screenY1;
-	y2 -= screenY1;
+	x1 -= screenX1 + ((screenX2 - screenX1) / 2.0f);
+	x2 -= screenX1 + ((screenX2 - screenX1) / 2.0f);
+	y1 -= screenY1 + ((screenY2 - screenY1) / 2.0f);
+	y2 -= screenY1 + ((screenY2 - screenY1) / 2.0f);
 
 	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 
@@ -324,13 +322,13 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	luaL_checktype(lua, 2, LUA_TTABLE);
 
 	lua_getfield(lua, 2, "r");
-	r = luaL_optnumber(lua, -1, 255.0f);
+	r = luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 255.0f);
+	g = luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "b");
-	b = luaL_optnumber(lua, -1, 255.0f);
+	b = luaL_optnumber(lua, -1, 256.0f);
 	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 255.0f);
+	a = luaL_optnumber(lua, -1, 256.0f);
 
 	lua_getfield(lua, 2, "u");
 	u = luaL_checknumber(lua, -1);

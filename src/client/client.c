@@ -1,6 +1,5 @@
-#include "precompiled.h"
-#include "client.h"
 #include "core.h"
+#include "client.h"
 #include "window.h"
 #include "lua_wrapper.h"
 
@@ -22,6 +21,8 @@ void jeClient_destroy(jeClient* client) {
 	}
 
 	jeWindow_destroy(jeWindow_get());
+
+	memset(client, 0, sizeof(*client));
 }
 bool jeClient_create(jeClient* client) {
 	bool success = true;
@@ -58,7 +59,9 @@ bool jeClient_create(jeClient* client) {
 bool jeClient_run() {
 	bool success = false;
 	int luaResponse = 0;
-	jeClient client = {0};
+	jeClient client;
+
+	memset(&client, 0, sizeof(client));
 
 	JE_LOG("jeClient_run()");
 

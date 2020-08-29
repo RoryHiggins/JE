@@ -17,8 +17,8 @@ table.insert(SimulationSys.drawEvents, function()
 	local screen = SimulationSys.state.screen
 	local screenTarget = EntitySys.find("screenTarget")
 	if screenTarget then
-		screen.x = math.floor(screenTarget.x - (screen.w / 2.5))
-		screen.y = math.floor(screenTarget.y - (screen.h / 2.5))
+		screen.x = screenTarget.x - math.floor(ClientSys.width / 2)
+		screen.y = screenTarget.y - math.floor(ClientSys.height / 2)
 	end
 
 	local events = ScreenSys.drawEvents

@@ -15,17 +15,17 @@ local static = SimulationSys.static
 
 
 local defaultMaterialPhysics = {
-	["friction"] = 0.2,
-	["moveForceStrength"] = 1,
+	["friction"] = 0.1,
+	["moveForceStrength"] = 0.3,
 	["jumpForceStrength"] = 1,
 }
 static.gravityX = 0
-static.gravityY = 0.8
+static.gravityY = 0.4
 static.maxSpeed = 8
-static.physicsMaxRecursionDepth = 50
+static.physicsMaxRecursionDepth = 10
 static.materialsPhysics = {
 	["air"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {
-		["moveForceStrength"] = 0.6,
+		["moveForceStrength"] = 0.2,
 	}),
 	["solid"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
 	["water"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
@@ -157,7 +157,7 @@ function PhysicsSys.tryMoveX(entity, moveX, recursionDepth, innerMove)
 		local obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
 		while obstacle and entity.physicsCanPush and PhysicsSys.tryPushX(obstacle, signX, recursionDepth + 1) do
 			recursionDepth = recursionDepth + 1
-			entity.forceX = entity.forceX - (signX * 0.2)
+			entity.forceX = entity.forceX - (signX * 0.1)
 			obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
 			recursionDepth = recursionDepth + 1
 		end

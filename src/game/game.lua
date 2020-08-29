@@ -50,7 +50,7 @@ function GameSys.populateTestWorld()
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 500 do
+	for _ = 1, 10 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject,
 			-48 + math.floor(math.random(ClientSys.width + 96)),

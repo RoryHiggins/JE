@@ -1,5 +1,3 @@
-#include "precompiled.h"
-
 #if !defined(JE_CLIENT_H)
 #define JE_CLIENT_H
 

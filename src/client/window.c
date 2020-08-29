@@ -1,246 +1,359 @@
-#include "precompiled.h"
-#include "window.h"
 #include "core.h"
+#include "image.h"
+#include "window.h"
 
+#define JE_WINDOW_CAPTION ""
 #define JE_WINDOW_WIDTH 640
 #define JE_WINDOW_HEIGHT 480
 #define JE_WINDOW_SCALE 4
-#define JE_WINDOW_FRAME_RATE 30
-#define JE_WINDOW_SPRITES "data/sprites.png"
+#define JE_WINDOW_FRAME_RATE 60
+#define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
+#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 8192
+
+/*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
+#define JE_WINDOW_VERT_SHADER \
+	"#version 120\n" \
+	\
+	"attribute vec3 srcPos;" \
+	"attribute vec4 srcCol;" \
+	"attribute vec2 srcUv;" \
+	\
+	"varying vec4 col;" \
+	"varying vec2 uv;" \
+	\
+	"void main() {" \
+		"col = srcCol;" \
+		"uv = srcUv;" \
+		"gl_Position = vec4(srcPos, 1.0);" \
+	"}"
+#define JE_WINDOW_FRAG_SHADER \
+	"#version 120\n" \
+	\
+	"uniform sampler2D srcTexture;" \
+	\
+	"varying vec4 col;" \
+	"varying vec2 uv;" \
+	\
+	"void main() {" \
+		"gl_FragColor = texture2D(srcTexture, uv).rgba * col;" \
+	"}"
+
+static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
+static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
+static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
+static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
 
 
-typedef struct jeRenderVertexArray jeRenderVertexArray;
-typedef struct jeRenderQueue jeRenderQueue;
 
-struct jeRenderVertexArray {
-	int z;
-	sfVertexArray* vertexArray;
+typedef struct jeVertex jeVertex;
+
+struct jeVertex {
+	float x;
+	float y;
+	float z;
+
+	float r;
+	float g;
+	float b;
+	float a;
+
+	float u;
+	float v;
 };
 
-struct jeRenderQueue {
-	jeRenderVertexArray* vertexArrays;
-
-	int capacity;
-	int count;
-};
 
 struct jeWindow {
-	sfRenderWindow* window;
-	sfRenderStates renderStates;
-	sfTexture* spriteTexture;
-	jeRenderQueue renderQueue;
+	bool open;
+	Uint32 nextFrameTimeMs;
+	jeImage image;
+	SDL_Window* window;
 
-	time_t lastSecond;
-	unsigned framesThisSecond;
-	unsigned framesLastSecond;
+	SDL_GLContext context;
+	GLuint vertShader;
+	GLuint fragShader;
+	GLuint program;
+	GLuint texture;
+	GLuint vbo;
+	GLuint vao;
 
-	bool closing;
+	jeVertex vboData[JE_WINDOW_VERTEX_BUFFER_CAPACITY];
+	GLuint vboVertexCount;
 };
-
-int jeVertexArray_compare(const void* a, const void* b) {
-	return ((const jeRenderVertexArray*)a)->z - ((const jeRenderVertexArray*)b)->z;
-}
-bool jeVertexArray_create(jeRenderVertexArray* vertexArray, int z) {
-	vertexArray->z = z;
-	vertexArray->vertexArray = sfVertexArray_create();
-	sfVertexArray_setPrimitiveType(vertexArray->vertexArray, sfTriangles);
-
-	return true;
-}
-void jeVertexArray_destroy(jeRenderVertexArray* vertexArray) {
-	if (vertexArray->vertexArray != NULL) {
-		sfVertexArray_destroy(vertexArray->vertexArray);
-		vertexArray->vertexArray = NULL;
-	}
-}
-
-jeRenderVertexArray jeRenderQueue_getArray(jeRenderQueue* renderQueue, int z) {
-	jeRenderVertexArray vertexArray = {0};
-	jeRenderVertexArray* vertexArrayPtr = NULL;
-	int newCapacity = 0;
-
-	vertexArray.z = z;
-	vertexArrayPtr = (jeRenderVertexArray*)bsearch(&vertexArray, renderQueue->vertexArrays, renderQueue->count, sizeof(jeRenderVertexArray), &jeVertexArray_compare);
-
-	if (vertexArrayPtr != NULL) {
-		vertexArray = *vertexArrayPtr;
-		goto cleanup;
-	}
-
-	if (renderQueue->count >= renderQueue->capacity) {
-		newCapacity = (renderQueue->capacity * 2) + 1;
-		renderQueue->vertexArrays = (jeRenderVertexArray*)realloc((void*)renderQueue->vertexArrays, sizeof(jeRenderVertexArray) * newCapacity);
-		renderQueue->capacity = newCapacity;
-	}
-
-	jeVertexArray_create(&renderQueue->vertexArrays[renderQueue->count], z);
-	vertexArray = renderQueue->vertexArrays[renderQueue->count];
-	renderQueue->count++;
-	qsort((void*)renderQueue->vertexArrays, renderQueue->count, sizeof(jeRenderVertexArray), &jeVertexArray_compare);
-
-	cleanup: {
-	}
-
-	return vertexArray;
-}
-void jeRenderQueue_queueSprite(jeRenderQueue* renderQueue, int z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
-	jeRenderVertexArray vertexArray = jeRenderQueue_getArray(renderQueue, z);
-	size_t vertexIndex = sfVertexArray_getVertexCount(vertexArray.vertexArray);
-	sfVertex* vertex = NULL;
-	int i = 0;
-
-	sfVertexArray_resize(vertexArray.vertexArray, vertexIndex + 6);
-
-	/*
-	Render sprite via two triangles.  Triangle vertex indices are clockwise:
-
-		0  1
-		2  -
-
-		-  4
-		3  5
-	*/
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 0);
-	vertex->position.x = x1;
-	vertex->position.y = y1;
-	vertex->texCoords.x = u1;
-	vertex->texCoords.y = v1;
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 1);
-	vertex->position.x = x2;
-	vertex->position.y = y1;
-	vertex->texCoords.x = u2;
-	vertex->texCoords.y = v1;
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 2);
-	vertex->position.x = x1;
-	vertex->position.y = y2;
-	vertex->texCoords.x = u1;
-	vertex->texCoords.y = v2;
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 3);
-	vertex->position.x = x1;
-	vertex->position.y = y2;
-	vertex->texCoords.x = u1;
-	vertex->texCoords.y = v2;
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 4);
-	vertex->position.x = x2;
-	vertex->position.y = y1;
-	vertex->texCoords.x = u2;
-	vertex->texCoords.y = v1;
-
-	vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + 5);
-	vertex->position.x = x2;
-	vertex->position.y = y2;
-	vertex->texCoords.x = u2;
-	vertex->texCoords.y = v2;
-
-	for (i = 0; i < 6; i++) {
-		vertex = sfVertexArray_getVertex(vertexArray.vertexArray, vertexIndex + i);
-		vertex->color.r = r;
-		vertex->color.g = g;
-		vertex->color.b = b;
-		vertex->color.a = a;
-	}
-}
-void jeRenderQueue_draw(jeRenderQueue* renderQueue, sfRenderWindow *renderWindow, const sfRenderStates *renderStates) {
-	int i = 0;
-
-	/*draw layers back-to-front (painters algorithm)*/
-	for (i = renderQueue->count - 1; i >= 0; i--) {
-		sfRenderWindow_drawVertexArray(renderWindow, renderQueue->vertexArrays[i].vertexArray, renderStates);
-		sfVertexArray_clear(renderQueue->vertexArrays[i].vertexArray);
-	}
-}
-bool jeRenderQueue_create(jeRenderQueue* renderQueue) {
-	static const int startCapacity = 16;
-
-	renderQueue->vertexArrays = (jeRenderVertexArray*)malloc(sizeof(jeRenderVertexArray) * startCapacity);
-	renderQueue->count = 0;
-	renderQueue->capacity = startCapacity;
-
-	return true;
-}
-void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
-	int i = 0;
-
-	if (renderQueue->vertexArrays) {
-		for (i = 0; i < renderQueue->count; i++) {
-			jeVertexArray_destroy(&renderQueue->vertexArrays[i]);
-		}
-		free((void*)renderQueue->vertexArrays);
-		renderQueue->vertexArrays = NULL;
-
-		renderQueue->count = 0;
-		renderQueue->capacity = 0;
-	}
-}
 
 jeWindow* jeWindow_get() {
 	static jeWindow window;
 	return &window;
 }
+bool jeWindow_getGlOk(jeWindow* window, const char* file, unsigned line, const char* function) {
+	bool ok = true;
+	GLenum glError = GL_NO_ERROR;
+
+	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
+		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLog_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
+		ok = false;
+	}
+
+	JE_MAYBE_UNUSED(window);
+
+	return ok;
+}
+bool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* file, unsigned line, const char* function) {
+	bool ok = true;
+	GLint compileStatus = GL_FALSE;
+	GLsizei msgMaxSize = 0;
+	void* buffer = NULL;
+
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+
+	if (compileStatus == GL_FALSE) {
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgMaxSize);
+		buffer = malloc(msgMaxSize);
+
+		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
+
+		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLog_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
+
+		ok = false;
+	}
+
+	/*cleanup:*/ {
+		if (buffer != NULL) {
+			free(buffer);
+		}
+	}
+
+	JE_MAYBE_UNUSED(window);
+
+	return ok;
+}
+bool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* file, unsigned line, const char* function) {
+	bool ok = true;
+	GLint linkStatus = GL_FALSE;
+	GLsizei msgMaxSize = 0;
+	void* buffer = NULL;
+
+	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+
+	if (linkStatus == GL_FALSE) {
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgMaxSize);
+		buffer = malloc(msgMaxSize);
+
+		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
+
+		jeLog_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+		jeLog_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
+
+		ok = false;
+	}
+
+	/*cleanup:*/ {
+		if (buffer != NULL) {
+			free(buffer);
+		}
+	}
+
+	JE_MAYBE_UNUSED(window);
+
+	return ok;
+}
 bool jeWindow_isOpen(jeWindow* window) {
-	return (window->window != NULL) && (window->closing == false);
+	return window->open;
 }
 void jeWindow_destroy(jeWindow* window) {
-	JE_LOG("jeWindow_destroy()");
+	JE_MAYBE_UNUSED(window);
 
-	if (window->spriteTexture != NULL) {
-		sfTexture_destroy(window->spriteTexture);
-		window->spriteTexture = NULL;
+	if (window->vao != 0) {
+		glBindVertexArray(window->vao);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDeleteVertexArrays(1, &window->vao);
+		window->vao = 0;
+	}
+
+	glBindVertexArray(0);
+
+	if (window->vbo != 0) {
+		glDeleteBuffers(1, &window->vbo);
+		window->vbo = 0;
+	}
+
+	if (window->texture != 0) {
+		glDeleteTextures(1, &window->texture);
+		window->texture = 0;
+	}
+
+	if (window->program != 0) {
+		glDetachShader(window->program, window->fragShader);
+		glDetachShader(window->program, window->vertShader);
+		glDeleteProgram(window->program);
+		window->program = 0;
+	}
+
+	if (window->fragShader != 0) {
+		glDeleteShader(window->fragShader);
+		window->fragShader = 0;
+	}
+
+	if (window->vertShader != 0) {
+		glDeleteShader(window->vertShader);
+		window->vertShader = 0;
+	}
+
+	if (window->context != NULL) {
+		SDL_GL_DeleteContext(window->context);
+		window->context = NULL;
 	}
 
 	if (window->window != NULL) {
-		sfRenderWindow_destroy(window->window);
+		SDL_DestroyWindow(window->window);
 		window->window = NULL;
 	}
+
+	SDL_Quit();
+
+	jeImage_destroy(&window->image);
+
+	window->open = false;
+
+	memset(window, 0, sizeof(*window));
 }
 bool jeWindow_create(jeWindow* window) {
 	bool success = false;
-	sfVideoMode videoMode = {0};
 
-	JE_LOG("jeWindow_create()");
+	memset(window, 0, sizeof(*window));
 
-	videoMode.width = JE_WINDOW_WIDTH;
-	videoMode.height = JE_WINDOW_HEIGHT;
-	videoMode.bitsPerPixel = 32;
+	if (!jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME)) {
+		goto cleanup;
+	}
 
-	memset((void*)window, 0, sizeof(*window));
+	if (SDL_Init(SDL_INIT_VIDEO)) {
+		JE_ERR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
+		goto cleanup;
+	}
 
-	window->window = sfRenderWindow_create(videoMode, "", sfTitlebar | sfClose, NULL);
+	/*SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);*/
+
+	/*FOR RENDERDOC TESTING ONLY*/
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+	window->window = SDL_CreateWindow(
+		JE_WINDOW_CAPTION,
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		JE_WINDOW_WIDTH,
+		JE_WINDOW_HEIGHT,
+		/*flags*/ SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL
+	);
 	if (window->window == NULL) {
-		JE_ERR("jeWindow_create(): sfRenderWindow_create() failed");
+		JE_ERR("jeWindow_create(): SDL_CreateWindow() failed with error=%s", SDL_GetError());
 		goto cleanup;
 	}
 
-	sfRenderWindow_setFramerateLimit(window->window, JE_WINDOW_FRAME_RATE);
-	sfRenderWindow_clear(window->window, sfWhite);
-
-	window->renderStates.blendMode = sfBlendAlpha;
-	window->renderStates.transform = sfTransform_Identity;
-	window->renderStates.texture = NULL;
-	window->renderStates.shader = NULL;
-	sfTransform_scale(&window->renderStates.transform, (float)JE_WINDOW_SCALE, (float)JE_WINDOW_SCALE);
-
-	window->spriteTexture = sfTexture_createFromFile(JE_WINDOW_SPRITES, /*area*/ NULL);
-	if (window->spriteTexture == NULL) {
-		JE_ERR("jeWindow_create(): sfTexture_createFromFile() failed");
-		goto cleanup;
-	}
-	window->renderStates.texture = window->spriteTexture;
-
-	if (jeRenderQueue_create(&window->renderQueue) == false) {
+	window->context = SDL_GL_CreateContext(window->window);
+	if (window->context == 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_CreateContext() failed with error=%s", SDL_GetError());
 		goto cleanup;
 	}
 
-	time(&window->lastSecond);
-	window->framesThisSecond = 0;
-	window->framesLastSecond = 0;
+	if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
+		goto cleanup;
+	}
 
-	window->closing = false;
+	glewExperimental = true;
+	if (glewInit() != GLEW_OK) {
+		JE_ERR("jeWindow_create(): glewInit() failed");
+		goto cleanup;
+	}
+
+	if (SDL_GL_SetSwapInterval(1) < 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
+	}
+
+	glDisable(GL_DEPTH_TEST);
+	/*glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);*/
+	glDisable(GL_CULL_FACE);
+	glViewport(0, 0, JE_WINDOW_WIDTH, JE_WINDOW_HEIGHT);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	window->vertShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(window->vertShader, 1, &jeWindow_vertShaderPtr, &jeWindow_vertShaderSize);
+	glCompileShader(window->vertShader);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")
+		|| !jeWindow_getShaderCompiledOk(window, window->vertShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	window->fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(window->fragShader, 1, &jeWindow_fragShaderPtr, &jeWindow_fragShaderSize);
+	glCompileShader(window->fragShader);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")
+		|| !jeWindow_getShaderCompiledOk(window, window->fragShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	window->program = glCreateProgram();
+	glAttachShader(window->program, window->vertShader);
+	glAttachShader(window->program, window->fragShader);
+	glBindAttribLocation(window->program, 0, "srcPos");
+	glBindAttribLocation(window->program, 1, "srcCol");
+	glBindAttribLocation(window->program, 2, "srcUv");
+	glLinkProgram(window->program);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")
+		|| !jeWindow_getProgramLinkedOk(window, window->program, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glGenTextures(1, &window->texture);
+	glBindTexture(GL_TEXTURE_2D, window->texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window->image.width, window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glGenBuffers(1, &window->vbo);
+
+	glGenVertexArrays(1, &window->vao);
+
+	glBindVertexArray(window->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, window->vbo);
+	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)0);
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(3 * sizeof(GLfloat)));
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(7 * sizeof(GLfloat)));
+	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		goto cleanup;
+	}
+
+	glBindVertexArray(0);
+
+	window->open = true;
 
 	success = true;
 	cleanup: {
@@ -248,58 +361,34 @@ bool jeWindow_create(jeWindow* window) {
 
 	return success;
 }
-void jeWindow_step(jeWindow* window) {
-	sfEvent event;
-	time_t timeNow = 0;
 
-	while (sfRenderWindow_pollEvent(window->window, &event)) {
-		if (event.type == sfEvtClosed) {
-			window->closing = true;
-		}
-	}
-
-	if (sfKeyboard_isKeyPressed(sfKeyEscape)) {
-		window->closing = true;
-	}
-
-	jeRenderQueue_draw(&window->renderQueue, window->window, &window->renderStates);
-
-	sfRenderWindow_display(window->window);
-	sfRenderWindow_clear(window->window, sfWhite);
-
-	window->framesThisSecond++;
-	time(&timeNow);
-	if (difftime(timeNow, window->lastSecond) >= 1.0) {
-		window->lastSecond = timeNow;
-		window->framesLastSecond = window->framesThisSecond;
-		window->framesThisSecond = 0;
-	}
-}
 bool jeWindow_getInput(jeWindow* window, int inputId) {
+	const Uint8* keyState = SDL_GetKeyboardState(NULL);
+
 	switch (inputId) {
 		case JE_INPUT_LEFT: {
-			return sfKeyboard_isKeyPressed(sfKeyLeft) || sfKeyboard_isKeyPressed(sfKeyA);
+			return keyState[SDL_GetScancodeFromKey(SDLK_LEFT)] || keyState[SDL_GetScancodeFromKey(SDLK_a)];
 		}
 		case JE_INPUT_RIGHT: {
-			return sfKeyboard_isKeyPressed(sfKeyRight) || sfKeyboard_isKeyPressed(sfKeyD);
+			return keyState[SDL_GetScancodeFromKey(SDLK_RIGHT)] || keyState[SDL_GetScancodeFromKey(SDLK_d)];
 		}
 		case JE_INPUT_UP: {
-			return sfKeyboard_isKeyPressed(sfKeyUp) || sfKeyboard_isKeyPressed(sfKeyW);
+			return keyState[SDL_GetScancodeFromKey(SDLK_UP)] || keyState[SDL_GetScancodeFromKey(SDLK_w)];
 		}
 		case JE_INPUT_DOWN: {
-			return sfKeyboard_isKeyPressed(sfKeyDown) || sfKeyboard_isKeyPressed(sfKeyS);
+			return keyState[SDL_GetScancodeFromKey(SDLK_DOWN)] || keyState[SDL_GetScancodeFromKey(SDLK_s)];
 		}
 		case JE_INPUT_A: {
-			return sfKeyboard_isKeyPressed(sfKeyEnter) || sfKeyboard_isKeyPressed(sfKeyZ);
+			return keyState[SDL_GetScancodeFromKey(SDLK_RETURN)] || keyState[SDL_GetScancodeFromKey(SDLK_z)];
 		}
 		case JE_INPUT_B: {
-			return sfKeyboard_isKeyPressed(sfKeyBackspace) || sfKeyboard_isKeyPressed(sfKeyX);
+			return keyState[SDL_GetScancodeFromKey(SDLK_BACKSPACE)] || keyState[SDL_GetScancodeFromKey(SDLK_x)];
 		}
 		case JE_INPUT_X: {
-			return sfKeyboard_isKeyPressed(sfKeyC);
+			return keyState[SDL_GetScancodeFromKey(SDLK_c)];
 		}
 		case JE_INPUT_Y: {
-			return sfKeyboard_isKeyPressed(sfKeyC);
+			return keyState[SDL_GetScancodeFromKey(SDLK_v)];
 		}
 	}
 
@@ -308,9 +397,196 @@ bool jeWindow_getInput(jeWindow* window, int inputId) {
 	return false;
 }
 unsigned jeWindow_getFramesPerSecond(jeWindow* window) {
-	return window->framesLastSecond;
+	JE_MAYBE_UNUSED(window);
+
+	return 0;
+}
+void jeWindow_flushVertexBuffer(jeWindow* window) {
+	/*TODO remove temp testing*/
+	/*window->vboVertexCount = 0;
+	window->vboData[window->vboVertexCount].x = -1.0f;
+	window->vboData[window->vboVertexCount].y = -1.0f;
+	window->vboData[window->vboVertexCount].z = 0.0f;
+	window->vboData[window->vboVertexCount].r = 1.0f;
+	window->vboData[window->vboVertexCount].g = 1.0f;
+	window->vboData[window->vboVertexCount].b = 1.0f;
+	window->vboData[window->vboVertexCount].a = 1.0f;
+	window->vboData[window->vboVertexCount].u = 0.0f;
+	window->vboData[window->vboVertexCount].v = 0.0f;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = 1.0f;
+	window->vboData[window->vboVertexCount].y = -1.0f;
+	window->vboData[window->vboVertexCount].z = 0.0f;
+	window->vboData[window->vboVertexCount].r = 1.0f;
+	window->vboData[window->vboVertexCount].g = 1.0f;
+	window->vboData[window->vboVertexCount].b = 1.0f;
+	window->vboData[window->vboVertexCount].a = 1.0f;
+	window->vboData[window->vboVertexCount].u = 0.0f;
+	window->vboData[window->vboVertexCount].v = 0.0f;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = -1.0f;
+	window->vboData[window->vboVertexCount].y = 1.0f;
+	window->vboData[window->vboVertexCount].z = 0.0f;
+	window->vboData[window->vboVertexCount].r = 1.0f;
+	window->vboData[window->vboVertexCount].g = 1.0f;
+	window->vboData[window->vboVertexCount].b = 1.0f;
+	window->vboData[window->vboVertexCount].a = 1.0f;
+	window->vboData[window->vboVertexCount].u = 0.0f;
+	window->vboData[window->vboVertexCount].v = 0.0f;
+	window->vboVertexCount++;*/
+
+	glUseProgram(window->program);
+	glBindVertexArray(window->vao);
+
+	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLES, 0, window->vboVertexCount);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_flushVertexBuffer()");
+
+	window->vboVertexCount = 0;
+	memset(window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
 void jeWindow_drawSprite(jeWindow* window, int z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
-	jeRenderQueue_queueSprite(&window->renderQueue, z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
-}
 
+	static const GLuint spriteVertexCount = 6;
+	static const float scaleX = (2.0f * (float)JE_WINDOW_SCALE) / (float)JE_WINDOW_WIDTH;
+	static const float scaleY = (2.0f * (float)JE_WINDOW_SCALE) / (float)JE_WINDOW_HEIGHT;
+
+	if ((window->vboVertexCount + spriteVertexCount) >= JE_WINDOW_VERTEX_BUFFER_CAPACITY) {
+		jeWindow_flushVertexBuffer(window);
+	}
+
+	/* Render sprites as two clockwise triangles:
+		0 1   - 4
+		2 -   3 5
+	*/
+
+	x1 = (x1 * scaleX);
+	x2 = (x2 * scaleX);
+	y1 = (-y1 * scaleY);
+	y2 = (-y2 * scaleY);
+	r = r / 256.0f;
+	g = g / 256.0f;
+	b = b / 256.0f;
+	a = a / 256.0f;
+	u1 = u1 / (float)window->image.width;
+	u2 = u2 / (float)window->image.width;
+	v1 = v1 / (float)window->image.height;
+	v2 = v2 / (float)window->image.height;
+
+	window->vboData[window->vboVertexCount].x = x1;
+	window->vboData[window->vboVertexCount].y = y1;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u1;
+	window->vboData[window->vboVertexCount].v = v1;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = x2;
+	window->vboData[window->vboVertexCount].y = y1;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u2;
+	window->vboData[window->vboVertexCount].v = v1;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = x1;
+	window->vboData[window->vboVertexCount].y = y2;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u1;
+	window->vboData[window->vboVertexCount].v = v2;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = x1;
+	window->vboData[window->vboVertexCount].y = y2;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u1;
+	window->vboData[window->vboVertexCount].v = v2;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = x2;
+	window->vboData[window->vboVertexCount].y = y1;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u2;
+	window->vboData[window->vboVertexCount].v = v1;
+	window->vboVertexCount++;
+
+	window->vboData[window->vboVertexCount].x = x2;
+	window->vboData[window->vboVertexCount].y = y2;
+	window->vboData[window->vboVertexCount].z = z;
+	window->vboData[window->vboVertexCount].r = r;
+	window->vboData[window->vboVertexCount].g = g;
+	window->vboData[window->vboVertexCount].b = b;
+	window->vboData[window->vboVertexCount].a = a;
+	window->vboData[window->vboVertexCount].u = u2;
+	window->vboData[window->vboVertexCount].v = v2;
+	window->vboVertexCount++;
+}
+void jeWindow_step(jeWindow* window) {
+	/*Wait for frame start time*/
+	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
+
+	SDL_Event event;
+	Uint32 timeMs = SDL_GetTicks();
+
+	jeWindow_flushVertexBuffer(window);
+	SDL_GL_SwapWindow(window->window);
+
+	if ((timeMs + 1) < window->nextFrameTimeMs) {
+		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
+		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
+			window->nextFrameTimeMs = timeMs + frameTimeMs;
+		}
+
+		SDL_Delay(frameTimeMs - 1);
+		timeMs = SDL_GetTicks();
+	}
+	window->nextFrameTimeMs = timeMs + frameTimeMs;
+	
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+			case SDL_QUIT: {
+				JE_LOG("jeWindow_step(): Quit event received");
+				window->open = false;
+				break;
+			}
+			case SDL_KEYUP: {
+				switch (event.key.keysym.sym) {
+					case SDLK_ESCAPE: {
+						JE_LOG("jeWindow_step(): Escape key released");
+						window->open = false;
+						break;
+					}
+					default: break;
+				}
+				break;
+			}
+		}
+	}
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}

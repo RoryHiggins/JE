@@ -17,9 +17,12 @@ PlayerSys.template = TemplateSys.add("player", {
 	["h"] = 6,
 	["spriteId"] = "playerRight",
 	["playerJumpFramesCur"] = 0,
-	["playerJumpForce"] = 5,
-	["playerJumpFrameForce"] = 0.7,
-	["playerJumpFrames"] = 15,
+	["playerJumpForce"] = 3,
+	["playerJumpFrameForce"] = 0.5,
+	["playerJumpFrames"] = 10,
+	["playerTargetMovementSpeed"] = 3,
+	["playerBelowTargetMovementSpeedMultiplier"] = 2,
+	["playerChangeDirForceMultiplier"] = 1.5,
 	["playerMoveForce"] = 0.6,
 	["physicsCanPush"] = true,
 	["physicsCanCarry"] = true,
@@ -45,6 +48,13 @@ function PlayerSys.tickEntity(entity)
 
 	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
 	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
+
+	if moveDirX ~= UtilSys.sign(entity.speedX) then
+		moveForceX = moveForceX * entity.playerChangeDirForceMultiplier
+	end
+	if moveDirY ~= UtilSys.sign(entity.speedY) then
+		moveForceY = moveForceY * entity.playerChangeDirForceMultiplier
+	end
 
 	entity.forceX = entity.forceX + moveForceX
 	entity.forceY = entity.forceY + moveForceY
