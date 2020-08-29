@@ -74,7 +74,8 @@ function PhysicsSys.getCarryablesRecursive(entity, outCarryables, recursionDepth
 		return outCarryables
 	end
 
-	local candidates = EntitySysFindAllRelative(entity, 0, -UtilSysSign(static.physicsGravityY), "physicsCarryable")
+	local candidates = EntitySysFindAllRelative(
+		entity, -UtilSysSign(static.physicsGravityX), -UtilSysSign(static.physicsGravityY), "physicsCarryable")
 	local candidatesCount = #candidates
 
 	for i = 1, candidatesCount do
@@ -114,7 +115,7 @@ function PhysicsSys.tryPushX(entity, signX, recursionDepth)
 
 	PhysicsSys.stopX(entity)
 
-	if not PhysicsSys.tryMoveX(entity, signX, recursionDepth + 1, true) then
+	if not PhysicsSys.tryMoveX(entity, signX, recursionDepth + 1, (recursionDepth ~= 1)) then
 		return false
 	end
 
@@ -136,7 +137,7 @@ function PhysicsSys.tryPushY(entity, signY, recursionDepth)
 
 	PhysicsSys.stopY(entity)
 
-	if not PhysicsSys.tryMoveY(entity, signY, recursionDepth + 1, true) then
+	if not PhysicsSys.tryMoveY(entity, signY, recursionDepth + 1, (recursionDepth ~= 1)) then
 		return false
 	end
 
