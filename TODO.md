@@ -1,6 +1,4 @@
 
-Game should require() engine files directly (no EngineSys indirection)
-
 Editor thoughts: keyboard+mouse focused
 - 2x or maybe even 1x scale
 - Mouse wheel to zoom

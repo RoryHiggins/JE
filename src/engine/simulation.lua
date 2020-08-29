@@ -11,20 +11,8 @@ SimulationSys.stepEvents = {}
 SimulationSys.drawEvents = {}
 SimulationSys.state = {}
 SimulationSys.static = {}
-SimulationSys.inputs = {
-	["left"] = false,
-	["right"] = false,
-	["up"] = false,
-	["down"] = false,
-
-	["a"] = false,
-	["b"] = false,
-
-	["x"] = false,
-	["y"] = false,
-}
 function SimulationSys.isRunning()
-	return SimulationSys.state.created and ClientSys.isRunning()
+	return SimulationSys.state.running and ClientSys.state.running
 end
 function SimulationSys.step()
 	local events = SimulationSys.stepEvents
@@ -34,8 +22,6 @@ function SimulationSys.step()
 	end
 
 	SimulationSys.draw()
-
-	ClientSys.updateInputs(SimulationSys.inputs)
 end
 function SimulationSys.draw()
 	local events = SimulationSys.drawEvents
@@ -47,7 +33,7 @@ end
 function SimulationSys.destroy()
 	UtilSys.log("SimulationSys.destroy()")
 
-	if not SimulationSys.state.created then
+	if not SimulationSys.state.running then
 		return
 	end
 
@@ -60,13 +46,13 @@ function SimulationSys.destroy()
 	end
 end
 function SimulationSys.create()
-	if SimulationSys.state.created then
+	if SimulationSys.state.running then
 		SimulationSys.destroy()
 	end
 
 	UtilSys.log("SimulationSys.create()")
 
-	SimulationSys.state.created = true
+	SimulationSys.state.running = true
 	SimulationSys.state.saveVersion = SimulationSys.SAVE_VERSION
 
 	for _, event in pairs(SimulationSys.createEvents) do

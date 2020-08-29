@@ -130,59 +130,54 @@ int jeLuaClient_readData(lua_State* lua) {
 	
 	return numResponses;
 }
-int jeLuaClient_isRunning(lua_State* lua) {
-	lua_pushboolean(lua, jeWindow_isOpen(jeWindow_get()));
-	return 1;
-}
 int jeLuaClient_step(lua_State* lua) {
-	jeWindow_step(jeWindow_get());
-
-	JE_MAYBE_UNUSED(lua);
-
-	return 0;
-}
-int jeLuaClient_updateInputs(lua_State* lua) {
 	jeWindow* window = jeWindow_get();
+
+	jeWindow_step(window);
 
 	luaL_checktype(lua, 1, LUA_TTABLE);
 
-	lua_pushstring(lua, "left");
+	lua_pushstring(lua, "running");
+	lua_pushboolean(lua, jeWindow_isOpen(window));
+	lua_settable(lua, 1);
+
+	lua_pushstring(lua, "fps");
+	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
+	lua_settable(lua, 1);
+
+	lua_pushstring(lua, "inputLeft");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "right");
+	lua_pushstring(lua, "inputRight");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "up");
+	lua_pushstring(lua, "inputUp");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "down");
+	lua_pushstring(lua, "inputDown");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "a");
+	lua_pushstring(lua, "inputA");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "b");
+	lua_pushstring(lua, "inputB");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "x");
+	lua_pushstring(lua, "inputX");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
 	lua_settable(lua, 1);
 
-	lua_pushstring(lua, "y");
+	lua_pushstring(lua, "inputY");
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
 	lua_settable(lua, 1);
 
 	return 0;
-}
-int jeLuaClient_getCurrentFPS(lua_State* lua) {
-	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(jeWindow_get()));
-	return 1;
 }
 int jeLuaClient_drawSprite(lua_State* lua) {
 	int halfWindowWidth = 0;
@@ -429,11 +424,8 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 }*/
 jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	static const luaL_Reg clientBindings[] = {
-		JE_LUA_CLIENT_BINDING(isRunning),
 		JE_LUA_CLIENT_BINDING(step),
 		JE_LUA_CLIENT_BINDING(drawSprite),
-		JE_LUA_CLIENT_BINDING(updateInputs),
-		JE_LUA_CLIENT_BINDING(getCurrentFPS),
 		JE_LUA_CLIENT_BINDING(readData),
 		JE_LUA_CLIENT_BINDING(writeData),
 		{NULL, NULL}  /*sentinel value*/

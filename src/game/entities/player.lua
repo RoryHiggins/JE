@@ -1,4 +1,5 @@
 local UtilSys = require("src/engine/util")
+local ClientSys = require("src/engine/client")
 local SimulationSys = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 local SpriteSys = require("src/engine/sprite")
@@ -38,8 +39,8 @@ PlayerSys.template = TemplateSys.add("player", {
 function PlayerSys.tickEntity(entity)
 	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
 
-	local inputDirX = UtilSys.boolToNumber(SimulationSys.inputs.right) - UtilSys.boolToNumber(SimulationSys.inputs.left)
-	local inputDirY = UtilSys.boolToNumber(SimulationSys.inputs.down) - UtilSys.boolToNumber(SimulationSys.inputs.up)
+	local inputDirX = UtilSys.boolToNumber(ClientSys.state.inputRight) - UtilSys.boolToNumber(ClientSys.state.inputLeft)
+	local inputDirY = UtilSys.boolToNumber(ClientSys.state.inputDown) - UtilSys.boolToNumber(ClientSys.state.inputUp)
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
 	local gravityLength = math.sqrt((static.gravityX * static.gravityX) + (static.gravityY * static.gravityY))

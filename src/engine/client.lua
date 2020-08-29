@@ -32,12 +32,6 @@ function HeadlessClientMetatable.__index()
 end
 
 local HeadlessClientSys = setmetatable({}, HeadlessClientMetatable)
-function HeadlessClientSys.isRunning()
-	return false
-end
-function HeadlessClientSys.getCurrentFPS()
-	return 0
-end
 function HeadlessClientSys.writeData(filename, dataStr)
 	return writeDataUncompressed(filename, dataStr)
 end
@@ -50,9 +44,24 @@ end
 local ClientSys = jeClientBindings or HeadlessClientSys  -- luacheck: globals jeClientBindings
 ClientSys.writeDataUncompressed = writeDataUncompressed
 ClientSys.readDataUncompressed = readDataUncompressed
+ClientSys.state = {
+	["running"] = false,
+	["fps"] = 0,
+	["inputLeft"] = false,
+	["inputRight"] = false,
+	["inputUp"] = false,
+	["inputDown"] = false,
+	["inputA"] = false,
+	["inputB"] = false,
+	["inputX"] = false,
+	["inputY"] = false,
+}
 function ClientSys.runTests()
-	ClientSys.isRunning()
-	ClientSys.step()
+	ClientSys.writeData("ClientSysTestFile", "")
+	assert(ClientSys.readData("ClientSysTestFile") == "")
+	os.remove("ClientSysTestFile")
+
+	ClientSys.step(ClientSys.state)
 end
 
 return ClientSys

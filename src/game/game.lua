@@ -100,10 +100,10 @@ function GameSys.create()
 	GameSys.populateTestWorld()
 end
 function GameSys.step()
-	ClientSys.step()
+	ClientSys.step(ClientSys.state)
 	SimulationSys.step()
 
-	if SimulationSys.inputs.x then
+	if ClientSys.state.inputX then
 		GameSys.create()
 	end
 end
