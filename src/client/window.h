@@ -20,8 +20,10 @@ jeBool jeWindow_isOpen(jeWindow* window);
 void jeWindow_destroy(jeWindow* window);
 jeBool jeWindow_create(jeWindow* window);
 void jeWindow_step(jeWindow* window);
+int jeWindow_getWidth(jeWindow* window);
+int jeWindow_getHeight(jeWindow* window);
 jeBool jeWindow_getInput(jeWindow* window, int inputId);
-unsigned jeWindow_getFramesPerSecond(jeWindow* window);
+int jeWindow_getFramesPerSecond(jeWindow* window);
 void jeWindow_drawSprite(jeWindow* window, int z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2);
 
 #endif

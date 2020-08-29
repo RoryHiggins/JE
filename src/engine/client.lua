@@ -48,8 +48,6 @@ end
 
 -- injected by the c client in main.c:jeGame_registerLuaClientBindings()
 local ClientSys = jeClientBindings or HeadlessClientSys  -- luacheck: globals jeClientBindings
-ClientSys.width = 160  -- TODO find a better way to store/accessing this
-ClientSys.height = 120
 ClientSys.writeDataUncompressed = writeDataUncompressed
 ClientSys.readDataUncompressed = readDataUncompressed
 function ClientSys.runTests()

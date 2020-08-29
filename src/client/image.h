@@ -8,8 +8,8 @@ typedef struct jeImage jeImage;
 
 struct jeImage {
 	void* buffer;
-	unsigned width;
-	unsigned height;
+	int width;
+	int height;
 };
 
 void jeImage_destroy(jeImage* image);

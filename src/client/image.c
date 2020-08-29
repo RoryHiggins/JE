@@ -11,7 +11,7 @@ void jeImage_destroy(jeImage* image) {
 }
 jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
 	jeBool success = JE_FALSE;
-	unsigned imageSize = 0;
+	int imageSize = 0;
 	png_image pngImage;
 
 	memset((void*)&pngImage, 0, sizeof(pngImage));

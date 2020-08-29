@@ -185,7 +185,12 @@ int jeLuaClient_getCurrentFPS(lua_State* lua) {
 	return 1;
 }
 int jeLuaClient_drawSprite(lua_State* lua) {
+	int halfWindowWidth = 0;
+	int halfWindowHeight = 0;
+
 	/*screen*/
+	float screenOriginX = 0.0f;
+	float screenOriginY = 0.0f;
 	float screenX1 = 0.0f;
 	float screenY1 = 0.0f;
 	float screenX2 = 0.0f;
@@ -209,16 +214,20 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	float y2 = 0.0f;
 	int z = 0;
 
+	halfWindowWidth = jeWindow_getWidth(jeWindow_get()) / 2;
+	halfWindowHeight = jeWindow_getHeight(jeWindow_get()) / 2;
+
 	/*screen*/
 	luaL_checktype(lua, 3, LUA_TTABLE);
 	lua_getfield(lua, 3, "x");
-	screenX1 = luaL_checknumber(lua, -1);
+	screenOriginX = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 3, "y");
-	screenY1 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "w");
-	screenX2 = screenX1 + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "h");
-	screenY2 = screenY1 + luaL_checknumber(lua, -1);
+	screenOriginY = luaL_checknumber(lua, -1);
+
+	screenX1 = screenOriginX - halfWindowWidth;
+	screenY1 = screenOriginY - halfWindowHeight;
+	screenX2 = screenOriginX + halfWindowWidth;
+	screenY2 = screenOriginY + halfWindowHeight;
 
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
@@ -265,10 +274,10 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 		goto cleanup;
 	}
 
-	x1 -= screenX1 + ((screenX2 - screenX1) / 2.0f);
-	x2 -= screenX1 + ((screenX2 - screenX1) / 2.0f);
-	y1 -= screenY1 + ((screenY2 - screenY1) / 2.0f);
-	y2 -= screenY1 + ((screenY2 - screenY1) / 2.0f);
+	x1 -= screenOriginX;
+	x2 -= screenOriginX;
+	y1 -= screenOriginY;
+	y2 -= screenOriginY;
 
 	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 
@@ -277,14 +286,14 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 
 	return 0;
 }
-int jeLuaClient_drawSpriteText(lua_State* lua) {
-	/*screen*/
+/*int jeLuaClient_drawSpriteText(lua_State* lua) {
+	/#*screen*#/
 	float screenX1 = 0.0f;
 	float screenY1 = 0.0f;
 	float screenX2 = 0.0f;
 	float screenY2 = 0.0f;
 
-	/*font*/
+	/#*font*#/
 	float r = 0.0f;
 	float g = 0.0f;
 	float b = 0.0f;
@@ -299,7 +308,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	const char* charFirst = "\0";
 	const char* charLast = "\0";
 
-	/*text*/
+	/#*text*#/
 	float x1 = 0.0f;
 	float y1 = 0.0f;
 	float x2 = 0.0f;
@@ -307,7 +316,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	int z = 0;
 	const char* text = "";
 
-	/*screen*/
+	/#*screen*#/
 	luaL_checktype(lua, 3, LUA_TTABLE);
 
 	lua_getfield(lua, 3, "x");
@@ -319,7 +328,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	lua_getfield(lua, 3, "h");
 	screenY2 = screenY1 + luaL_checknumber(lua, -1);
 
-	/*font*/
+	/#*font*#/
 	luaL_checktype(lua, 2, LUA_TTABLE);
 
 	lua_getfield(lua, 2, "r");
@@ -348,7 +357,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	lua_getfield(lua, 2, "charColumns");
 	charColumns = luaL_checknumber(lua, -1);
 
-	/*render object*/
+	/#*render object*#/
 	luaL_checktype(lua, 1, LUA_TTABLE);
 
 	lua_getfield(lua, 1, "x");
@@ -380,16 +389,16 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	y1 -= screenY1;
 	y2 -= screenY1;
 
-	/*TODO*/
-	/*jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);*/
+	/#*TODO*#/
+	/#*jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);*#/
 
-	/*screen*/
+	/#*screen*#/
 	JE_MAYBE_UNUSED(screenX1);
 	JE_MAYBE_UNUSED(screenY1);
 	JE_MAYBE_UNUSED(screenX2);
 	JE_MAYBE_UNUSED(screenY2);
 
-	/*font*/
+	/#*font*#/
 	JE_MAYBE_UNUSED(r);
 	JE_MAYBE_UNUSED(g);
 	JE_MAYBE_UNUSED(b);
@@ -404,7 +413,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	JE_MAYBE_UNUSED(charLast);
 	JE_MAYBE_UNUSED(charColumns);
 
-	/*text*/
+	/#*text*#/
 	JE_MAYBE_UNUSED(x1);
 	JE_MAYBE_UNUSED(y1);
 	JE_MAYBE_UNUSED(x2);
@@ -417,7 +426,7 @@ int jeLuaClient_drawSpriteText(lua_State* lua) {
 	}
 
 	return 0;
-}
+}*/
 jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	static const luaL_Reg clientBindings[] = {
 		JE_LUA_CLIENT_BINDING(isRunning),

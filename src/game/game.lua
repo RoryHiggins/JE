@@ -23,15 +23,22 @@ function GameSys.populateTestWorld()
 
 	-- step floors
 	for i = 1, 7 do
-		TemplateSys.instantiate("wall", -48 + ((i - 1) * 32), -48 + ((i - 1) * 32), 48, 8)
+		local x = -48 + ((i - 1) * 32)
+		local y = -48 + ((i - 1) * 32)
+		SpriteSys.attach(TemplateSys.instantiate("wall", x, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalLeft"))
+		SpriteSys.attach(TemplateSys.instantiate("wall", x + 8, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalMid"))
+		SpriteSys.attach(TemplateSys.instantiate("wall", x + 16, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalMid"))
+		SpriteSys.attach(TemplateSys.instantiate("wall", x + 24, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalRight"))
 	end
 
 	-- side walls
-	TemplateSys.instantiate("wall", -64, -64, 8, ClientSys.height + 128)
-	TemplateSys.instantiate("wall", ClientSys.width + 56, -64, 8, ClientSys.height + 128)
+	local levelWidth = 160
+	local levelHeight = 120
+	TemplateSys.instantiate("wall", -64, -64, 8, levelHeight + 128)
+	TemplateSys.instantiate("wall", levelWidth + 56, -64, 8, levelHeight + 128)
 
-	TemplateSys.instantiate("wall", -64, -64, ClientSys.width + 128, 8)
-	TemplateSys.instantiate("wall", -64, ClientSys.height + 56, ClientSys.width + 128, 8)
+	TemplateSys.instantiate("wall", -64, -64, levelWidth + 128, 8)
+	TemplateSys.instantiate("wall", -64, levelHeight + 56, levelWidth + 128, 8)
 
 	SpriteSys.addSprite("physicsObject", 1, 10, 6, 6)
 	TemplateSys.add("physicsObject", {
@@ -53,8 +60,8 @@ function GameSys.populateTestWorld()
 	for _ = 1, 10 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject,
-			-48 + math.floor(math.random(ClientSys.width + 96)),
-			-48 + math.floor(math.random(ClientSys.height + 96)), 6, 6)
+			-48 + math.floor(math.random(levelWidth + 96)),
+			-48 + math.floor(math.random(levelHeight + 96)), 6, 6)
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
 		if EntitySys.findRelative(physicsObject, 0, 0, "solid") or EntitySys.findRelative(physicsObject, 0, 0, "player") then

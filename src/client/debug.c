@@ -2,7 +2,7 @@
 #include "debug.h"
 
 
-void jeLogger_logPrefixImpl(const char* label, const char* file, unsigned line) {
+void jeLogger_logPrefixImpl(const char* label, const char* file, int line) {
 	fprintf(stdout, "[%s %s:%d] ", label, file, line);
 }
 void jeLogger_logImpl(const char* formatStr, ...) {

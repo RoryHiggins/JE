@@ -15,7 +15,7 @@
 #endif
 
 
-void jeLogger_logPrefixImpl(const char* label, const char* file, unsigned line);
+void jeLogger_logPrefixImpl(const char* label, const char* file, int line);
 void jeLogger_logImpl(const char* formatStr, ...);
 void jeLogger_discardLogImpl(const char* formatStr, ...);
 
