@@ -18,13 +18,13 @@ PlayerSys.template = TemplateSys.add("player", {
 	["h"] = 6,
 	["spriteId"] = "playerRight",
 	["playerJumpFramesCur"] = 0,
-	["playerJumpForce"] = 3,
+	["playerJumpForce"] = 4,
 	["playerJumpFrameForce"] = 0.5,
-	["playerJumpFrames"] = 16,
-	["playerTargetMovementSpeed"] = 3,
-	["playerBelowTargetMovementSpeedMultiplier"] = 2,
-	["playerChangeDirForceMultiplier"] = 1.5,
-	["playerMoveForce"] = 0.6,
+	["playerJumpFrames"] = 12,
+	["playerMoveForce"] = 0.25,
+	["playerChangeDirForceMultiplier"] = 0.8,
+	["playerTargetMovementSpeed"] = 2,
+	["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
 	["physicsCanPush"] = true,
 	["physicsCanCarry"] = true,
 	["tags"] = {
@@ -43,18 +43,27 @@ function PlayerSys.tickEntity(entity)
 	local inputDirY = UtilSys.boolToNumber(ClientSys.state.inputDown) - UtilSys.boolToNumber(ClientSys.state.inputUp)
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
-	local gravityLength = math.sqrt((static.gravityX * static.gravityX) + (static.gravityY * static.gravityY))
-	local moveDirX = inputDirX * (math.abs(static.gravityY) / gravityLength)
-	local moveDirY = inputDirY * (math.abs(static.gravityX) / gravityLength)
+	local moveDirX = inputDirX * math.abs(UtilSys.sign(static.physicsGravityY))
+	local moveDirY = inputDirY * math.abs(UtilSys.sign(static.physicsGravityX))
 
 	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
 	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
 
-	if moveDirX ~= UtilSys.sign(entity.speedX) then
+	local changingDirX = moveDirX ~= UtilSys.sign(entity.speedX)
+	local changingDirY = moveDirY ~= UtilSys.sign(entity.speedY)
+
+	if changingDirX then
 		moveForceX = moveForceX * entity.playerChangeDirForceMultiplier
 	end
-	if moveDirY ~= UtilSys.sign(entity.speedY) then
+	if changingDirY then
 		moveForceY = moveForceY * entity.playerChangeDirForceMultiplier
+	end
+
+	if changingDirX or (math.abs(entity.speedX) < entity.playerTargetMovementSpeed) then
+		moveForceX = moveForceX * entity.playerBelowTargetMovementSpeedForceMultiplier
+	end
+	if changingDirY or (math.abs(entity.speedY) < entity.playerTargetMovementSpeed) then
+		moveForceY = moveForceY * entity.playerBelowTargetMovementSpeedForceMultiplier
 	end
 
 	entity.forceX = entity.forceX + moveForceX
@@ -62,17 +71,17 @@ function PlayerSys.tickEntity(entity)
 
 	local onGround = EntitySys.findRelative(
 		entity,
-		UtilSys.sign(static.gravityX),
-		UtilSys.sign(static.gravityY),
+		UtilSys.sign(static.physicsGravityX),
+		UtilSys.sign(static.physicsGravityY),
 		"solid"
 	)
 	local tryingToJump = (
-		((UtilSys.sign(static.gravityX) ~= 0) and (UtilSys.sign(inputDirX) == -UtilSys.sign(static.gravityX)))
-		or ((UtilSys.sign(static.gravityY) ~= 0) and (UtilSys.sign(inputDirY) == -UtilSys.sign(static.gravityY)))
+		((UtilSys.sign(static.physicsGravityX) ~= 0) and (UtilSys.sign(inputDirX) == -UtilSys.sign(static.physicsGravityX)))
+		or ((UtilSys.sign(static.physicsGravityY) ~= 0) and (UtilSys.sign(inputDirY) == -UtilSys.sign(static.physicsGravityY)))
 	)
 
-	local fallingX = (static.gravityX ~= 0) and (entity.speedX * UtilSys.sign(static.gravityX) >= 0)
-	local fallingY = (static.gravityY ~= 0) and (entity.speedY * UtilSys.sign(static.gravityY) >= 0)
+	local fallingX = (static.physicsGravityX ~= 0) and (entity.speedX * UtilSys.sign(static.physicsGravityX) >= 0)
+	local fallingY = (static.physicsGravityY ~= 0) and (entity.speedY * UtilSys.sign(static.physicsGravityY) >= 0)
 	local falling = fallingX or fallingY
 	if not tryingToJump or onGround or falling then
 		entity.playerJumpFramesCur = 0
@@ -80,20 +89,20 @@ function PlayerSys.tickEntity(entity)
 
 	if tryingToJump then
 		if onGround then
-			if static.gravityX ~= 0 then
+			if static.physicsGravityX ~= 0 then
 				PhysicsSys.stopX(entity)
 			end
-			if static.gravityY ~= 0 then
+			if static.physicsGravityY ~= 0 then
 				PhysicsSys.stopY(entity)
 			end
 			local jumpForce = entity.playerJumpForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (UtilSys.sign(static.gravityX) * jumpForce)
-			entity.forceY = entity.forceY - (UtilSys.sign(static.gravityY) * jumpForce)
+			entity.forceX = entity.forceX - (UtilSys.sign(static.physicsGravityX) * jumpForce)
+			entity.forceY = entity.forceY - (UtilSys.sign(static.physicsGravityY) * jumpForce)
 			entity.playerJumpFramesCur = entity.playerJumpFrames
 		elseif entity.playerJumpFramesCur > 0 then
 			local jumpFrameForce = entity.playerJumpFrameForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (UtilSys.sign(static.gravityX) * jumpFrameForce)
-			entity.forceY = entity.forceY - (UtilSys.sign(static.gravityY) * jumpFrameForce)
+			entity.forceX = entity.forceX - (UtilSys.sign(static.physicsGravityX) * jumpFrameForce)
+			entity.forceY = entity.forceY - (UtilSys.sign(static.physicsGravityY) * jumpFrameForce)
 			entity.playerJumpFramesCur = entity.playerJumpFramesCur - 1
 		end
 	end

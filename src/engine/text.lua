@@ -3,14 +3,14 @@
 -- local EntitySys = require("src/engine/entity")
 -- local ScreenSys = require("src/engine/screen")
 
--- SimulationSys.static.spriteFonts = {}
+-- SimulationSys.static.fonts = {}
 
-local TextSys = {}
+-- local TextSys = {}
 -- function TextSys.addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
--- 	local spriteFonts = SimulationSys.static.spriteFonts
--- 	local spriteFont = spriteFonts[fontId]
--- 	if spriteFont == nil then
--- 		spriteFont = {
+-- 	local fonts = SimulationSys.static.fonts
+-- 	local font = fonts[fontId]
+-- 	if font == nil then
+-- 		font = {
 -- 			["fontId"] = fontId,
 -- 			["u"] = u,
 -- 			["v"] = v,
@@ -20,31 +20,31 @@ local TextSys = {}
 -- 			["charLast"] = charLast,
 -- 			["charColumns"] = charColumns,
 -- 		}
--- 		spriteFonts[fontId] = spriteFont
+-- 		fonts[fontId] = font
 -- 	end
 
--- 	return spriteFont
+-- 	return font
 -- end
--- function TextSys.attach(entity, spriteFont, text)
--- 	local spriteFontId = spriteFont.spriteFontId
+-- function TextSys.attach(entity, font, text)
+-- 	local fontId = font.fontId
 
--- 	entity.spriteFontId = spriteFontId
+-- 	entity.fontId = fontId
 -- 	entity.text = text
 -- 	EntitySys.tag(entity, "text")
 -- end
 -- table.insert(ScreenSys.drawEvents, function(screen)
--- 	local spriteFonts = SimulationSys.static.spriteFonts
+-- 	local fonts = SimulationSys.static.fonts
 -- 	local world = SimulationSys.state.world
 -- 	local entities = world.entities
 
--- 	local spriteTextEntityIds = world.tagEntities["sprite"] or {}
--- 	local spriteTextEntityIdsCount = #spriteTextEntityIds
+-- 	local textEntityIds = EntitySys.findAll("text")
+-- 	local textEntityIdsCount = #textEntityIds
 
--- 	for i = 1, spriteTextEntityIdsCount do
--- 		local entity = entities[spriteTextEntityIds[i]]
--- 		local font = spriteFonts[entity.spriteFontId]
+-- 	for i = 1, textEntityIdsCount do
+-- 		local entity = entities[textEntityIds[i]]
+-- 		local font = fonts[entity.fontId]
 -- 		ClientSys.drawSprite(entity, font, screen)
 -- 	end
 -- end)
 
-return TextSys
+-- return TextSys

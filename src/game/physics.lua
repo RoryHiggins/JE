@@ -15,17 +15,19 @@ local static = SimulationSys.static
 
 
 local defaultMaterialPhysics = {
-	["friction"] = 0.1,
-	["moveForceStrength"] = 0.3,
+	["friction"] = 0.3,
+	["moveForceStrength"] = 1,
 	["jumpForceStrength"] = 1,
 }
-static.gravityX = 0
-static.gravityY = 0.4
-static.maxSpeed = 8
-static.physicsMaxRecursionDepth = 10
-static.materialsPhysics = {
+static.physicsPushCounterforce = 0.1
+static.physicsGravityX = 0
+static.physicsGravityY = 0.5
+static.physicsMaxSpeed = 8
+static.physicsMaxRecursionDepth = 25
+static.physicsMaterials = {
 	["air"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {
-		["moveForceStrength"] = 0.2,
+		["friction"] = 0.1,
+		["moveForceStrength"] = 0.5,
 	}),
 	["solid"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
 	["water"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {}),
@@ -35,8 +37,8 @@ static.materialsPhysics = {
 
 local PhysicsSys = {}
 function PhysicsSys.getMaterialPhysics(entity)
-	local gravitySignX = UtilSysSign(static.gravityX)
-	local gravitySignY = UtilSysSign(static.gravityY)
+	local gravitySignX = UtilSysSign(static.physicsGravityX)
+	local gravitySignY = UtilSysSign(static.physicsGravityY)
 	local materialEntity = EntitySys.findBounded(
 		entity.x + mathMin(0, gravitySignX),
 		entity.y + mathMin(0, gravitySignY),
@@ -46,7 +48,7 @@ function PhysicsSys.getMaterialPhysics(entity)
 		entity.id
 	)
 
-	local materialsPhysics = static.materialsPhysics
+	local materialsPhysics = static.physicsMaterials
 	local materialPhysics = materialsPhysics.air
 	if materialEntity then
 		local entityTags = materialEntity.tags
@@ -72,7 +74,7 @@ function PhysicsSys.getCarryablesRecursive(entity, outCarryables, recursionDepth
 		return outCarryables
 	end
 
-	local candidates = EntitySysFindAllRelative(entity, 0, -UtilSysSign(static.gravityY), "physicsCarryable")
+	local candidates = EntitySysFindAllRelative(entity, 0, -UtilSysSign(static.physicsGravityY), "physicsCarryable")
 	local candidatesCount = #candidates
 
 	for i = 1, candidatesCount do
@@ -147,7 +149,7 @@ function PhysicsSys.tryMoveX(entity, moveX, recursionDepth, innerMove)
 	end
 
 	local signX = UtilSysSign(moveX)
-	local absMoveX = mathMin(static.maxSpeed, mathAbs(moveX))
+	local absMoveX = mathMin(static.physicsMaxSpeed, mathAbs(moveX))
 	local moveSuccessful = true
 
 	local curMoveX = 0
@@ -157,7 +159,7 @@ function PhysicsSys.tryMoveX(entity, moveX, recursionDepth, innerMove)
 		local obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
 		while obstacle and entity.physicsCanPush and PhysicsSys.tryPushX(obstacle, signX, recursionDepth + 1) do
 			recursionDepth = recursionDepth + 1
-			entity.forceX = entity.forceX - (signX * 0.1)
+			entity.forceX = entity.forceX - (signX * static.physicsPushCounterforce)
 			obstacle = EntitySysFindRelative(entity, nextMoveX, 0, "solid")
 			recursionDepth = recursionDepth + 1
 		end
@@ -172,7 +174,7 @@ function PhysicsSys.tryMoveX(entity, moveX, recursionDepth, innerMove)
 
 	EntitySysSetBounds(entity, entity.x + curMoveX, entity.y, entity.w, entity.h)
 
-	if curMoveX ~= 0 and entity.physicsCanCarry and not innerMove and static.gravityY ~= 0 then
+	if curMoveX ~= 0 and entity.physicsCanCarry and not innerMove and static.physicsGravityY ~= 0 then
 		for _, carryable in pairs(PhysicsSys.getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
 			PhysicsSys.tryMoveX(carryable, curMoveX, recursionDepth + 1, true)
 		end
@@ -187,7 +189,7 @@ function PhysicsSys.tryMoveY(entity, moveY, recursionDepth, innerMove)
 	end
 
 	local signY = UtilSysSign(moveY)
-	local absMoveY = mathMin(static.maxSpeed, mathAbs(moveY))
+	local absMoveY = mathMin(static.physicsMaxSpeed, mathAbs(moveY))
 	local moveSuccessful = true
 
 	local curMoveY = 0
@@ -197,7 +199,7 @@ function PhysicsSys.tryMoveY(entity, moveY, recursionDepth, innerMove)
 		local obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
 		while obstacle and entity.physicsCanPush and PhysicsSys.tryPushY(obstacle, signY, recursionDepth + 1) do
 			recursionDepth = recursionDepth + 1
-			entity.forceY = entity.forceY - (signY * 0.2)
+			entity.forceY = entity.forceY - (signY * static.physicsPushCounterforce)
 			obstacle = EntitySysFindRelative(entity, 0, nextMoveY, "solid")
 		end
 		if obstacle then
@@ -209,7 +211,7 @@ function PhysicsSys.tryMoveY(entity, moveY, recursionDepth, innerMove)
 		curMoveY = nextMoveY
 	end
 
-	if curMoveY ~= 0 and entity.physicsCanCarry and not innerMove and static.gravityX ~= 0 then
+	if curMoveY ~= 0 and entity.physicsCanCarry and not innerMove and static.physicsGravityX ~= 0 then
 		for _, carryable in pairs(PhysicsSys.getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
 			PhysicsSys.tryMoveY(carryable, curMoveY, recursionDepth + 1, true)
 		end
@@ -230,8 +232,8 @@ function PhysicsSys.tickForces(entity)
 	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
 
 	-- apply gravity to force
-	entity.forceX = entity.forceX + static.gravityX
-	entity.forceY = entity.forceY + static.gravityY
+	entity.forceX = entity.forceX + static.physicsGravityX
+	entity.forceY = entity.forceY + static.physicsGravityY
 
 	-- apply "friction" to speed
 	local speedSignX = UtilSysSign(entity.speedX)
@@ -247,8 +249,8 @@ function PhysicsSys.tickForces(entity)
 end
 function PhysicsSys.tickMovement(entity)
 	-- clamp speed to max speed
-	entity.speedX = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedX))
-	entity.speedY = mathMax(-static.maxSpeed, mathMin(static.maxSpeed, entity.speedY))
+	entity.speedX = mathMax(-static.physicsMaxSpeed, mathMin(static.physicsMaxSpeed, entity.speedX))
+	entity.speedY = mathMax(-static.physicsMaxSpeed, mathMin(static.physicsMaxSpeed, entity.speedY))
 
 	-- compute amount to move (integer values).  the fractional movement component is accumulated for subsequent ticks
 	local moveX, overflowX = mathModf(entity.speedX)

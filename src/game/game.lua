@@ -75,13 +75,13 @@ function GameSys.populateTestWorld()
 	-- table.insert(SimulationSys.stepEvents, function()
 	-- 	steps = steps + 1.5
 	-- 	local dir = math.rad((math.floor(steps / 90) * 90) % 360)
-	-- 	SimulationSys.static.gravityX = math.cos(dir) * 0.8
-	-- 	SimulationSys.static.gravityY = math.sin(dir) * 0.8
-	-- 	if math.abs(SimulationSys.static.gravityX) < 0.1 then
-	-- 		SimulationSys.static.gravityX = 0
+	-- 	SimulationSys.static.physicsGravityX = math.cos(dir) * 0.8
+	-- 	SimulationSys.static.physicsGravityY = math.sin(dir) * 0.8
+	-- 	if math.abs(SimulationSys.static.physicsGravityX) < 0.1 then
+	-- 		SimulationSys.static.physicsGravityX = 0
 	-- 	end
-	-- 	if math.abs(SimulationSys.static.gravityY) < 0.1 then
-	-- 		SimulationSys.static.gravityY = 0
+	-- 	if math.abs(SimulationSys.static.physicsGravityY) < 0.1 then
+	-- 		SimulationSys.static.physicsGravityY = 0
 	-- 	end
 	-- end)
 end
