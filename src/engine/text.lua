@@ -1,50 +1,71 @@
--- local client = require("src/engine/client")
--- local simulation = require("src/engine/simulation")
--- local EntitySys = require("src/engine/entity")
--- local ScreenSys = require("src/engine/screen")
+local client = require("src/engine/client")
+local Simulation = require("src/engine/simulation")
+local Entity = require("src/engine/entity")
+local Screen = require("src/engine/screen")
 
--- simulation.static.fonts = {}
+local Text = Simulation.createSystem("text")
+function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
+	local fonts = self.simulation.static.fonts
+	local font = fonts[fontId]
+	if font == nil then
+		font = {
+			["fontId"] = fontId,
+			["u"] = u,
+			["v"] = v,
+			["charW"] = charW,
+			["charH"] = charH,
+			["charFirst"] = charFirst,
+			["charLast"] = charLast,
+			["charColumns"] = charColumns,
+		}
+		fonts[fontId] = font
+	end
 
--- local TextSys = {}
--- function TextSys.addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
--- 	local fonts = simulation.static.fonts
--- 	local font = fonts[fontId]
--- 	if font == nil then
--- 		font = {
--- 			["fontId"] = fontId,
--- 			["u"] = u,
--- 			["v"] = v,
--- 			["charW"] = charW,
--- 			["charH"] = charH,
--- 			["charFirst"] = charFirst,
--- 			["charLast"] = charLast,
--- 			["charColumns"] = charColumns,
--- 		}
--- 		fonts[fontId] = font
--- 	end
+	return font
+end
+function Text:getFont(fontId)
+	return self.simulation.static.fonts[fontId]
+end
+function Text:attach(entity, font, text)
+	local fontId = font.fontId
 
--- 	return font
--- end
--- function TextSys.attach(entity, font, text)
--- 	local fontId = font.fontId
+	entity.fontId = fontId
+	entity.text = text
+	self.entitySys:tag(entity, "text")
+end
+function Text:detach(entity)
+	self.entitySys:untag(entity, "text")
+	entity.text = nil
+	entity.fontId = nil
+end
+function Text:onSimulationCreate()
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.screenSys = self.simulation:addSystem(Screen)
 
--- 	entity.fontId = fontId
--- 	entity.text = text
--- 	EntitySys.tag(entity, "text")
--- end
--- table.insert(ScreenSys.drawEvents, function(screen)
--- 	local fonts = simulation.static.fonts
--- 	local world = simulation.state.world
--- 	local entities = world.entities
+	self.simulation.static.fonts = {}
+end
+function Text:onScreenDraw(screen)
+	local fonts = self.simulation.static.fonts
 
--- 	local textEntityIds = EntitySys.findAll("text")
--- 	local textEntityIdsCount = #textEntityIds
+	for _, entity in ipairs(self.entitySys:findAll("text")) do
+		client.drawText(entity, fonts[entity.fontId], screen)
+	end
+end
+function Text:onSimulationTests()
+	local entity = self.entitySys:create()
+	local testFont = self:addFont("test", 0, 192, 8, 8, " ", "_", 8)
 
--- 	for i = 1, textEntityIdsCount do
--- 		local entity = entities[textEntityIds[i]]
--- 		local font = fonts[entity.fontId]
--- 		client.drawSprite(entity, font, screen)
--- 	end
--- end)
+	assert(self:getFont("test") == testFont)
 
--- return TextSys
+	self:attach(entity, testFont, "hello")
+	assert(entity.fontId == "test")
+	assert(entity.tags.text)
+	assert(entity.text == "hello")
+
+	self:detach(entity, testFont)
+	assert(entity.spriteId == nil)
+	assert(entity.tags.sprite == nil)
+	assert(entity.text == nil)
+end
+
+return Text

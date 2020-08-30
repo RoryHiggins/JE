@@ -1,56 +1,30 @@
-local UtilSys = require("src/engine/util")
+local util = require("src/engine/util")
 local client = require("src/engine/client")
-local simulation = require("src/engine/simulation")
-local EntitySys = require("src/engine/entity")
-local SpriteSys = require("src/engine/sprite")
-local TemplateSys = require("src/engine/template")
+local Simulation = require("src/engine/simulation")
+local Entity = require("src/engine/entity")
+local Sprite = require("src/engine/sprite")
+local Template = require("src/engine/template")
 
-local PhysicsSys = require("src/game/physics")
+local Physics = require("src/game/physics")
 
-local static = simulation.static
+local Player = Simulation.createSystem("player")
+function Player:tickEntity(entity)
+	local static = self.simulation.static
 
-local PlayerSys = {}
-SpriteSys.addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
-SpriteSys.addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
-SpriteSys.addSprite("playerUp", 24 + 1, 0 + 2, 6, 6)
-PlayerSys.template = TemplateSys.add("player", {
-	["w"] = 6,
-	["h"] = 6,
-	["spriteId"] = "playerRight",
-	["playerJumpFramesCur"] = 0,
-	["playerJumpForce"] = 4,
-	["playerJumpFrameForce"] = 0.5,
-	["playerJumpFrames"] = 12,
-	["playerMoveForce"] = 0.25,
-	["playerChangeDirForceMultiplier"] = 0.8,
-	["playerTargetMovementSpeed"] = 2,
-	["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
-	["physicsCanPush"] = true,
-	["physicsCanCarry"] = false,  -- it is tremendously annoying for a player; crates stick to your head
-	["tags"] = {
-		["sprite"] = true,
-		["screenTarget"] = true,
-		["material"] = true,
-		["solid"] = true,
-		["physics"] = true,
-		["player"] = true,
-	}
-})
-function PlayerSys.tickEntity(entity)
-	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
+	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
 
-	local inputDirX = UtilSys.boolToNumber(client.state.inputRight) - UtilSys.boolToNumber(client.state.inputLeft)
-	local inputDirY = UtilSys.boolToNumber(client.state.inputDown) - UtilSys.boolToNumber(client.state.inputUp)
+	local inputDirX = util.boolToNumber(client.state.inputRight) - util.boolToNumber(client.state.inputLeft)
+	local inputDirY = util.boolToNumber(client.state.inputDown) - util.boolToNumber(client.state.inputUp)
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
-	local moveDirX = inputDirX * math.abs(UtilSys.sign(static.physicsGravityY))
-	local moveDirY = inputDirY * math.abs(UtilSys.sign(static.physicsGravityX))
+	local moveDirX = inputDirX * math.abs(util.sign(static.physicsGravityY))
+	local moveDirY = inputDirY * math.abs(util.sign(static.physicsGravityX))
 
 	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
 	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
 
-	local changingDirX = moveDirX ~= UtilSys.sign(entity.speedX)
-	local changingDirY = moveDirY ~= UtilSys.sign(entity.speedY)
+	local changingDirX = moveDirX ~= util.sign(entity.speedX)
+	local changingDirY = moveDirY ~= util.sign(entity.speedY)
 
 	if changingDirX then
 		moveForceX = moveForceX * entity.playerChangeDirForceMultiplier
@@ -69,19 +43,19 @@ function PlayerSys.tickEntity(entity)
 	entity.forceX = entity.forceX + moveForceX
 	entity.forceY = entity.forceY + moveForceY
 
-	local onGround = EntitySys.findRelative(
+	local onGround = self.entitySys:findRelative(
 		entity,
-		UtilSys.sign(static.physicsGravityX),
-		UtilSys.sign(static.physicsGravityY),
+		util.sign(static.physicsGravityX),
+		util.sign(static.physicsGravityY),
 		"solid"
 	)
 	local tryingToJump = (
-		((UtilSys.sign(static.physicsGravityX) ~= 0) and (UtilSys.sign(inputDirX) == -UtilSys.sign(static.physicsGravityX)))
-		or ((UtilSys.sign(static.physicsGravityY) ~= 0) and (UtilSys.sign(inputDirY) == -UtilSys.sign(static.physicsGravityY)))
+		((util.sign(static.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(static.physicsGravityX)))
+		or ((util.sign(static.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(static.physicsGravityY)))
 	)
 
-	local fallingX = (static.physicsGravityX ~= 0) and (entity.speedX * UtilSys.sign(static.physicsGravityX) >= 0)
-	local fallingY = (static.physicsGravityY ~= 0) and (entity.speedY * UtilSys.sign(static.physicsGravityY) >= 0)
+	local fallingX = (static.physicsGravityX ~= 0) and (entity.speedX * util.sign(static.physicsGravityX) >= 0)
+	local fallingY = (static.physicsGravityY ~= 0) and (entity.speedY * util.sign(static.physicsGravityY) >= 0)
 	local falling = fallingX or fallingY
 	if not tryingToJump or onGround or falling then
 		entity.playerJumpFramesCur = 0
@@ -90,35 +64,76 @@ function PlayerSys.tickEntity(entity)
 	if tryingToJump then
 		if onGround then
 			if static.physicsGravityX ~= 0 then
-				PhysicsSys.stopX(entity)
+				self.physicsSys:stopX(entity)
 			end
 			if static.physicsGravityY ~= 0 then
-				PhysicsSys.stopY(entity)
+				self.physicsSys:stopY(entity)
 			end
 			local jumpForce = entity.playerJumpForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (UtilSys.sign(static.physicsGravityX) * jumpForce)
-			entity.forceY = entity.forceY - (UtilSys.sign(static.physicsGravityY) * jumpForce)
+			entity.forceX = entity.forceX - (util.sign(static.physicsGravityX) * jumpForce)
+			entity.forceY = entity.forceY - (util.sign(static.physicsGravityY) * jumpForce)
 			entity.playerJumpFramesCur = entity.playerJumpFrames
 		elseif entity.playerJumpFramesCur > 0 then
 			local jumpFrameForce = entity.playerJumpFrameForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (UtilSys.sign(static.physicsGravityX) * jumpFrameForce)
-			entity.forceY = entity.forceY - (UtilSys.sign(static.physicsGravityY) * jumpFrameForce)
+			entity.forceX = entity.forceX - (util.sign(static.physicsGravityX) * jumpFrameForce)
+			entity.forceY = entity.forceY - (util.sign(static.physicsGravityY) * jumpFrameForce)
 			entity.playerJumpFramesCur = entity.playerJumpFramesCur - 1
 		end
 	end
 
 	if inputDirY < 0 then
-		SpriteSys.attach(entity, SpriteSys.getSprite("playerUp"))
+		self.spriteSys:attach(entity, self.spriteSys:get("playerUp"))
 	elseif inputDirX > 0 then
-		SpriteSys.attach(entity, SpriteSys.getSprite("playerRight"))
+		self.spriteSys:attach(entity, self.spriteSys:get("playerRight"))
 	else
-		SpriteSys.attach(entity, SpriteSys.getSprite("playerLeft"))
+		self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
 	end
 end
-table.insert(simulation.stepEvents, function()
-	for _, player in pairs(EntitySys.findAll("player")) do
-		PlayerSys.tickEntity(player)
-	end
-end)
+function Player:onSimulationCreate()
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.templateSys = self.simulation:addSystem(Template)
+	self.physicsSys = self.simulation:addSystem(Physics)
 
-return PlayerSys
+	self.spriteSys:addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
+	self.spriteSys:addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
+	self.spriteSys:addSprite("playerUp", 24 + 1, 0 + 2, 6, 6)
+	self.template = self.templateSys:add("player", {
+		["w"] = 6,
+		["h"] = 6,
+		["spriteId"] = "playerRight",
+		["playerJumpFramesCur"] = 0,
+		["playerJumpForce"] = 4,
+		["playerJumpFrameForce"] = 0.5,
+		["playerJumpFrames"] = 12,
+		["playerMoveForce"] = 0.25,
+		["playerChangeDirForceMultiplier"] = 0.8,
+		["playerTargetMovementSpeed"] = 2,
+		["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
+		["physicsCanPush"] = true,
+		["physicsCanCarry"] = false,  -- it is tremendously annoying for a player; crates stick to your head
+		["tags"] = {
+			["sprite"] = true,
+			["screenTarget"] = true,
+			["material"] = true,
+			["solid"] = true,
+			["physics"] = true,
+			["player"] = true,
+		}
+	})
+end
+function Player:onSimulationStep()
+	for _, player in pairs(self.entitySys:findAll("player")) do
+		self:tickEntity(player)
+	end
+end
+function Player:onSimulationTests()
+	self:onSimulationStep()
+
+	self.templateSys:instantiate(self.template)
+	for _ = 1, 10 do
+		self:onSimulationStep()
+	end
+end
+
+return Player

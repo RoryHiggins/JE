@@ -1,7 +1,8 @@
-local GameSys = require("src/game/game")
+local Game = require("src/game/game")
 
 local function main()
-	GameSys.run()
+	local game = Game.new()
+	game:run()
 end
 
 main()

@@ -1,28 +1,28 @@
-local simulation = require("src/engine/simulation")
-local WorldSys = require("src/engine/world")
-local EntitySys = require("src/engine/entity")
+local Simulation = require("src/engine/simulation")
+local Entity = require("src/engine/entity")
 
-local ScreenSys = {}
-ScreenSys.drawEvents = {}
-table.insert(WorldSys.createEvents, function()
-	simulation.state.screen = {
+local Screen = Simulation.createSystem("screen")
+function Screen:onSimulationCreate()
+	self.entitySys = self.simulation:addSystem(Entity)
+
+	self.simulation.state.screen = {
 		["x"] = 0,
 		["y"] = 0,
 	}
-end)
-table.insert(simulation.drawEvents, function()
-	local screen = simulation.state.screen
-	local screenTarget = EntitySys.find("screenTarget")
+end
+function Screen:onSimulationDraw()
+	local screen = self.simulation.state.screen
+	local screenTarget = self.entitySys:find("screenTarget")
 	if screenTarget then
 		screen.x = screenTarget.x
 		screen.y = screenTarget.y
 	end
 
-	local events = ScreenSys.drawEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i](screen)
-	end
-end)
+	self.simulation:broadcast("onScreenDraw", screen)
+end
+function Screen:onSimulationTests()
+	assert(self.simulation.state.screen ~= nil)
+	self:onSimulationDraw()
+end
 
-return ScreenSys
+return Screen

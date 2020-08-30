@@ -1,141 +1,204 @@
 local json = require("lib/json")
-local UtilSys = require("src/engine/util")
+local util = require("src/engine/util")
 local client = require("src/engine/client")
 
-local simulation = {}
-simulation.SAVE_VERSION = 1
-simulation.createEvents = {}
-simulation.postCreateEvents = {}
-simulation.destroyEvents = {}
-simulation.stepEvents = {}
-simulation.drawEvents = {}
-simulation.state = {}
-simulation.static = {}
-function simulation.isRunning()
-	return simulation.state.running and client.state.running
-end
-function simulation.step()
-	local events = simulation.stepEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i]()
-	end
 
-	simulation.draw()
-end
-function simulation.draw()
-	local events = simulation.drawEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i]()
+local Simulation = {}
+function Simulation:broadcast(event, ...)
+	for _, system in pairs(self.systems) do
+		local eventHandler = system[event]
+		if eventHandler then
+			eventHandler(system, ...)
+		end
 	end
 end
-function simulation.destroy()
-	UtilSys.log("simulation.destroy()")
+function Simulation:addSystem(class)
+	if type(class) ~= "table" then
+		util.err("Simulation:addSystem() class is not a table, class=%s", util.toComparable(class))
+		return {}
+	end
 
-	if not simulation.state.running then
+	local systemName = class.SYSTEM_NAME
+
+	if type(systemName) ~= "string" then
+		util.err("Simulation:addSystem() class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
+		return {}
+	end
+
+	local system = self.systems[systemName]
+	if system == nil then
+		util.debug("Simulation:addSystem() instantiating system, systemName=%s", systemName)
+
+		class.__index = class
+		system = setmetatable({}, class)
+
+		system.simulation = self
+		system.created = false
+
+		self.systems[systemName] = system
+	end
+
+	if self.created and system.onSimulationCreate and not system.created then
+		util.debug("Simulation:addSystem() creating system, systemName=%s", systemName)
+
+		system.created = true  -- marking as created first, to prevent recursion with circular dependencies
+		system:onSimulationCreate()
+	end
+
+	return system
+end
+function Simulation:step()
+	self:broadcast("onSimulationStep")
+end
+function Simulation:draw()
+	self:broadcast("onSimulationDraw")
+end
+function Simulation:destroy()
+	if not self.created then
 		return
 	end
 
-	for _, event in pairs(simulation.destroyEvents) do
-		event()
+	util.log("Simulation:destroy()")
+
+	self:broadcast("onSimulationDestroy")
+	self.state = {}
+
+	for _, system in pairs(self.systems) do
+		system.created = false
 	end
 
-	for key, _ in pairs(simulation.state) do
-		simulation.state[key] = nil
+	self.created = false
+end
+function Simulation:create()
+	self:destroy()
+
+	util.log("Simulation:create()")
+
+	math.randomseed(0)
+
+	self.created = true
+	self.state.saveVersion = 1
+
+	for systemName, system in pairs(self.systems) do
+		if system.simulation and not system.created then
+			util.debug("Simulation:create() creating system, name=%s", systemName)
+
+			system.created = true  -- marking as created first, to prevent recursion with circular dependencies
+
+			if system.onSimulationCreate then
+				system:onSimulationCreate()
+			end
+		end
 	end
 end
-function simulation.create()
-	if simulation.state.running then
-		simulation.destroy()
-	end
-
-	UtilSys.log("simulation.create()")
-
-	simulation.state.running = true
-	simulation.state.saveVersion = simulation.SAVE_VERSION
-
-	for _, event in pairs(simulation.createEvents) do
-		event()
-	end
-
-	for _, event in pairs(simulation.postCreateEvents) do
-		event()
-	end
-
-	return simulation.state
-end
-function simulation.dump(filename)
-	UtilSys.log("simulation.dump(): filename=%s", filename)
+function Simulation:dump(filename)
+	util.debug("Simulation:dump(): filename=%s", filename)
 
 	local dump = {
-		["state"] = simulation.state,
-		["static"] = simulation.static,
+		["state"] = self.state,
+		["static"] = self.static,
+		["systems"] = util.getKeys(self.systems),
 	}
-	if not UtilSys.writeDataUncompressed(filename, UtilSys.toComparable(dump)) then
-		UtilSys.log("simulation.dump(): client.writeData() failed")
+	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
+		util.err("Simulation:dump(): client.writeData() failed")
 		return false
 	end
 
 	return true
 end
-function simulation.save(filename)
-	UtilSys.log("simulation.save(): filename=%s", filename)
+function Simulation:save(filename)
+	util.debug("Simulation:save(): filename=%s", filename)
 
-	if not client.writeData(filename, json.encode(simulation.state)) then
-		UtilSys.log("simulation.save(): client.writeData() failed")
+	if not client.writeData(filename, json.encode(self.state)) then
+		util.err("Simulation:save(): client.writeData() failed")
 		return false
 	end
 
 	return true
 end
-function simulation.load(filename)
-	UtilSys.log("simulation.load(): filename=%s", filename)
+function Simulation:load(filename)
+	util.log("Simulation:load(): filename=%s", filename)
 
-	local loadedSimulationStr = client.readData(filename)
-	if not loadedSimulationStr then
+	local loadedStateStr = client.readData(filename)
+	if not loadedStateStr then
 		return false
 	end
 
-	local loadedSimulation = json.decode(loadedSimulationStr)
+	local loadedState = json.decode(loadedStateStr)
 
-	if loadedSimulation.saveVersion > simulation.SAVE_VERSION then
-		UtilSys.err("simulation.load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
-				   simulation.SAVE_VERSION, loadedSimulation.saveVersion)
+	if loadedState.saveVersion and (loadedState.saveVersion > self.state.saveVersion) then
+		util.err("Simulation:load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
+				   self.state.saveVersion, loadedState.saveVersion)
 		return false
 	end
-	if loadedSimulation.saveVersion < simulation.SAVE_VERSION then
-		UtilSys.log("simulation.load(): save version is older, saveVersion=%d, save.saveVersion=%d",
-				   simulation.SAVE_VERSION, loadedSimulation.saveVersion)
+	if loadedState.saveVersion and (loadedState.saveVersion < self.state.saveVersion) then
+		util.log("Simulation:load(): save version is older, saveVersion=%d, save.saveVersion=%d",
+				   self.state.saveVersion, loadedState.saveVersion)
 	end
 
-	simulation.create()
-	local state = simulation.state
-	for key, val in pairs(loadedSimulation) do
-		state[key] = val
-	end
+	self.state = loadedState
 
 	return true
 end
-function simulation.runTests()
-	simulation.destroy()
-	simulation.create()
+function Simulation:onSimulationTests()
+	self:step()
+	self:draw()
 
-	simulation.step()
-	simulation.draw()
-
-	local gameBeforeSave = UtilSys.toComparable(simulation.state)
-	assert(simulation.dump("test_dump.sav"))
-	assert(simulation.save("test_save.sav"))
-	assert(simulation.load("test_save.sav"))
+	local gameBeforeSave = util.toComparable(self.state)
+	assert(self:dump("test_dump.sav"))
+	assert(self:save("test_save.sav"))
+	assert(self:load("test_save.sav"))
 	os.remove("test_dump.sav")
 	os.remove("test_save.sav")
 
-	local gameAfterLoad = UtilSys.toComparable(simulation.state)
+	local gameAfterLoad = util.toComparable(self.state)
 	if gameBeforeSave ~= gameAfterLoad then
-		UtilSys.err("simulation.runTests(): Mismatch between state before save and after load: before=%s, after=%s",
+		util.err("Simulation:onSimulationTests(): Mismatch between state before save and after load: before=%s, after=%s",
 					  gameBeforeSave, gameAfterLoad)
 	end
 end
+function Simulation:runTests()
+	util.log("Simulation:runTests()")
 
-return simulation
+	for _, system in pairs(self.systems) do
+		if system.onSimulationTests then
+			util.debug("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
+
+			self:destroy()
+			self:create()
+
+			system:onSimulationTests()
+		end
+	end
+
+	self:destroy()
+end
+
+function Simulation.new()
+	local simulation = {
+		["systems"] = {},
+		["state"] = {},
+		["static"] = {},
+		["created"] = false,
+	}
+
+	Simulation.__index = Simulation
+	setmetatable(simulation, Simulation)
+
+	Simulation.SYSTEM_NAME = "simulation"
+	simulation.systems.simulation = simulation
+
+	util.SYSTEM_NAME = "util"
+	simulation.systems.util = util
+
+	return simulation
+end
+function Simulation.createSystem(systemName)
+	local class = {}
+	class.__index = class
+	class.SYSTEM_NAME = systemName
+
+	return class
+end
+
+return Simulation

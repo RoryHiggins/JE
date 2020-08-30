@@ -1,16 +1,13 @@
+local util = require("src/engine/util")
 local client = require("src/engine/client")
-local simulation = require("src/engine/simulation")
-local EntitySys = require("src/engine/entity")
-local ScreenSys = require("src/engine/screen")
+local Simulation = require("src/engine/simulation")
+local Entity = require("src/engine/entity")
+local Screen = require("src/engine/screen")
 
-local clientDrawSprite = client.drawSprite
 
-local static = simulation.static
-static.sprites = {}
-
-local SpriteSys = {}
-function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
-	local sprites = simulation.static.sprites
+local Sprite = Simulation.createSystem("sprite")
+function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
+	local sprites = self.simulation.static.sprites
 	local sprite = sprites[spriteId]
 	if sprite == nil then
 		sprite = {
@@ -27,47 +24,49 @@ function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
 		sprites[spriteId] = sprite
 	end
 
+	util.debug("Sprite:addSprite(): sprite=%s", util.toComparable(sprite))
+
 	return sprite
 end
-function SpriteSys.getSprite(spriteId)
-	return simulation.static.sprites[spriteId]
+function Sprite:get(spriteId)
+	return self.simulation.static.sprites[spriteId]
 end
-function SpriteSys.attach(entity, sprite)
+function Sprite:attach(entity, sprite)
 	local spriteId = sprite.spriteId
 
 	entity.spriteId = spriteId
-	EntitySys.tag(entity, "sprite")
+	self.entitySys:tag(entity, "sprite")
 end
-function SpriteSys.detach(entity)
-	EntitySys.untag(entity, "sprite")
+function Sprite:detach(entity)
+	self.entitySys:untag(entity, "sprite")
 	entity.spriteId = nil
 end
-function SpriteSys.runTests()
-	simulation.create()
+function Sprite:onSimulationCreate()
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.screenSys = self.simulation:addSystem(Screen)
 
-	local entity = EntitySys.create()
-	local testSprite = SpriteSys.addSprite("test", 40, 0, 8, 8)
+	self.simulation.static.sprites = {}
+end
+function Sprite:onScreenDraw(screen)
+	local sprites = self.simulation.static.sprites
 
-	assert(SpriteSys.getSprite("test") == testSprite)
+	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
+		client.drawSprite(entity, sprites[entity.spriteId], screen)
+	end
+end
+function Sprite:onSimulationTests()
+	local entity = self.entitySys:create()
+	local testSprite = self:addSprite("test", 40, 0, 8, 8)
 
-	SpriteSys.attach(entity, testSprite)
+	assert(self:get("test") == testSprite)
+
+	self:attach(entity, testSprite)
 	assert(entity.spriteId == "test")
 	assert(entity.tags.sprite)
 
-	SpriteSys.detach(entity, testSprite)
+	self:detach(entity, testSprite)
 	assert(entity.spriteId == nil)
 	assert(entity.tags.sprite == nil)
 end
-table.insert(ScreenSys.drawEvents, function(screen)
-	local sprites = simulation.static.sprites
 
-	local entities = EntitySys.findAll("sprite")
-	local entitiesCount = #entities
-	for i = 1, entitiesCount do
-		local entity = entities[i]
-		local sprite = sprites[entity.spriteId]
-		clientDrawSprite(entity, sprite, screen)
-	end
-end)
-
-return SpriteSys
+return Sprite

@@ -1,19 +1,20 @@
-local simulation = require("src/engine/simulation")
-local EntitySys = require("src/engine/entity")
+local Simulation = require("src/engine/simulation")
+local Entity = require("src/engine/entity")
 
-simulation.static.templates = {}
-
-local TemplateSys = {}
-function TemplateSys.add(templateId, template)
-	local templates = simulation.static.templates
+local Template = Simulation.createSystem("template")
+function Template:add(templateId, template)
+	local templates = self.simulation.static.templates
 	local currentTemplate = templates[templateId]
 	if currentTemplate == nil then
 		templates[templateId] = template
 	end
 	return template
 end
-function TemplateSys.instantiate(templateId, x, y, w, h)
-	local entity = EntitySys.create(simulation.static.templates[templateId])
+function Template:get(templateId)
+	return self.simulation.static.templates[templateId]
+end
+function Template:instantiate(template, x, y, w, h)
+	local entity = self.entitySys:create(template)
 
 	if x == nil then
 		x = entity.x
@@ -29,21 +30,31 @@ function TemplateSys.instantiate(templateId, x, y, w, h)
 		h = entity.h
 	end
 
-	EntitySys.setBounds(entity, x, y, w, h)
+	self.entitySys:setBounds(entity, x, y, w, h)
 
 	return entity
 
 end
-function TemplateSys.runTests()
-	simulation.create()
-	assert(simulation.static.templates ~= nil)
+function Template:onSimulationCreate()
+	self.entitySys = self.simulation:addSystem(Entity)
 
-	local template = {["x"] = 2, ["tags"] = {["yee"] = true}}
-	TemplateSys.add("yee", template)
-	EntitySys.create(simulation.static.templates["yee"])
-	assert(EntitySys.find("yee").x == 2)
-	assert(EntitySys.find("yee").tags["yee"] ~= nil)
+	self.simulation.static.templates = {}
+end
+function Template:onSimulationTests()
+	assert(self.simulation.static.templates ~= nil)
+
+	local template = self:add("yee", {
+		["x"] = 2,
+		["tags"] = {
+			["yee"] = true
+		},
+	})
+	assert(self:get("yee") == template)
+
+	local entity = self:instantiate(template)
+	assert(self.entitySys:find("yee") == entity)
+	assert(self.entitySys:find("yee").x == 2)
+	assert(self.entitySys:find("yee").tags["yee"] ~= nil)
 end
 
-
-return TemplateSys
+return Template

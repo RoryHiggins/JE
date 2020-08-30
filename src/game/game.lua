@@ -1,47 +1,49 @@
-local EngineSys = require("src/engine/engine")
-local UtilSys = require("src/engine/util")
+local util = require("src/engine/util")
 local client = require("src/engine/client")
-local simulation = require("src/engine/simulation")
+local Simulation = require("src/engine/simulation")
 
-local GameSys = {}
-GameSys.DUMP_FILE = ".\\game_dump.sav"
-GameSys.SAVE_FILE = ".\\game_save.sav"
-GameSys.components = {
-	["MaterialSys"] = require("src/game/material"),
-	["PhysicsSys"] = require("src/game/physics"),
-	["WallSys"] = require("src/game/entities/wall"),
-	["PlayerSys"] = require("src/game/entities/player"),
-}
-function GameSys.populateTestWorld()
-	UtilSys.log("GameSys.populateTestWorld()")
+local Game = {}
+Game.DUMP_FILE = ".\\game_dump.sav"
+Game.SAVE_FILE = ".\\game_save.sav"
+function Game:populateTestWorld()
+	util.log("Game:populateTestWorld()")
 
-	local EntitySys = require("src/engine/entity")
-	local TemplateSys = require("src/engine/template")
-	local SpriteSys = require("src/engine/sprite")
+	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
+	local templateSys = self.simulation:addSystem(require("src/engine/template"))
+	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
 
-	TemplateSys.instantiate("player", 120, -32)
+	local playerTemplate = templateSys:get("player")
+	local wallTemplate = templateSys:get("wall")
+
+	-- print(util.toComparable(self.simulation))
+	-- print(util.toComparable(playerTemplate))
+	templateSys:instantiate(playerTemplate, 120, -32)
 
 	-- step floors
 	for i = 1, 7 do
 		local x = -48 + ((i - 1) * 32)
 		local y = -48 + ((i - 1) * 32)
-		SpriteSys.attach(TemplateSys.instantiate("wall", x, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalLeft"))
-		SpriteSys.attach(TemplateSys.instantiate("wall", x + 8, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalMid"))
-		SpriteSys.attach(TemplateSys.instantiate("wall", x + 16, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalMid"))
-		SpriteSys.attach(TemplateSys.instantiate("wall", x + 24, y, 8, 8), SpriteSys.getSprite("wallMetalVerticalRight"))
+		spriteSys:attach(templateSys:instantiate(wallTemplate, x, y, 8, 8),
+						 spriteSys:get("wallMetalVerticalLeft"))
+		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 8, y, 8, 8),
+						 spriteSys:get("wallMetalVerticalMid"))
+		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 16, y, 8, 8),
+						 spriteSys:get("wallMetalVerticalMid"))
+		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 24, y, 8, 8),
+						 spriteSys:get("wallMetalVerticalRight"))
 	end
 
 	-- side walls
 	local levelWidth = 160
 	local levelHeight = 120
-	TemplateSys.instantiate("wall", -64, -64, 8, levelHeight + 128)
-	TemplateSys.instantiate("wall", levelWidth + 56, -64, 8, levelHeight + 128)
+	templateSys:instantiate(wallTemplate, -64, -64, 8, levelHeight + 128)
+	templateSys:instantiate(wallTemplate, levelWidth + 56, -64, 8, levelHeight + 128)
 
-	TemplateSys.instantiate("wall", -64, -64, levelWidth + 128, 8)
-	TemplateSys.instantiate("wall", -64, levelHeight + 56, levelWidth + 128, 8)
+	templateSys:instantiate(wallTemplate, -64, -64, levelWidth + 128, 8)
+	templateSys:instantiate(wallTemplate, -64, levelHeight + 56, levelWidth + 128, 8)
 
-	SpriteSys.addSprite("physicsObject", 1, 10, 6, 6)
-	TemplateSys.add("physicsObject", {
+	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
+	local physicsObjectTemplate = templateSys:add("physicsObject", {
 		["spriteId"] = "physicsObject",
 		["w"] = 6,
 		["h"] = 6,
@@ -58,87 +60,55 @@ function GameSys.populateTestWorld()
 		}
 	})
 	for _ = 1, 10 do
-		local physicsObject = TemplateSys.instantiate("physicsObject")
-		EntitySys.setBounds(physicsObject,
+		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
+		entitySys:setBounds(physicsObject,
 			-48 + math.floor(math.random(levelWidth + 96)),
 			-48 + math.floor(math.random(levelHeight + 96)), 6, 6)
 		physicsObject.z = physicsObject.y
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
-		if EntitySys.findRelative(physicsObject, 0, 0, "solid") or EntitySys.findRelative(physicsObject, 0, 0, "player") then
-			EntitySys.destroy(physicsObject)
+		if (entitySys:findRelative(physicsObject, 0, 0, "solid")
+			or entitySys:findRelative(physicsObject, 0, 0, "player")) then
+			entitySys:destroy(physicsObject)
 		end
 	end
-	UtilSys.log("GameSys.populateTestWorld(): physicsObjectCount=%d", #EntitySys.findAll("physicsObject"))
+	util.log("Game:populateTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+end
+function Game:run()
+	self.simulation:runTests()
 
-	-- Rotating gravity
-	-- local steps = 90
-	-- table.insert(simulation.stepEvents, function()
-	-- 	steps = steps + 0.25
-	-- 	local dir = math.rad((math.floor(steps / 90) * 90) % 360)
-	-- 	simulation.static.physicsGravityX = math.cos(dir) * 0.5
-	-- 	simulation.static.physicsGravityY = math.sin(dir) * 0.5
-	-- 	if math.abs(simulation.static.physicsGravityX) < 0.1 then
-	-- 		simulation.static.physicsGravityX = 0
-	-- 	end
-	-- 	if math.abs(simulation.static.physicsGravityY) < 0.1 then
-	-- 		simulation.static.physicsGravityY = 0
-	-- 	end
-	-- end)
-end
-function GameSys.isRunning()
-	return simulation.isRunning()
-end
-function GameSys.destroy()
-	-- simulation.dump(GameSys.DUMP_FILE)
-	-- simulation.save(GameSys.SAVE_FILE)
-	simulation.destroy()
-end
-function GameSys.create()
-	GameSys.destroy()
-
-	simulation.create()
-	GameSys.populateTestWorld()
-end
-function GameSys.step()
 	client.step(client.state)
-	simulation.step()
+	self.simulation:addSystem(require("src/game/entities/wall"))
+	self.simulation:addSystem(require("src/game/entities/player"))
 
-	if client.state.inputX then
-		GameSys.create()
-	end
-end
-function GameSys.runTests()
-	UtilSys.log("GameSys.runTests(): Running automated tests")
+	self.simulation:create()
+	self:populateTestWorld()
 
-	EngineSys.runTests()
+	while client.state.running do
+		client.step(client.state)
+		self.simulation:step()
+		self.simulation:draw()
 
-	for componentName, component in pairs(GameSys.components) do
-		if component.runTests then
-			UtilSys.log("GameSys.runTests(): Running tests for %s", componentName)
-			component.runTests()
-		else
-			UtilSys.log("GameSys.runTests(): No tests for %s", componentName)
+		if client.state.inputX then
+			self.simulation:create()
+			self:populateTestWorld()
 		end
 	end
 
-	GameSys.create()
-
-	-- simulate a few frames of gameplay
-	for _ = 1, 5 do
-		GameSys.step()
-	end
+	-- self.simulation:dump(self.DUMP_FILE)
+	-- self.simulation:save(self.SAVE_FILE)
+	self.simulation:destroy()
 end
-function GameSys.run()
-	GameSys.runTests()
+function Game.new()
+	local game = {
+		["created"] = false,
+		["simulation"] = Simulation.new(),
+	}
 
-	GameSys.create()
+	Game.__index = Game
+	setmetatable(game, Game)
 
-	while GameSys.isRunning() do
-		GameSys.step()
-	end
-
-	GameSys.destroy()
+	return game
 end
 
-return GameSys
+return Game

@@ -1,18 +1,16 @@
 local json = require("./lib/json")
-local UtilSys = require("src/engine/util")
-local simulation = require("src/engine/simulation")
-local WorldSys = require("src/engine/world")
+local util = require("src/engine/util")
+local Simulation = require("src/engine/simulation")
+local World = require("src/engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
-local UtilSysRectCollides = UtilSys.rectCollides
+local utilRectCollides = util.rectCollides
 local mathFloor = math.floor
 local stringFormat = string.format
 
-local EntitySys = {}
-EntitySys.destroyEvents = {}
-EntitySys.tagEvents = {}
-EntitySys.ENTITY_CHUNK_SIZE = 64
-function EntitySys.setBounds(entity, x, y, w, h)
+local Entity = Simulation.createSystem("entity")
+Entity.ENTITY_CHUNK_SIZE = 64
+function Entity:setBounds(entity, x, y, w, h)
 	local oldEntityX = entity.x
 	local oldEntityY = entity.y
 
@@ -24,7 +22,7 @@ function EntitySys.setBounds(entity, x, y, w, h)
 		return
 	end
 
-	local entityChunkSize = EntitySys.ENTITY_CHUNK_SIZE
+	local entityChunkSize = self.ENTITY_CHUNK_SIZE
 	local oldChunkX1 = mathFloor(oldEntityX / entityChunkSize)
 	local oldChunkY1 = mathFloor(oldEntityY / entityChunkSize)
 	local oldChunkX2 = mathFloor((oldEntityX + oldEntityW - FLOAT_EPSILON) / entityChunkSize)
@@ -47,7 +45,7 @@ function EntitySys.setBounds(entity, x, y, w, h)
 		chunkY2 = chunkY1 - 1
 	end
 
-	local world = simulation.state.world
+	local world = self.simulation.state.world
 	local worldEntities = world.entities
 	local entityChunks = entity.chunks
 	local worldChunks = world.chunkEntities
@@ -108,16 +106,16 @@ function EntitySys.setBounds(entity, x, y, w, h)
 	entity.w = w
 	entity.h = h
 end
-function EntitySys.setPos(entity, x, y)
-	EntitySys.setBounds(entity, x, y, entity.w, entity.h)
+function Entity:setPos(entity, x, y)
+	self:setBounds(entity, x, y, entity.w, entity.h)
 end
-function EntitySys.tag(entity, tag)
+function Entity:tag(entity, tag)
 	local entityTags = entity.tags
 	if entityTags[tag] ~= nil then
 		return
 	end
 
-	local worldTagEntities = simulation.state.world.tagEntities
+	local worldTagEntities = self.simulation.state.world.tagEntities
 	local tagEntities = worldTagEntities[tag]
 
 	if tagEntities == nil then
@@ -131,20 +129,16 @@ function EntitySys.tag(entity, tag)
 
 	entityTags[tag] = tagId
 
-	local events = EntitySys.tagEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i](entity, tag, tagId)
-	end
+	self.simulation:broadcast("onEntityTag", entity, tag, tagId)
 end
-function EntitySys.untag(entity, tag)
+function Entity:untag(entity, tag)
 	local entityTags = entity.tags
 	local tagId = entityTags[tag]
 	if tagId == nil then
 		return
 	end
 
-	local world = simulation.state.world
+	local world = self.simulation.state.world
 	local worldTagEntities = world.tagEntities
 	local tagEntities = worldTagEntities[tag]
 	local tagsCount = #tagEntities
@@ -157,14 +151,10 @@ function EntitySys.untag(entity, tag)
 	tagEntities[tagsCount] = nil
 	entityTags[tag] = nil
 
-	local events = EntitySys.tagEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i](entity, tag, nil)
-	end
+	self.simulation:broadcast("onEntityTag", entity, tag, nil)
 end
-function EntitySys.find(tag, getAll)
-	local world = simulation.state.world
+function Entity:find(tag, getAll)
+	local world = self.simulation.state.world
 
 	local worldEntities = world.entities
 	local tagEntities = world.tagEntities[tag] or {}
@@ -185,10 +175,10 @@ function EntitySys.find(tag, getAll)
 
 	return results
 end
-function EntitySys.findAll(tag)
-	return EntitySys.find(tag, true)
+function Entity:findAll(tag)
+	return self:find(tag, true)
 end
-function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
+function Entity:findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 	local seenResults = nil
 	local results = nil
 	if getAll then
@@ -196,13 +186,13 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 		seenResults = {}
 	end
 
-	local entityChunkSize = EntitySys.ENTITY_CHUNK_SIZE
+	local entityChunkSize = self.ENTITY_CHUNK_SIZE
 	local chunkX1 = mathFloor(x / entityChunkSize)
 	local chunkY1 = mathFloor(y / entityChunkSize)
 	local chunkX2 = mathFloor((x + w - FLOAT_EPSILON) / entityChunkSize)
 	local chunkY2 = mathFloor((y + h - FLOAT_EPSILON) / entityChunkSize)
 
-	local world = simulation.state.world
+	local world = self.simulation.state.world
 	local worldChunks = world.chunkEntities
 	local entities = world.entities
 	for chunkY = chunkY1, chunkY2 do
@@ -218,7 +208,7 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 				local entityId = chunkEntities[i]
 				if (filterOutEntityId == nil) or (entityId ~= filterOutEntityId) then
 					local entity = entities[entityId]
-					if UtilSysRectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h) then
+					if utilRectCollides(x, y, w, h, entity.x, entity.y, entity.w, entity.h) then
 						if (filterTag == nil) or (entity.tags[filterTag] ~= nil) then
 							if not getAll then
 								return entity
@@ -238,35 +228,31 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 
 	return results
 end
-function EntitySys.findAllBounded(x, y, w, h, filterTag, filterOutEntityId)
-	return EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, true)
+function Entity:findAllBounded(x, y, w, h, filterTag, filterOutEntityId)
+	return self:findBounded(x, y, w, h, filterTag, filterOutEntityId, true)
 end
-function EntitySys.findRelative(entity, signX, signY, filterTag, getAll)
+function Entity:findRelative(entity, signX, signY, filterTag, getAll)
 	local relativeX = entity.x + (signX or 0)
 	local relativeY = entity.y + (signY or 0)
 
-	return EntitySys.findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id, getAll)
+	return self:findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id, getAll)
 end
-function EntitySys.findAllRelative(entity, signX, signY, filterTag)
-	return EntitySys.findRelative(entity, signX, signY, filterTag, true)
+function Entity:findAllRelative(entity, signX, signY, filterTag)
+	return self:findRelative(entity, signX, signY, filterTag, true)
 end
-function EntitySys.destroy(entity)
+function Entity:destroy(entity)
 	if entity.destroyed then
 		return
 	end
 
-	local events = EntitySys.destroyEvents
-	local eventsCount = #events
-	for i = 1, eventsCount do
-		events[i](entity)
-	end
+	self.simulation:broadcast("onEntityDestroy", entity)
 
 	local entityTags = entity.tags
 	for tag, _ in pairs(entityTags) do
-		EntitySys.untag(entity, tag)
+		self:untag(entity, tag)
 	end
 
-	EntitySys.setBounds(entity, 0, 0, 0, 0)
+	self:setBounds(entity, 0, 0, 0, 0)
 
 	local entityId = entity.id
 	for key, _ in pairs(entity) do
@@ -275,11 +261,11 @@ function EntitySys.destroy(entity)
 
 	entity.destroyed = true
 
-	local destroyedEntities = simulation.state.world.destroyedEntities
+	local destroyedEntities = self.simulation.state.world.destroyedEntities
 	destroyedEntities[#destroyedEntities + 1] = entityId
 end
-function EntitySys.create(template)
-	local world = simulation.state.world
+function Entity:create(template)
+	local world = self.simulation.state.world
 	local entities = world.entities
 	local entitiesCount = #entities
 
@@ -310,12 +296,12 @@ function EntitySys.create(template)
 	entity.tags = {}
 
 	if template ~= nil then
-		EntitySys.setBounds(entity, template.x or 0, template.y or 0, template.w or 0, template.h or 0)
+		self:setBounds(entity, template.x or 0, template.y or 0, template.w or 0, template.h or 0)
 
 		local templateTags = template.tags
 		if templateTags ~= nil then
 			for tag, _ in pairs(templateTags) do
-				EntitySys.tag(entity, tag)
+				self:tag(entity, tag)
 			end
 		end
 	end
@@ -324,103 +310,108 @@ function EntitySys.create(template)
 
 	return entity
 end
-function EntitySys.runTests()
-	simulation.create()
+function Entity:onSimulationCreate()
+	self.worldSys = self.simulation:addSystem(World)
 
-	local entityChunkSizeBackup = EntitySys.ENTITY_CHUNK_SIZE
-	EntitySys.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size
+	local world = self.simulation.state.world
+	world.entities = {}
+	world.tagEntities = {}
+	world.chunkEntities = {}
+	world.destroyedEntities = {}
+end
+function Entity:onSimulationTests()
+	local entityChunkSizeBackup = self.ENTITY_CHUNK_SIZE
+	self.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size
 
-	local world = simulation.state.world
+	local world = self.simulation.state.world
 	if world.entities == nil then
-		UtilSys.err("EntitySys.runTests(): entities object was not created during WorldSys.create()")
+		util.err("Entity:onSimulationTests(): entities object was not created during World.create()")
 	end
 	if world.tagEntities == nil then
-		UtilSys.err("EntitySys.runTests(): tagEntities object was not created during WorldSys.create()")
+		util.err("Entity:onSimulationTests(): tagEntities object was not created during World.create()")
 	end
 	if world.chunkEntities == nil then
-		UtilSys.err("EntitySys.runTests(): chunkEntities object was not created during WorldSys.create()")
+		util.err("Entity:onSimulationTests(): chunkEntities object was not created during World.create()")
 	end
 
-	local entity = EntitySys.create()
-	local entity2 = EntitySys.create()
+	local entity = self:create()
+	local entity2 = self:create()
 	assert(entity.id ~= entity2.id)
 	assert(world.entities[entity.id] == entity)
 	assert(world.entities[entity2.id] == entity2)
 
 	assert((entity.x == 0) and (entity.y == 0) and (entity.w == 0) and (entity.h == 0))
-	assert(UtilSys.setEquality(UtilSys.getKeys(entity.chunks), {}))
-	EntitySys.tag(entity, "yolo")
-	assert(EntitySys.findBounded(0, 0, 100, 100, "yolo") == nil)
-	assert(#EntitySys.findAllBounded(0, 0, 100, 100, "yolo") == 0)
+	assert(util.setEquality(util.getKeys(entity.chunks), {}))
+	self:tag(entity, "red")
+	assert(self:findBounded(0, 0, 100, 100, "red") == nil)
+	assert(#self:findAllBounded(0, 0, 100, 100, "red") == 0)
 
-	EntitySys.setBounds(entity, 64, 96, 16, 32)
+	self:setBounds(entity, 64, 96, 16, 32)
 	assert(entity.x == 64 and entity.y == 96 and entity.w == 16 and entity.h == 32)
-	assert(UtilSys.setEquality(UtilSys.getKeys(entity.chunks), {"1,1"}))
+	assert(util.setEquality(util.getKeys(entity.chunks), {"1,1"}))
 	assert(world.chunkEntities["1,1"][entity.chunks["1,1"]] == entity.id)
-	assert(#EntitySys.findAllBounded(0, 0, 100, 100, "yolo") == 1)
-	assert(EntitySys.findBounded(0, 0, 100, 100, "yolo"))
-	assert(EntitySys.findBounded(0, 0, 64, 96, "yolo") == nil)
-	assert(EntitySys.findBounded(0, 0, 65, 97, "yolo"))
-	assert(EntitySys.findBounded(80, 128, 1, 1, "yolo") == nil)
-	assert(EntitySys.findBounded(79, 127, 1, 1, "yolo"))
+	assert(#self:findAllBounded(0, 0, 100, 100, "red") == 1)
+	assert(self:findBounded(0, 0, 100, 100, "red"))
+	assert(self:findBounded(0, 0, 64, 96, "red") == nil)
+	assert(self:findBounded(0, 0, 65, 97, "red"))
+	assert(self:findBounded(80, 128, 1, 1, "red") == nil)
+	assert(self:findBounded(79, 127, 1, 1, "red"))
 
-	assert(EntitySys.findRelative(entity) == nil)
+	assert(self:findRelative(entity, 0, 0, "red") == nil)
+	assert(#self:findAllRelative(entity, 0, 0, "red") == 0)
 
-	EntitySys.setBounds(entity, 0, 0, 0, 0)
-	assert(UtilSys.setEquality(UtilSys.getKeys(entity.chunks), {}))
+	self:setPos(entity, 32, 32)
+	assert(entity.x == 32)
+	assert(entity.y == 32)
 
-	EntitySys.untag(entity, "yolo")
-	EntitySys.tag(entity, "yolo")
-	assert(UtilSys.setEquality(UtilSys.getKeys(entity.tags), {"yolo"}))
+	self:setBounds(entity, 0, 0, 0, 0)
+	assert(util.setEquality(util.getKeys(entity.chunks), {}))
 
-	EntitySys.tag(entity, "swag")
-	assert(UtilSys.setEquality(UtilSys.getKeys(entity.tags), {"yolo", "swag"}))
+	self:untag(entity, "red")
+	self:tag(entity, "red")
+	assert(util.setEquality(util.getKeys(entity.tags), {"red"}))
 
-	assert(EntitySys.find("yolo") == entity)
-	assert(UtilSys.setEquality(EntitySys.findAll("yolo"), {entity}))
+	self:tag(entity, "green")
+	assert(util.setEquality(util.getKeys(entity.tags), {"red", "green"}))
 
-	EntitySys.tag(entity2, "yolo")
-	assert(UtilSys.setEquality(EntitySys.findAll("yolo"), {entity, entity2}))
+	assert(self:find("red") == entity)
+	assert(util.setEquality(self:findAll("red"), {entity}))
 
-	EntitySys.destroy(entity)
+	self:tag(entity2, "red")
+	assert(util.setEquality(self:findAll("red"), {entity, entity2}))
+
+	self:destroy(entity)
 	assert(entity.destroyed)
-	assert(UtilSys.setEquality(EntitySys.findAll("yolo"), {entity2}))
+	assert(util.setEquality(self:findAll("red"), {entity2}))
 
-	EntitySys.destroy(entity2)
+	self:destroy(entity2)
 	assert(entity.destroyed)
-	assert(UtilSys.setEquality(EntitySys.findAll("yolo"), {}))
+	assert(util.setEquality(self:findAll("red"), {}))
 
 	local entities = {}
 	local numEntities = 5
-	assert(#EntitySys.findAllBounded(0, 0, 100, 100, "ysg") == 0)
+	assert(#self:findAllBounded(0, 0, 100, 100, "blue") == 0)
 	for i = 1, numEntities do
-		entity = EntitySys.create()
-		EntitySys.setBounds(entity, i, i, 1, 1)
-		EntitySys.tag(entity, tostring(i))
-		EntitySys.tag(entity, "ysg")
+		entity = self:create()
+		self:setBounds(entity, i, i, 1, 1)
+		self:tag(entity, tostring(i))
+		self:tag(entity, "blue")
 
-		assert(EntitySys.find(tostring(i)) == entity)
+		assert(self:find(tostring(i)) == entity)
 
 		entities[#entities + 1] = entity
 	end
 
-	assert(UtilSys.setEquality(EntitySys.findAll("ysg"), entities))
-	assert(#EntitySys.findAllBounded(0, 0, 100, 100, "ysg") == numEntities)
+	assert(util.setEquality(self:findAll("blue"), entities))
+	assert(#self:findAllBounded(0, 0, 100, 100, "blue") == numEntities)
 
 	for _, entityToDestroy in ipairs(entities) do
-		EntitySys.destroy(entityToDestroy)
+		self:destroy(entityToDestroy)
 	end
 
-	assert(UtilSys.setEquality(EntitySys.findAll("ysg"), {}))
+	assert(util.setEquality(self:findAll("blue"), {}))
 
-	EntitySys.ENTITY_CHUNK_SIZE = entityChunkSizeBackup
+	self.ENTITY_CHUNK_SIZE = entityChunkSizeBackup
 end
-table.insert(WorldSys.createEvents, function()
-	local world = simulation.state.world
-	world.entities = {}
-	world.tagEntities = {}
-	world.chunkEntities = {}
-	world.destroyedEntities = {}
-end)
 
-return EntitySys
+return Entity

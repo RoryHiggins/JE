@@ -126,8 +126,10 @@ jeBool jeWindow_getGlOk(jeWindow* window, const char* file, int line, const char
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
-		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
 		jeLogger_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
+#endif
 		ok = JE_FALSE;
 	}
 
@@ -149,8 +151,10 @@ jeBool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char*
 
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
 
-		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
 		jeLogger_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
+#endif
 
 		ok = JE_FALSE;
 	}
@@ -179,8 +183,10 @@ jeBool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char*
 
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
 
-		jeLogger_logPrefixImpl(JE_LOG_ERR_LABEL, file, line);
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
 		jeLogger_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
+#endif
 
 		ok = JE_FALSE;
 	}
@@ -197,6 +203,68 @@ jeBool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char*
 }
 jeBool jeWindow_isOpen(jeWindow* window) {
 	return window->open;
+}
+void jeWindow_flushVertexBuffer(jeWindow* window) {
+	glUseProgram(window->program);
+	glBindVertexArray(window->vao);
+
+	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLES, 0, window->vboVertexCount);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_flushVertexBuffer()");
+
+	window->vboVertexCount = 0;
+	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
+}
+void jeWindow_step(jeWindow* window) {
+	/*Wait for frame start time*/
+	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
+
+	SDL_Event event;
+	Uint32 timeMs = SDL_GetTicks();
+
+	jeWindow_flushVertexBuffer(window);
+	SDL_GL_SwapWindow(window->window);
+
+	if ((timeMs + 1) < window->nextFrameTimeMs) {
+		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
+		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
+			window->nextFrameTimeMs = timeMs + frameTimeMs;
+		}
+
+		SDL_Delay(frameTimeMs - 1);
+		timeMs = SDL_GetTicks();
+	}
+	window->nextFrameTimeMs = timeMs + frameTimeMs;
+	
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+			case SDL_QUIT: {
+				JE_LOG("jeWindow_step(): Quit event received");
+				window->open = JE_FALSE;
+				break;
+			}
+			case SDL_KEYUP: {
+				switch (event.key.keysym.sym) {
+					case SDLK_ESCAPE: {
+						JE_LOG("jeWindow_step(): Escape key released");
+						window->open = JE_FALSE;
+						break;
+					}
+					default: break;
+				}
+				break;
+			}
+		}
+	}
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	window->keyState = SDL_GetKeyboardState(NULL);
 }
 void jeWindow_destroy(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
@@ -411,6 +479,8 @@ jeBool jeWindow_create(jeWindow* window) {
 
 	window->open = JE_TRUE;
 
+	jeWindow_step(window);
+
 	success = JE_TRUE;
 	cleanup: {
 	}
@@ -446,21 +516,6 @@ int jeWindow_getFramesPerSecond(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
 
 	return 0;
-}
-void jeWindow_flushVertexBuffer(jeWindow* window) {
-	glUseProgram(window->program);
-	glBindVertexArray(window->vao);
-
-	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLES, 0, window->vboVertexCount);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-	jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_flushVertexBuffer()");
-
-	window->vboVertexCount = 0;
-	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
 void jeWindow_drawSprite(jeWindow* window, float z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
 
@@ -556,51 +611,4 @@ void jeWindow_drawSprite(jeWindow* window, float z, float x1, float y1, float x2
 	window->vboData[window->vboVertexCount].u = u2;
 	window->vboData[window->vboVertexCount].v = v2;
 	window->vboVertexCount++;
-}
-void jeWindow_step(jeWindow* window) {
-	/*Wait for frame start time*/
-	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
-
-	SDL_Event event;
-	Uint32 timeMs = SDL_GetTicks();
-
-	jeWindow_flushVertexBuffer(window);
-	SDL_GL_SwapWindow(window->window);
-
-	if ((timeMs + 1) < window->nextFrameTimeMs) {
-		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
-		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
-			window->nextFrameTimeMs = timeMs + frameTimeMs;
-		}
-
-		SDL_Delay(frameTimeMs - 1);
-		timeMs = SDL_GetTicks();
-	}
-	window->nextFrameTimeMs = timeMs + frameTimeMs;
-	
-	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-			case SDL_QUIT: {
-				JE_LOG("jeWindow_step(): Quit event received");
-				window->open = JE_FALSE;
-				break;
-			}
-			case SDL_KEYUP: {
-				switch (event.key.keysym.sym) {
-					case SDLK_ESCAPE: {
-						JE_LOG("jeWindow_step(): Escape key released");
-						window->open = JE_FALSE;
-						break;
-					}
-					default: break;
-				}
-				break;
-			}
-		}
-	}
-
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	window->keyState = SDL_GetKeyboardState(NULL);
 }
