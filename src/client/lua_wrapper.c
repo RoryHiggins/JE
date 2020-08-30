@@ -73,7 +73,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 		goto cleanup;
 	}
 
-	JE_LOG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
+	JE_DEBUG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
 
 	success = JE_TRUE;
 	cleanup: {
@@ -113,7 +113,7 @@ int jeLuaClient_readData(lua_State* lua) {
 		dataSize--;
 	}
 
-	JE_LOG("jeLuaClient_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
+	JE_DEBUG("jeLuaClient_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
 
 	success = JE_TRUE;
 
@@ -411,7 +411,7 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	jeBool success = JE_FALSE;
 	int createdResult = 0;
 
-	JE_LOG("jeLuaClient_registerLuaClientBindings()");
+	JE_DEBUG("jeLuaClient_registerLuaClientBindings()");
 
 	createdResult = luaL_newmetatable(lua, "jeClientMetatable");
 	if (createdResult != 1) {

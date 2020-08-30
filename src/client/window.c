@@ -219,59 +219,7 @@ void jeWindow_flushVertexBuffer(jeWindow* window) {
 	window->vboVertexCount = 0;
 	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
-void jeWindow_step(jeWindow* window) {
-	/*Wait for frame start time*/
-	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
-
-	SDL_Event event;
-	Uint32 timeMs = SDL_GetTicks();
-
-	jeWindow_flushVertexBuffer(window);
-	SDL_GL_SwapWindow(window->window);
-
-	if ((timeMs + 1) < window->nextFrameTimeMs) {
-		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
-		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
-			window->nextFrameTimeMs = timeMs + frameTimeMs;
-		}
-
-		SDL_Delay(frameTimeMs - 1);
-		timeMs = SDL_GetTicks();
-	}
-	window->nextFrameTimeMs = timeMs + frameTimeMs;
-	
-	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-			case SDL_QUIT: {
-				JE_LOG("jeWindow_step(): Quit event received");
-				window->open = JE_FALSE;
-				break;
-			}
-			case SDL_KEYUP: {
-				switch (event.key.keysym.sym) {
-					case SDLK_ESCAPE: {
-						JE_LOG("jeWindow_step(): Escape key released");
-						window->open = JE_FALSE;
-						break;
-					}
-					default: break;
-				}
-				break;
-			}
-		}
-	}
-
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	window->keyState = SDL_GetKeyboardState(NULL);
-}
-void jeWindow_destroy(jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
+void jeWindow_destroyGL(jeWindow* window) {
 	if (window->vao != 0) {
 		glBindVertexArray(window->vao);
 		glDisableVertexAttribArray(0);
@@ -315,58 +263,9 @@ void jeWindow_destroy(jeWindow* window) {
 		SDL_GL_DeleteContext(window->context);
 		window->context = NULL;
 	}
-
-	if (window->window != NULL) {
-		SDL_DestroyWindow(window->window);
-		window->window = NULL;
-	}
-
-	SDL_Quit();
-
-	jeImage_destroy(&window->image);
-
-	window->open = JE_FALSE;
-
-	memset((void*)window, 0, sizeof(*window));
 }
-jeBool jeWindow_create(jeWindow* window) {
+jeBool jeWindow_initGL(jeWindow* window) {
 	jeBool success = JE_FALSE;
-
-	memset((void*)window, 0, sizeof(*window));
-
-	if (!jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME)) {
-		JE_ERR("jeWindow_create(): jeImage_createFromFile() failed");
-		goto cleanup;
-	}
-
-	if (SDL_Init(SDL_INIT_VIDEO)) {
-		JE_ERR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
-		goto cleanup;
-	}
-
-	/*define OpenGL 3.2 context for RenderDoc support when debugging*/
-#if defined(JE_BUILD_DEBUG)
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-#else
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#endif
-
-	window->window = SDL_CreateWindow(
-		JE_WINDOW_CAPTION,
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
-		JE_WINDOW_WIDTH,
-		JE_WINDOW_HEIGHT,
-		/*flags*/ SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL
-	);
-	if (window->window == NULL) {
-		JE_ERR("jeWindow_create(): SDL_CreateWindow() failed with error=%s", SDL_GetError());
-		goto cleanup;
-	}
 
 	window->context = SDL_GL_CreateContext(window->window);
 	if (window->context == 0) {
@@ -379,14 +278,14 @@ jeBool jeWindow_create(jeWindow* window) {
 		goto cleanup;
 	}
 
+	if (SDL_GL_SetSwapInterval(0) < 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to disable vsync, error=%s", SDL_GetError());
+	}
+
 	glewExperimental = JE_TRUE;
 	if (glewInit() != GLEW_OK) {
 		JE_ERR("jeWindow_create(): glewInit() failed");
 		goto cleanup;
-	}
-
-	if (SDL_GL_SetSwapInterval(0) < 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to disable vsync, error=%s", SDL_GetError());
 	}
 
 	glEnable(GL_BLEND);
@@ -397,7 +296,7 @@ jeBool jeWindow_create(jeWindow* window) {
 
 	glDisable(GL_CULL_FACE);
 
-	glViewport(0, 0, JE_WINDOW_WIDTH, JE_WINDOW_HEIGHT);
+	glViewport(0, 0, jeWindow_getWidth(window), jeWindow_getHeight(window));
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
 		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto cleanup;
@@ -488,6 +387,137 @@ jeBool jeWindow_create(jeWindow* window) {
 
 	glBindVertexArray(0);
 
+	success = JE_TRUE;
+	cleanup: {
+	}
+
+	return success;
+}
+void jeWindow_step(jeWindow* window) {
+	/*Wait for frame start time*/
+	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
+
+	SDL_Event event;
+	Uint32 timeMs = SDL_GetTicks();
+
+	jeWindow_flushVertexBuffer(window);
+	SDL_GL_SwapWindow(window->window);
+
+	if ((timeMs + 1) < window->nextFrameTimeMs) {
+		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
+		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
+			window->nextFrameTimeMs = timeMs + frameTimeMs;
+		}
+
+		SDL_Delay(frameTimeMs - 1);
+		timeMs = SDL_GetTicks();
+	}
+	window->nextFrameTimeMs = timeMs + frameTimeMs;
+
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+			case SDL_QUIT: {
+				JE_DEBUG("jeWindow_step(): Quit event received");
+				window->open = JE_FALSE;
+				break;
+			}
+			case SDL_KEYUP: {
+				switch (event.key.keysym.sym) {
+					case SDLK_ESCAPE: {
+						JE_DEBUG("jeWindow_step(): Escape key released");
+						window->open = JE_FALSE;
+						break;
+					}
+					default: break;
+				}
+				break;
+			}
+			case SDL_WINDOWEVENT: {
+				switch (event.window.event) {
+					case SDL_WINDOWEVENT_RESIZED:
+					case SDL_WINDOWEVENT_SIZE_CHANGED: {
+						JE_DEBUG(
+							"jeWindow_step(): resizing window to width=%d, height=%d",
+							jeWindow_getWidth(window),
+							jeWindow_getHeight(window)
+						);
+						jeWindow_destroyGL(window);
+						if (!jeWindow_initGL(window)) {
+							JE_ERR("jeWindow_step(): jeWindow_initGL failed");
+							window->open = JE_FALSE;
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	window->keyState = SDL_GetKeyboardState(NULL);
+}
+void jeWindow_destroy(jeWindow* window) {
+	window->open = JE_FALSE;
+
+	SDL_Quit();
+
+	jeWindow_destroyGL(window);
+
+	jeImage_destroy(&window->image);
+
+	if (window->window != NULL) {
+		SDL_DestroyWindow(window->window);
+		window->window = NULL;
+	}
+
+	memset((void*)window, 0, sizeof(*window));
+}
+jeBool jeWindow_create(jeWindow* window) {
+	jeBool success = JE_FALSE;
+
+	memset((void*)window, 0, sizeof(*window));
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		JE_ERR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
+		goto cleanup;
+	}
+
+	/*define OpenGL 3.2 context for RenderDoc support when debugging*/
+#if defined(JE_BUILD_DEBUG)
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#else
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
+
+	window->window = SDL_CreateWindow(
+		JE_WINDOW_CAPTION,
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		JE_WINDOW_WIDTH,
+		JE_WINDOW_HEIGHT,
+		/*flags*/ SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+	);
+	if (window->window == NULL) {
+		JE_ERR("jeWindow_create(): SDL_CreateWindow() failed with error=%s", SDL_GetError());
+		goto cleanup;
+	}
+
+	if (jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME) == JE_FALSE) {
+		JE_ERR("jeWindow_create(): jeImage_createFromFile() failed");
+		goto cleanup;
+	}
+
+	if (jeWindow_initGL(window) == JE_FALSE) {
+		JE_ERR("jeWindow_create(): jeWindow_initGL() failed");
+		goto cleanup;
+	}
+
 	jeController_setBindings(&window->controller);
 	window->keyState = SDL_GetKeyboardState(NULL);
 
@@ -534,8 +564,8 @@ int jeWindow_getFramesPerSecond(jeWindow* window) {
 void jeWindow_drawSprite(jeWindow* window, float z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
 
 	static const GLuint spriteVertexCount = 6;
-	static const float scaleX = (2.0f * (float)JE_WINDOW_SCALE) / (float)JE_WINDOW_WIDTH;
-	static const float scaleY = (2.0f * (float)JE_WINDOW_SCALE) / (float)JE_WINDOW_HEIGHT;
+	float scaleX = (2.0f * (float)JE_WINDOW_SCALE) / (float)jeWindow_getWidth(window);
+	float scaleY = (2.0f * (float)JE_WINDOW_SCALE) / (float)jeWindow_getHeight(window);
 
 	if ((window->vboVertexCount + spriteVertexCount) >= JE_WINDOW_VERTEX_BUFFER_CAPACITY) {
 		jeWindow_flushVertexBuffer(window);

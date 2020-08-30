@@ -14,7 +14,7 @@ struct jeClient {
 };
 
 void jeClient_destroy(jeClient* client) {
-	JE_LOG("jeClient_destroy()");
+	JE_DEBUG("jeClient_destroy()");
 
 	if (client->lua != NULL) {
 		lua_close(client->lua);
@@ -28,7 +28,7 @@ void jeClient_destroy(jeClient* client) {
 jeBool jeClient_create(jeClient* client) {
 	jeBool success = JE_FALSE;
 
-	JE_LOG("jeClient_create()");
+	JE_DEBUG("jeClient_create()");
 
 	memset((void*)client, 0, sizeof(*client));
 
