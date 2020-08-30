@@ -1,7 +1,7 @@
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 
-local Template = Simulation.createSystem("template")
+local Template = System.new("template")
 function Template:add(templateId, template)
 	local templates = self.simulation.static.templates
 	local currentTemplate = templates[templateId]
@@ -36,7 +36,7 @@ function Template:instantiate(template, x, y, w, h)
 
 end
 function Template:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
+	self:addDependencies(Entity)
 
 	self.simulation.static.templates = {}
 end

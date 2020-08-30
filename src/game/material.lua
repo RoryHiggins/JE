@@ -1,9 +1,9 @@
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 
-local Material = Simulation.createSystem("material")
+local Material = System.new("material")
 function Material:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
+	self:addDependencies(Entity)
 
 	self.simulation.static.materials = {
 		"air",

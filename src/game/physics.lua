@@ -1,10 +1,10 @@
 local util = require("src/engine/util")
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Template = require("src/engine/template")
 local Material = require("src/game/material")
 
-local Physics = Simulation.createSystem("physics")
+local Physics = System.new("physics")
 function Physics:getMaterialPhysics(entity)
 	local static = self.simulation.static
 
@@ -268,9 +268,7 @@ function Physics:tick(entity)
 	self:tickMovement(entity)
 end
 function Physics:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
-	self.templateSys = self.simulation:addSystem(Template)
-	self.materialSys = self.simulation:addSystem(Material)
+	self:addDependencies(Entity, Template, Material)
 
 	local static = self.simulation.static
 

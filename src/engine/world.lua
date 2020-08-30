@@ -1,6 +1,6 @@
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 
-local World = Simulation.createSystem("world")
+local World = System.new("world")
 function World:onSimulationCreate()
 	self.simulation.state.world = {}
 end

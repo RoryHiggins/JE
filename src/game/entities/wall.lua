@@ -1,11 +1,10 @@
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Sprite = require("src/engine/sprite")
 local Template = require("src/engine/template")
 
-local Wall = Simulation.createSystem("wall")
+local Wall = System.new("wall")
 function Wall:onSimulationCreate()
-	self.spriteSys = self.simulation:addSystem(Sprite)
-	self.templateSys = self.simulation:addSystem(Template)
+	self:addDependencies(Sprite, Template)
 
 	self.spriteSys:addSprite("wallMetal", 0, 40, 8, 8)
 	self.spriteSys:addSprite("wallMetalVerticalLeft", 8, 40, 8, 8)

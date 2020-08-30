@@ -193,12 +193,5 @@ function Simulation.new()
 
 	return simulation
 end
-function Simulation.createSystem(systemName)
-	local class = {}
-	class.__index = class
-	class.SYSTEM_NAME = systemName
-
-	return class
-end
 
 return Simulation

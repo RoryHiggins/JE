@@ -1,13 +1,13 @@
 local util = require("src/engine/util")
 local client = require("src/engine/client")
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Sprite = require("src/engine/sprite")
 local Template = require("src/engine/template")
 
 local Physics = require("src/game/physics")
 
-local Player = Simulation.createSystem("player")
+local Player = System.new("player")
 function Player:tickEntity(entity)
 	local static = self.simulation.static
 
@@ -90,10 +90,7 @@ function Player:tickEntity(entity)
 	end
 end
 function Player:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
-	self.spriteSys = self.simulation:addSystem(Sprite)
-	self.templateSys = self.simulation:addSystem(Template)
-	self.physicsSys = self.simulation:addSystem(Physics)
+	self:addDependencies(Entity, Sprite, Template, Physics)
 
 	self.spriteSys:addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
 	self.spriteSys:addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
@@ -105,7 +102,7 @@ function Player:onSimulationCreate()
 		["playerJumpFramesCur"] = 0,
 		["playerJumpForce"] = 4,
 		["playerJumpFrameForce"] = 0.5,
-		["playerJumpFrames"] = 12,
+		["playerJumpFrames"] = 15,
 		["playerMoveForce"] = 0.25,
 		["playerChangeDirForceMultiplier"] = 0.8,
 		["playerTargetMovementSpeed"] = 2,

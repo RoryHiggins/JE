@@ -1,9 +1,9 @@
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 
-local Screen = Simulation.createSystem("screen")
+local Screen = System.new("screen")
 function Screen:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
+	self:addDependencies(Entity)
 
 	self.simulation.state.screen = {
 		["x"] = 0,

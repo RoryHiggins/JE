@@ -1,9 +1,9 @@
 local client = require("src/engine/client")
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Screen = require("src/engine/screen")
 
-local Text = Simulation.createSystem("text")
+local Text = System.new("text")
 function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
 	local fonts = self.simulation.static.fonts
 	local font = fonts[fontId]
@@ -39,8 +39,7 @@ function Text:detach(entity)
 	entity.fontId = nil
 end
 function Text:onSimulationCreate()
-	self.entitySys = self.simulation:addSystem(Entity)
-	self.screenSys = self.simulation:addSystem(Screen)
+	self:addDependencies(Entity, Screen)
 
 	self.simulation.static.fonts = {}
 end

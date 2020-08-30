@@ -1,6 +1,6 @@
 local json = require("./lib/json")
 local util = require("src/engine/util")
-local Simulation = require("src/engine/simulation")
+local System = require("src/engine/system")
 local World = require("src/engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
@@ -8,7 +8,7 @@ local utilRectCollides = util.rectCollides
 local mathFloor = math.floor
 local stringFormat = string.format
 
-local Entity = Simulation.createSystem("entity")
+local Entity = System.new("entity")
 Entity.ENTITY_CHUNK_SIZE = 64
 function Entity:setBounds(entity, x, y, w, h)
 	local oldEntityX = entity.x
@@ -311,7 +311,7 @@ function Entity:create(template)
 	return entity
 end
 function Entity:onSimulationCreate()
-	self.worldSys = self.simulation:addSystem(World)
+	self:addDependencies(World)
 
 	local world = self.simulation.state.world
 	world.entities = {}
