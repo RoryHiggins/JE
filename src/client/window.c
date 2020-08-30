@@ -261,8 +261,11 @@ void jeWindow_step(jeWindow* window) {
 		}
 	}
 
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	window->keyState = SDL_GetKeyboardState(NULL);
 }
@@ -341,8 +344,16 @@ jeBool jeWindow_create(jeWindow* window) {
 		goto cleanup;
 	}
 
+	/*define OpenGL 3.2 context for RenderDoc support when debugging*/
+#if defined(JE_BUILD_DEBUG)
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#else
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
 
 	window->window = SDL_CreateWindow(
 		JE_WINDOW_CAPTION,
@@ -377,6 +388,9 @@ jeBool jeWindow_create(jeWindow* window) {
 	if (SDL_GL_SetSwapInterval(0) < 0) {
 		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to disable vsync, error=%s", SDL_GetError());
 	}
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

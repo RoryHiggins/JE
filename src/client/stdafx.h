@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <time.h>
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

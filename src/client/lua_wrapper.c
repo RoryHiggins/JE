@@ -153,12 +153,15 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	float y2 = 0.0f;
 	float z = 0;
 
-	/*screen*/
 	luaL_checktype(lua, 3, LUA_TTABLE);
+	luaL_checktype(lua, 2, LUA_TTABLE);
+	luaL_checktype(lua, 1, LUA_TTABLE);
+
+	/*screen*/
 	lua_getfield(lua, 3, "x");
-	screenOriginX = luaL_checknumber(lua, -1);
+	screenOriginX = luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 3, "y");
-	screenOriginY = luaL_checknumber(lua, -1);
+	screenOriginY = luaL_optnumber(lua, -1, 0.0f);
 
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
@@ -181,17 +184,21 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	v2 = luaL_checknumber(lua, -1);
 
 	/*render object*/
-	luaL_checktype(lua, 1, LUA_TTABLE);
 	lua_getfield(lua, 1, "x");
 	x1 = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "y");
 	y1 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "w");
-	x2 = x1 + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "h");
-	y2 = y1 + luaL_checknumber(lua, -1);
+	lua_getfield(lua, 1, "spriteTranslationX");
+	x1 = x1 + luaL_optnumber(lua, -1, 0.0f);
+	lua_getfield(lua, 1, "spriteTranslationY");
+	y1 = y1 + luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 1, "z");
-	z = luaL_optnumber(lua, -1, 0.0);
+	z = luaL_optnumber(lua, -1, 0.0f);
+
+	lua_getfield(lua, 1, "w");
+	x2 = x1 + luaL_optnumber(lua, -1, u2 - u1);
+	lua_getfield(lua, 1, "h");
+	y2 = y1 + luaL_optnumber(lua, -1, y2 - y1);
 
 	x1 -= screenOriginX;
 	x2 -= screenOriginX;
@@ -203,6 +210,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	return 0;
 }
 int jeLuaClient_drawText(lua_State* lua) {
+	static const char charDefault = ' ';
 	/*screen*/
 	float screenOriginX = 0.0f;
 	float screenOriginY = 0.0f;
@@ -223,30 +231,38 @@ int jeLuaClient_drawText(lua_State* lua) {
 	const char* charLast = "\0";
 
 	/*text*/
-	float x1 = 0.0f;
-	float y1 = 0.0f;
-	float x2 = 0.0f;
-	float y2 = 0.0f;
+	float x = 0.0f;
+	float y = 0.0f;
 	float z = 0;
 	const char* text = "";
+	int textLength = 0;
+
+	/*char*/
+	int i = 0;
+	char charVal = charDefault;
+	int charIndex = 0;
+	float charX = 0.0f;
+	float charY = 0.0f;
+	float charU = 0.0f;
+	float charV = 0.0f;
+
+	luaL_checktype(lua, 3, LUA_TTABLE);
+	luaL_checktype(lua, 2, LUA_TTABLE);
+	luaL_checktype(lua, 1, LUA_TTABLE);
 
 	/*screen*/
-	luaL_checktype(lua, 3, LUA_TTABLE);
-
 	lua_getfield(lua, 3, "x");
 	screenOriginX = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 3, "y");
 	screenOriginY = luaL_checknumber(lua, -1);
 
 	/*font*/
-	luaL_checktype(lua, 2, LUA_TTABLE);
-
 	lua_getfield(lua, 2, "r");
-	r = luaL_optnumber(lua, -1, 256.0f);
+	r = luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 256.0f);
+	g = luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 2, "b");
-	b = luaL_optnumber(lua, -1, 256.0f);
+	b = luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 2, "a");
 	a = luaL_optnumber(lua, -1, 256.0f);
 
@@ -268,29 +284,42 @@ int jeLuaClient_drawText(lua_State* lua) {
 	charColumns = luaL_checknumber(lua, -1);
 
 	/*render object*/
-	luaL_checktype(lua, 1, LUA_TTABLE);
-
 	lua_getfield(lua, 1, "x");
-	x1 = luaL_checknumber(lua, -1);
+	x = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "y");
-	y1 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "w");
-	x2 = x1 + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "h");
-	y2 = y1 + luaL_checknumber(lua, -1);
+	y = luaL_checknumber(lua, -1);
+	lua_getfield(lua, 1, "textTranslationX");
+	x = x + luaL_optnumber(lua, -1, 0.0f);
+	lua_getfield(lua, 1, "textTranslationY");
+	y = y + luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 1, "z");
 	z = luaL_optnumber(lua, -1, 0.0f);
+	lua_getfield(lua, 1, "textZ");
+	z = luaL_optnumber(lua, -1, z);
 
 	lua_getfield(lua, 1, "text");
-	text = luaL_checkstring(lua, -1);
+	text = luaL_optstring(lua, -1, "");
+	textLength = strnlen(text, 256);
 
-	x1 -= screenOriginX;
-	x2 -= screenOriginX;
-	y1 -= screenOriginY;
-	y2 -= screenOriginY;
+	x -= screenOriginX;
+	y -= screenOriginY;
 
 	/*TODO*/
-	/*jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);*/
+	for (i = 0; i < textLength; i++) {
+		charVal = (char)toupper((int)text[i]);
+		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
+			JE_DEBUG("jeLuaClient_drawText(): character outside range, char=%d, min=%d, max=%d", (int)charVal, (int)charFirst[0], (int)charLast[0]);
+			charVal = charDefault;
+		}
+
+		charX = x + (charW * i);
+		charY = y;
+
+		charIndex = (int)(charVal - charFirst[0]);
+		charU = u + (charW * (charIndex % charColumns));
+		charV = v + (charH * (charIndex / charColumns));
+		jeWindow_drawSprite(jeWindow_get(), z, charX, charY, charX + charW, charY + charH, r, g, b, a, charU, charV, charU + charW, charV + charH);
+	}
 
 	/*font*/
 	JE_MAYBE_UNUSED(r);
@@ -308,10 +337,8 @@ int jeLuaClient_drawText(lua_State* lua) {
 	JE_MAYBE_UNUSED(charColumns);
 
 	/*text*/
-	JE_MAYBE_UNUSED(x1);
-	JE_MAYBE_UNUSED(y1);
-	JE_MAYBE_UNUSED(x2);
-	JE_MAYBE_UNUSED(y2);
+	JE_MAYBE_UNUSED(x);
+	JE_MAYBE_UNUSED(y);
 	JE_MAYBE_UNUSED(z);
 
 	JE_MAYBE_UNUSED(text);

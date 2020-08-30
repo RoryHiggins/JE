@@ -27,9 +27,7 @@ function Text:getFont(fontId)
 	return self.simulation.static.fonts[fontId]
 end
 function Text:attach(entity, font, text)
-	local fontId = font.fontId
-
-	entity.fontId = fontId
+	entity.fontId = font.fontId
 	entity.text = text
 	self.entitySys:tag(entity, "text")
 end

@@ -16,7 +16,7 @@
 
 #if defined(NDEBUG)
 #define JE_LOG_LEVEL 2
-#elif !defined(JE_LOG_DEBUG)
+#elif !defined(JE_BUILD_DEBUG)
 #define JE_LOG_LEVEL 1
 #else
 #define JE_LOG_LEVEL 0

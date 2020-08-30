@@ -11,13 +11,20 @@ function Game:populateTestWorld()
 	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
 	local templateSys = self.simulation:addSystem(require("src/engine/template"))
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
+	local textSys = self.simulation:addSystem(require("src/engine/text"))
 
 	local playerTemplate = templateSys:get("player")
 	local wallTemplate = templateSys:get("wall")
 
 	-- print(util.toComparable(self.simulation))
 	-- print(util.toComparable(playerTemplate))
-	templateSys:instantiate(playerTemplate, 120, -32)
+	local player = templateSys:instantiate(playerTemplate, 120, -32)
+
+	local font = textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
+	textSys:attach(player, font, "hello, world!")
+	player.textTranslationY = -8
+	player.textTranslationX = - (4 * #"hello, world!")
+	player.textZ = -1
 
 	-- step floors
 	for i = 1, 7 do

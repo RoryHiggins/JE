@@ -32,9 +32,7 @@ function Sprite:get(spriteId)
 	return self.simulation.static.sprites[spriteId]
 end
 function Sprite:attach(entity, sprite)
-	local spriteId = sprite.spriteId
-
-	entity.spriteId = spriteId
+	entity.spriteId = sprite.spriteId
 	self.entitySys:tag(entity, "sprite")
 end
 function Sprite:detach(entity)
