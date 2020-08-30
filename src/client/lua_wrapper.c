@@ -180,16 +180,9 @@ int jeLuaClient_step(lua_State* lua) {
 	return 0;
 }
 int jeLuaClient_drawSprite(lua_State* lua) {
-	int halfWindowWidth = 0;
-	int halfWindowHeight = 0;
-
 	/*screen*/
 	float screenOriginX = 0.0f;
 	float screenOriginY = 0.0f;
-	float screenX1 = 0.0f;
-	float screenY1 = 0.0f;
-	float screenX2 = 0.0f;
-	float screenY2 = 0.0f;
 
 	/*sprite template*/
 	float r = 0.0f;
@@ -207,10 +200,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	float y1 = 0.0f;
 	float x2 = 0.0f;
 	float y2 = 0.0f;
-	int z = 0;
-
-	halfWindowWidth = jeWindow_getWidth(jeWindow_get()) / 2;
-	halfWindowHeight = jeWindow_getHeight(jeWindow_get()) / 2;
+	float z = 0;
 
 	/*screen*/
 	luaL_checktype(lua, 3, LUA_TTABLE);
@@ -218,11 +208,6 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	screenOriginX = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 3, "y");
 	screenOriginY = luaL_checknumber(lua, -1);
-
-	screenX1 = screenOriginX - halfWindowWidth;
-	screenY1 = screenOriginY - halfWindowHeight;
-	screenX2 = screenOriginX + halfWindowWidth;
-	screenY2 = screenOriginY + halfWindowHeight;
 
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
@@ -255,19 +240,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	lua_getfield(lua, 1, "h");
 	y2 = y1 + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "z");
-	z = (int)luaL_optnumber(lua, -1, 0.0);
-
-	if ((a == 0)
-		|| (x1 > screenX2)
-		|| (y1 > screenY2)
-		|| (x2 <= screenX1)
-		|| (y2 <= screenY1)
-		|| (u1 == u2)
-		|| (v1 == v2)
-		|| (x1 == x2)
-		|| (y1 == y2)) {
-		goto cleanup;
-	}
+	z = luaL_optnumber(lua, -1, 0.0);
 
 	x1 -= screenOriginX;
 	x2 -= screenOriginX;
@@ -275,9 +248,6 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	y2 -= screenOriginY;
 
 	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
-
-	cleanup: {
-	}
 
 	return 0;
 }
@@ -308,7 +278,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	float y1 = 0.0f;
 	float x2 = 0.0f;
 	float y2 = 0.0f;
-	int z = 0;
+	float z = 0;
 	const char* text = "";
 
 	/#*screen*#/
@@ -364,7 +334,7 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	lua_getfield(lua, 1, "h");
 	y2 = y1 + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "z");
-	z = (int)luaL_optnumber(lua, -1, 0.0f);
+	z = luaL_optnumber(lua, -1, 0.0f);
 
 	lua_getfield(lua, 1, "text");
 	text = luaL_checkstring(lua, -1);

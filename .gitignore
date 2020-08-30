@@ -8,7 +8,9 @@
 *.a
 *.obj
 *.gcda
-*j25_*.tar.gz
+j25_*.tar.gz
+gmon.out
+profile.txt
 
 *.sublime-project
 *.sublime-workspace

@@ -1,8 +1,8 @@
-local SimulationSys = require("src/engine/simulation")
+local simulation = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 
 local MaterialSys = {}
-SimulationSys.static.materials = {
+simulation.static.materials = {
 	"air",
 	"solid",
 	"ice",
@@ -11,7 +11,7 @@ SimulationSys.static.materials = {
 }
 table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
 	if tagId ~= nil then
-		local materials = SimulationSys.static.materials
+		local materials = simulation.static.materials
 		local materialsCount = #materials
 		for i = 1, materialsCount do
 			if tag == materials[i] then

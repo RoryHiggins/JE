@@ -1,11 +1,11 @@
-local SimulationSys = require("src/engine/simulation")
+local simulation = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 
-SimulationSys.static.templates = {}
+simulation.static.templates = {}
 
 local TemplateSys = {}
 function TemplateSys.add(templateId, template)
-	local templates = SimulationSys.static.templates
+	local templates = simulation.static.templates
 	local currentTemplate = templates[templateId]
 	if currentTemplate == nil then
 		templates[templateId] = template
@@ -13,7 +13,7 @@ function TemplateSys.add(templateId, template)
 	return template
 end
 function TemplateSys.instantiate(templateId, x, y, w, h)
-	local entity = EntitySys.create(SimulationSys.static.templates[templateId])
+	local entity = EntitySys.create(simulation.static.templates[templateId])
 
 	if x == nil then
 		x = entity.x
@@ -35,12 +35,12 @@ function TemplateSys.instantiate(templateId, x, y, w, h)
 
 end
 function TemplateSys.runTests()
-	SimulationSys.create()
-	assert(SimulationSys.static.templates ~= nil)
+	simulation.create()
+	assert(simulation.static.templates ~= nil)
 
 	local template = {["x"] = 2, ["tags"] = {["yee"] = true}}
 	TemplateSys.add("yee", template)
-	EntitySys.create(SimulationSys.static.templates["yee"])
+	EntitySys.create(simulation.static.templates["yee"])
 	assert(EntitySys.find("yee").x == 2)
 	assert(EntitySys.find("yee").tags["yee"] ~= nil)
 end

@@ -1,16 +1,16 @@
-local ClientSys = require("src/engine/client")
-local SimulationSys = require("src/engine/simulation")
+local client = require("src/engine/client")
+local simulation = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 local ScreenSys = require("src/engine/screen")
 
-local ClientSysDrawSprite = ClientSys.drawSprite
+local clientDrawSprite = client.drawSprite
 
-local static = SimulationSys.static
+local static = simulation.static
 static.sprites = {}
 
 local SpriteSys = {}
 function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
-	local sprites = SimulationSys.static.sprites
+	local sprites = simulation.static.sprites
 	local sprite = sprites[spriteId]
 	if sprite == nil then
 		sprite = {
@@ -30,7 +30,7 @@ function SpriteSys.addSprite(spriteId, u, v, w, h, r, g, b, a)
 	return sprite
 end
 function SpriteSys.getSprite(spriteId)
-	return SimulationSys.static.sprites[spriteId]
+	return simulation.static.sprites[spriteId]
 end
 function SpriteSys.attach(entity, sprite)
 	local spriteId = sprite.spriteId
@@ -43,7 +43,7 @@ function SpriteSys.detach(entity)
 	entity.spriteId = nil
 end
 function SpriteSys.runTests()
-	SimulationSys.create()
+	simulation.create()
 
 	local entity = EntitySys.create()
 	local testSprite = SpriteSys.addSprite("test", 40, 0, 8, 8)
@@ -59,14 +59,14 @@ function SpriteSys.runTests()
 	assert(entity.tags.sprite == nil)
 end
 table.insert(ScreenSys.drawEvents, function(screen)
-	local sprites = SimulationSys.static.sprites
+	local sprites = simulation.static.sprites
 
 	local entities = EntitySys.findAll("sprite")
 	local entitiesCount = #entities
 	for i = 1, entitiesCount do
 		local entity = entities[i]
 		local sprite = sprites[entity.spriteId]
-		ClientSysDrawSprite(entity, sprite, screen)
+		clientDrawSprite(entity, sprite, screen)
 	end
 end)
 

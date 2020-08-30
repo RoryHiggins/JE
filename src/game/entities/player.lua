@@ -1,13 +1,13 @@
 local UtilSys = require("src/engine/util")
-local ClientSys = require("src/engine/client")
-local SimulationSys = require("src/engine/simulation")
+local client = require("src/engine/client")
+local simulation = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 local SpriteSys = require("src/engine/sprite")
 local TemplateSys = require("src/engine/template")
 
 local PhysicsSys = require("src/game/physics")
 
-local static = SimulationSys.static
+local static = simulation.static
 
 local PlayerSys = {}
 SpriteSys.addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
@@ -39,8 +39,8 @@ PlayerSys.template = TemplateSys.add("player", {
 function PlayerSys.tickEntity(entity)
 	local materialPhysics = PhysicsSys.getMaterialPhysics(entity)
 
-	local inputDirX = UtilSys.boolToNumber(ClientSys.state.inputRight) - UtilSys.boolToNumber(ClientSys.state.inputLeft)
-	local inputDirY = UtilSys.boolToNumber(ClientSys.state.inputDown) - UtilSys.boolToNumber(ClientSys.state.inputUp)
+	local inputDirX = UtilSys.boolToNumber(client.state.inputRight) - UtilSys.boolToNumber(client.state.inputLeft)
+	local inputDirY = UtilSys.boolToNumber(client.state.inputDown) - UtilSys.boolToNumber(client.state.inputUp)
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
 	local moveDirX = inputDirX * math.abs(UtilSys.sign(static.physicsGravityY))
@@ -115,7 +115,7 @@ function PlayerSys.tickEntity(entity)
 		SpriteSys.attach(entity, SpriteSys.getSprite("playerLeft"))
 	end
 end
-table.insert(SimulationSys.stepEvents, function()
+table.insert(simulation.stepEvents, function()
 	for _, player in pairs(EntitySys.findAll("player")) do
 		PlayerSys.tickEntity(player)
 	end

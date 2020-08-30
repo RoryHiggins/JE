@@ -1,7 +1,7 @@
 local EngineSys = require("src/engine/engine")
 local UtilSys = require("src/engine/util")
-local ClientSys = require("src/engine/client")
-local SimulationSys = require("src/engine/simulation")
+local client = require("src/engine/client")
+local simulation = require("src/engine/simulation")
 
 local GameSys = {}
 GameSys.DUMP_FILE = ".\\game_dump.sav"
@@ -57,11 +57,12 @@ function GameSys.populateTestWorld()
 			["physicsObject"] = true,
 		}
 	})
-	for _ = 1, 200 do
+	for _ = 1, 10 do
 		local physicsObject = TemplateSys.instantiate("physicsObject")
 		EntitySys.setBounds(physicsObject,
 			-48 + math.floor(math.random(levelWidth + 96)),
 			-48 + math.floor(math.random(levelHeight + 96)), 6, 6)
+		physicsObject.z = physicsObject.y
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
 		if EntitySys.findRelative(physicsObject, 0, 0, "solid") or EntitySys.findRelative(physicsObject, 0, 0, "player") then
@@ -71,39 +72,39 @@ function GameSys.populateTestWorld()
 	UtilSys.log("GameSys.populateTestWorld(): physicsObjectCount=%d", #EntitySys.findAll("physicsObject"))
 
 	-- Rotating gravity
-	-- local steps = 0
-	-- table.insert(SimulationSys.stepEvents, function()
-	-- 	steps = steps + 1.5
+	-- local steps = 90
+	-- table.insert(simulation.stepEvents, function()
+	-- 	steps = steps + 0.25
 	-- 	local dir = math.rad((math.floor(steps / 90) * 90) % 360)
-	-- 	SimulationSys.static.physicsGravityX = math.cos(dir) * 0.8
-	-- 	SimulationSys.static.physicsGravityY = math.sin(dir) * 0.8
-	-- 	if math.abs(SimulationSys.static.physicsGravityX) < 0.1 then
-	-- 		SimulationSys.static.physicsGravityX = 0
+	-- 	simulation.static.physicsGravityX = math.cos(dir) * 0.5
+	-- 	simulation.static.physicsGravityY = math.sin(dir) * 0.5
+	-- 	if math.abs(simulation.static.physicsGravityX) < 0.1 then
+	-- 		simulation.static.physicsGravityX = 0
 	-- 	end
-	-- 	if math.abs(SimulationSys.static.physicsGravityY) < 0.1 then
-	-- 		SimulationSys.static.physicsGravityY = 0
+	-- 	if math.abs(simulation.static.physicsGravityY) < 0.1 then
+	-- 		simulation.static.physicsGravityY = 0
 	-- 	end
 	-- end)
 end
 function GameSys.isRunning()
-	return SimulationSys.isRunning()
+	return simulation.isRunning()
 end
 function GameSys.destroy()
-	-- SimulationSys.dump(GameSys.DUMP_FILE)
-	-- SimulationSys.save(GameSys.SAVE_FILE)
-	SimulationSys.destroy()
+	-- simulation.dump(GameSys.DUMP_FILE)
+	-- simulation.save(GameSys.SAVE_FILE)
+	simulation.destroy()
 end
 function GameSys.create()
 	GameSys.destroy()
 
-	SimulationSys.create()
+	simulation.create()
 	GameSys.populateTestWorld()
 end
 function GameSys.step()
-	ClientSys.step(ClientSys.state)
-	SimulationSys.step()
+	client.step(client.state)
+	simulation.step()
 
-	if ClientSys.state.inputX then
+	if client.state.inputX then
 		GameSys.create()
 	end
 end

@@ -1,6 +1,6 @@
 local json = require("./lib/json")
 local UtilSys = require("src/engine/util")
-local SimulationSys = require("src/engine/simulation")
+local simulation = require("src/engine/simulation")
 local WorldSys = require("src/engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
@@ -47,7 +47,7 @@ function EntitySys.setBounds(entity, x, y, w, h)
 		chunkY2 = chunkY1 - 1
 	end
 
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	local worldEntities = world.entities
 	local entityChunks = entity.chunks
 	local worldChunks = world.chunkEntities
@@ -117,7 +117,7 @@ function EntitySys.tag(entity, tag)
 		return
 	end
 
-	local worldTagEntities = SimulationSys.state.world.tagEntities
+	local worldTagEntities = simulation.state.world.tagEntities
 	local tagEntities = worldTagEntities[tag]
 
 	if tagEntities == nil then
@@ -144,7 +144,7 @@ function EntitySys.untag(entity, tag)
 		return
 	end
 
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	local worldTagEntities = world.tagEntities
 	local tagEntities = worldTagEntities[tag]
 	local tagsCount = #tagEntities
@@ -164,7 +164,7 @@ function EntitySys.untag(entity, tag)
 	end
 end
 function EntitySys.find(tag, getAll)
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 
 	local worldEntities = world.entities
 	local tagEntities = world.tagEntities[tag] or {}
@@ -202,7 +202,7 @@ function EntitySys.findBounded(x, y, w, h, filterTag, filterOutEntityId, getAll)
 	local chunkX2 = mathFloor((x + w - FLOAT_EPSILON) / entityChunkSize)
 	local chunkY2 = mathFloor((y + h - FLOAT_EPSILON) / entityChunkSize)
 
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	local worldChunks = world.chunkEntities
 	local entities = world.entities
 	for chunkY = chunkY1, chunkY2 do
@@ -275,11 +275,11 @@ function EntitySys.destroy(entity)
 
 	entity.destroyed = true
 
-	local destroyedEntities = SimulationSys.state.world.destroyedEntities
+	local destroyedEntities = simulation.state.world.destroyedEntities
 	destroyedEntities[#destroyedEntities + 1] = entityId
 end
 function EntitySys.create(template)
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	local entities = world.entities
 	local entitiesCount = #entities
 
@@ -325,12 +325,12 @@ function EntitySys.create(template)
 	return entity
 end
 function EntitySys.runTests()
-	SimulationSys.create()
+	simulation.create()
 
 	local entityChunkSizeBackup = EntitySys.ENTITY_CHUNK_SIZE
 	EntitySys.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size
 
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	if world.entities == nil then
 		UtilSys.err("EntitySys.runTests(): entities object was not created during WorldSys.create()")
 	end
@@ -416,7 +416,7 @@ function EntitySys.runTests()
 	EntitySys.ENTITY_CHUNK_SIZE = entityChunkSizeBackup
 end
 table.insert(WorldSys.createEvents, function()
-	local world = SimulationSys.state.world
+	local world = simulation.state.world
 	world.entities = {}
 	world.tagEntities = {}
 	world.chunkEntities = {}

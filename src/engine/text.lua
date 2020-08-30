@@ -1,13 +1,13 @@
--- local ClientSys = require("src/engine/client")
--- local SimulationSys = require("src/engine/simulation")
+-- local client = require("src/engine/client")
+-- local simulation = require("src/engine/simulation")
 -- local EntitySys = require("src/engine/entity")
 -- local ScreenSys = require("src/engine/screen")
 
--- SimulationSys.static.fonts = {}
+-- simulation.static.fonts = {}
 
 -- local TextSys = {}
 -- function TextSys.addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
--- 	local fonts = SimulationSys.static.fonts
+-- 	local fonts = simulation.static.fonts
 -- 	local font = fonts[fontId]
 -- 	if font == nil then
 -- 		font = {
@@ -33,8 +33,8 @@
 -- 	EntitySys.tag(entity, "text")
 -- end
 -- table.insert(ScreenSys.drawEvents, function(screen)
--- 	local fonts = SimulationSys.static.fonts
--- 	local world = SimulationSys.state.world
+-- 	local fonts = simulation.static.fonts
+-- 	local world = simulation.state.world
 -- 	local entities = world.entities
 
 -- 	local textEntityIds = EntitySys.findAll("text")
@@ -43,7 +43,7 @@
 -- 	for i = 1, textEntityIdsCount do
 -- 		local entity = entities[textEntityIds[i]]
 -- 		local font = fonts[entity.fontId]
--- 		ClientSys.drawSprite(entity, font, screen)
+-- 		client.drawSprite(entity, font, screen)
 -- 	end
 -- end)
 

@@ -141,6 +141,32 @@ function UtilSys.rectCollides(ax, ay, aw, ah, bx, by, bw, bh)
 	        and (aw > 0) and (ah > 0) and (bw > 0) and (bh > 0))
 end
 
+
+function UtilSys.writeDataUncompressed(filename, dataStr)
+	local file, errMsg = io.open(filename, "w")
+	if file == nil then
+		UtilSys.err("client.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		return false
+	end
+
+	file:write(dataStr)
+	file:close()
+
+	return true
+end
+function UtilSys.readDataUncompressed(filename)
+	local file, errMsg = io.open(filename, "r")
+	if file == nil then
+		UtilSys.err("client.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		return
+	end
+
+	local dataStr = file:read("*all")
+	file:close()
+
+	return dataStr
+end
+
 function UtilSys.runTests()
 	UtilSys.noop()
 	assert(UtilSys.getKeys({["a"] = 1})[1] == "a")

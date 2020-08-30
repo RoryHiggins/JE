@@ -9,7 +9,7 @@
 #define JE_WINDOW_SCALE 4
 #define JE_WINDOW_FRAME_RATE 60
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
-#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 8192
+#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
@@ -48,6 +48,8 @@ static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
 
 typedef struct jeVertex jeVertex;
 
+typedef struct jeController jeController;
+
 struct jeVertex {
 	float x;
 	float y;
@@ -62,12 +64,19 @@ struct jeVertex {
 	float v;
 };
 
+struct jeController {
+	SDL_Scancode keys[JE_INPUT_COUNT];
+	SDL_Scancode altKeys[JE_INPUT_COUNT];
+};
 
 struct jeWindow {
 	jeBool open;
 	Uint32 nextFrameTimeMs;
 	jeImage image;
 	SDL_Window* window;
+
+	jeController controller;
+	const Uint8* keyState;
 
 	SDL_GLContext context;
 	GLuint vertShader;
@@ -80,6 +89,33 @@ struct jeWindow {
 	jeVertex vboData[JE_WINDOW_VERTEX_BUFFER_CAPACITY];
 	GLuint vboVertexCount;
 };
+
+void jeController_setBindings(jeController* controller) {
+	memset((void*)controller, 0, sizeof(*controller));
+	controller->keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
+	controller->altKeys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_a);
+
+	controller->keys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_RIGHT);
+	controller->altKeys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_d);
+
+	controller->keys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_UP);
+	controller->altKeys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_w);
+
+	controller->keys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_DOWN);
+	controller->altKeys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_s);
+
+	controller->keys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_RETURN);
+	controller->altKeys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_z);
+
+	controller->keys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
+	controller->altKeys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_x);
+
+	controller->keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_c);
+	controller->altKeys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_q);
+
+	controller->keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_v);
+	controller->altKeys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_e);
+}
 
 jeWindow* jeWindow_get() {
 	static jeWindow window;
@@ -237,12 +273,8 @@ jeBool jeWindow_create(jeWindow* window) {
 		goto cleanup;
 	}
 
-	/*SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);*/
-
-	/*FOR RENDERDOC TESTING ONLY*/
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
 	window->window = SDL_CreateWindow(
 		JE_WINDOW_CAPTION,
@@ -274,14 +306,15 @@ jeBool jeWindow_create(jeWindow* window) {
 		goto cleanup;
 	}
 
-	if (SDL_GL_SetSwapInterval(1) < 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
+	if (SDL_GL_SetSwapInterval(0) < 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to disable vsync, error=%s", SDL_GetError());
 	}
 
-	glDisable(GL_DEPTH_TEST);
-	/*glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);*/
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
 	glDisable(GL_CULL_FACE);
+
 	glViewport(0, 0, JE_WINDOW_WIDTH, JE_WINDOW_HEIGHT);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
 		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
@@ -373,6 +406,9 @@ jeBool jeWindow_create(jeWindow* window) {
 
 	glBindVertexArray(0);
 
+	jeController_setBindings(&window->controller);
+	window->keyState = SDL_GetKeyboardState(NULL);
+
 	window->open = JE_TRUE;
 
 	success = JE_TRUE;
@@ -398,39 +434,13 @@ int jeWindow_getHeight(jeWindow* window) {
 
 	return height;
 }
+
 jeBool jeWindow_getInput(jeWindow* window, int inputId) {
-	const Uint8* keyState = SDL_GetKeyboardState(NULL);
+	const Uint8* keyState = window->keyState;
+	SDL_Scancode* keys = window->controller.keys;
+	SDL_Scancode* altKeys = window->controller.altKeys;
 
-	switch (inputId) {
-		case JE_INPUT_LEFT: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_LEFT)] || keyState[SDL_GetScancodeFromKey(SDLK_a)];
-		}
-		case JE_INPUT_RIGHT: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_RIGHT)] || keyState[SDL_GetScancodeFromKey(SDLK_d)];
-		}
-		case JE_INPUT_UP: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_UP)] || keyState[SDL_GetScancodeFromKey(SDLK_w)];
-		}
-		case JE_INPUT_DOWN: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_DOWN)] || keyState[SDL_GetScancodeFromKey(SDLK_s)];
-		}
-		case JE_INPUT_A: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_RETURN)] || keyState[SDL_GetScancodeFromKey(SDLK_z)];
-		}
-		case JE_INPUT_B: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_BACKSPACE)] || keyState[SDL_GetScancodeFromKey(SDLK_x)];
-		}
-		case JE_INPUT_X: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_c)];
-		}
-		case JE_INPUT_Y: {
-			return keyState[SDL_GetScancodeFromKey(SDLK_v)];
-		}
-	}
-
-	JE_MAYBE_UNUSED(window);
-
-	return JE_FALSE;
+	return (keyState[keys[inputId]] || keyState[altKeys[inputId]]);
 }
 int jeWindow_getFramesPerSecond(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
@@ -452,7 +462,7 @@ void jeWindow_flushVertexBuffer(jeWindow* window) {
 	window->vboVertexCount = 0;
 	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
-void jeWindow_drawSprite(jeWindow* window, int z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
+void jeWindow_drawSprite(jeWindow* window, float z, float x1, float y1, float x2, float y2, float r, float g, float b, float a, float u1, float v1, float u2, float v2) {
 
 	static const GLuint spriteVertexCount = 6;
 	static const float scaleX = (2.0f * (float)JE_WINDOW_SCALE) / (float)JE_WINDOW_WIDTH;
@@ -471,6 +481,7 @@ void jeWindow_drawSprite(jeWindow* window, int z, float x1, float y1, float x2, 
 	x2 = (x2 * scaleX);
 	y1 = (-y1 * scaleY);
 	y2 = (-y2 * scaleY);
+	z = z / (float)(1 << 20);
 	r = r / 256.0f;
 	g = g / 256.0f;
 	b = b / 256.0f;
@@ -590,4 +601,6 @@ void jeWindow_step(jeWindow* window) {
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	window->keyState = SDL_GetKeyboardState(NULL);
 }

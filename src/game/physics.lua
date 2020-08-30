@@ -1,5 +1,5 @@
 local UtilSys = require("src/engine/util")
-local SimulationSys = require("src/engine/simulation")
+local simulation = require("src/engine/simulation")
 local EntitySys = require("src/engine/entity")
 
 local mathAbs = math.abs
@@ -11,7 +11,7 @@ local EntitySysFindRelative = EntitySys.findRelative
 local EntitySysFindAllRelative = EntitySys.findAllRelative
 local EntitySysSetBounds = EntitySys.setBounds
 
-local static = SimulationSys.static
+local static = simulation.static
 
 
 local defaultMaterialPhysics = {
@@ -23,7 +23,7 @@ static.physicsPushCounterforce = 0.1
 static.physicsGravityX = 0
 static.physicsGravityY = 0.5
 static.physicsMaxSpeed = 8
-static.physicsMaxRecursionDepth = 25
+static.physicsMaxRecursionDepth = 100
 static.physicsMaterials = {
 	["air"] = UtilSys.tableExtend({}, defaultMaterialPhysics, {
 		["friction"] = 0.1,
@@ -53,7 +53,7 @@ function PhysicsSys.getMaterialPhysics(entity)
 	if materialEntity then
 		local entityTags = materialEntity.tags
 
-		local materials = SimulationSys.static.materials
+		local materials = simulation.static.materials
 		local materialsCount = #materials
 		for i = 1, materialsCount do
 			local material = materials[i]
@@ -113,8 +113,6 @@ function PhysicsSys.tryPushX(entity, signX, recursionDepth)
 		return false
 	end
 
-	PhysicsSys.stopX(entity)
-
 	if not PhysicsSys.tryMoveX(entity, signX, recursionDepth + 1, (recursionDepth ~= 1)) then
 		return false
 	end
@@ -134,8 +132,6 @@ function PhysicsSys.tryPushY(entity, signY, recursionDepth)
 	if not entity.tags.physicsPushable then
 		return false
 	end
-
-	PhysicsSys.stopY(entity)
 
 	if not PhysicsSys.tryMoveY(entity, signY, recursionDepth + 1, (recursionDepth ~= 1)) then
 		return false
@@ -301,8 +297,8 @@ table.insert(EntitySys.tagEvents, function(entity, tag, tagId)
 		entity.physicsCanCarry = entity.physicsCanCarry or false
 	end
 end)
-table.insert(SimulationSys.stepEvents, function()
-	local world = SimulationSys.state.world
+table.insert(simulation.stepEvents, function()
+	local world = simulation.state.world
 	local entities = world.entities
 	local physicsEntityIds = world.tagEntities["physics"] or {}
 	local physicsEntityIdsCount = #physicsEntityIds
