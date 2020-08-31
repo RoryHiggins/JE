@@ -4,9 +4,9 @@
 #include "image.h"
 
 #define JE_WINDOW_CAPTION ""
-#define JE_WINDOW_WIDTH 640
-#define JE_WINDOW_HEIGHT 480
-#define JE_WINDOW_SCALE 4
+#define JE_WINDOW_SCALE 8
+#define JE_WINDOW_WIDTH (160 * JE_WINDOW_SCALE)
+#define JE_WINDOW_HEIGHT (120 * JE_WINDOW_SCALE)
 #define JE_WINDOW_FRAME_RATE 60
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
 #define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
@@ -522,8 +522,6 @@ jeBool jeWindow_create(jeWindow* window) {
 	window->keyState = SDL_GetKeyboardState(NULL);
 
 	window->open = JE_TRUE;
-
-	jeWindow_step(window);
 
 	success = JE_TRUE;
 	cleanup: {

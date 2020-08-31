@@ -1,5 +1,4 @@
 local util = require("src/engine/util")
-local client = require("src/engine/client")
 local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Sprite = require("src/engine/sprite")
@@ -13,8 +12,12 @@ function Player:tickEntity(entity)
 
 	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
 
-	local inputDirX = util.boolToNumber(client.state.inputRight) - util.boolToNumber(client.state.inputLeft)
-	local inputDirY = util.boolToNumber(client.state.inputDown) - util.boolToNumber(client.state.inputUp)
+	local inputDirX = (
+		util.boolToNumber(self.simulation.inputs.right.down)
+		- util.boolToNumber(self.simulation.inputs.left.down))
+	local inputDirY = (
+		util.boolToNumber(self.simulation.inputs.down.down)
+		- util.boolToNumber(self.simulation.inputs.up.down))
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
 	local moveDirX = inputDirX * math.abs(util.sign(static.physicsGravityY))

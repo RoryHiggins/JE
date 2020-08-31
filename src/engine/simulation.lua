@@ -47,7 +47,47 @@ function Simulation:addSystem(class)
 
 	return system
 end
+function Simulation:getInputs()
+	local previousInputs = self.inputs or {}
+	local clientInputMap = {
+		["left"] = "inputLeft",
+		["right"] = "inputRight",
+		["up"] = "inputUp",
+		["down"] = "inputDown",
+		["a"] = "inputA",
+		["b"] = "inputB",
+		["x"] = "inputX",
+		["y"] = "inputY",
+	}
+
+	local inputs = {}
+
+	for inputKey, clientInputKey in pairs(clientInputMap) do
+		local input = {}
+		input.down = client.state[clientInputKey]
+
+		input.pressed = false
+		input.released = false
+		input.framesDown = 0
+		if previousInputs[inputKey] then
+			input.pressed = input.down and not previousInputs[inputKey].down
+			input.released = not input.down and previousInputs[inputKey].down
+			if input.down then
+				input.framesDown = previousInputs[inputKey].framesDown + 1
+			end
+		end
+
+		inputs[inputKey] = input
+	end
+
+	self.inputs = inputs
+end
+function Simulation.isRunning()
+	return client.state.running
+end
 function Simulation:step()
+	client.step()
+	self:getInputs()
 	self:broadcast("onSimulationStep")
 end
 function Simulation:draw()
@@ -78,6 +118,8 @@ function Simulation:create()
 
 	self.created = true
 	self.state.saveVersion = 1
+
+	self:getInputs()
 
 	for systemName, system in pairs(self.systems) do
 		if system.simulation and not system.created then
@@ -162,7 +204,7 @@ function Simulation:runTests()
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationTests then
-			util.debug("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
+			util.log("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
 			self:create()
@@ -172,6 +214,8 @@ function Simulation:runTests()
 	end
 
 	self:destroy()
+
+	util.log("Simulation:runTests() complete")
 end
 
 function Simulation.new()
@@ -193,5 +237,7 @@ function Simulation.new()
 
 	return simulation
 end
+
+util.logLevel = client.state.logLevel
 
 return Simulation

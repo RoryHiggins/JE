@@ -1,5 +1,6 @@
 CC := gcc
 CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
+BUILD_MODE := DEVELOPMENT
 
 CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows -D NDEBUG
 LFLAGS_RELEASE := -static `sdl2-config --static-libs` -lm -lpng -ljpeg -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1 -static-libstdc++ -static-libgcc
@@ -13,19 +14,18 @@ LFLAGS_DEVELOPMENT := -lm -lpng -ljpeg -lz `sdl2-config --static-libs` -lopengl3
 CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -Og -g3 -fno-inline-functions
 LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
 
-DEVELOPMENT_MODE := DEBUG
-RELEASE_MODE := RELEASE
-
 bin/client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
-	$(CC) $(CFLAGS_$(DEVELOPMENT_MODE)) -D JE_BUILD_$(DEVELOPMENT_MODE) src/client/main.c $(LFLAGS_$(DEVELOPMENT_MODE)) -o bin/client
+	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/main.c $(LFLAGS_$(BUILD_MODE)) -o bin/client
 release/client:
 	rm -rf release
 	mkdir release
-	$(CC) $(CFLAGS_$(RELEASE_MODE)) -D JE_BUILD_$(DEVELOPMENT_MODE) src/client/main.c $(LFLAGS_$(RELEASE_MODE)) -o release/client
-	cp -r src/ lib/ data/ -- release/
+	mkdir release/src
+	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE src/client/main.c $(LFLAGS_RELEASE) -o release/client
+	cp -r lib/ data/ -- release/
+	cp -r src/engine src/game -- release/src
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
 stdafx.h.gch: Makefile src/client/stdafx.h
-	$(CC) $(CFLAGS_$(DEVELOPMENT_MODE)) -D JE_BUILD_$(DEVELOPMENT_MODE) src/client/stdafx.h -o stdafx.h.gch
+	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/stdafx.h -o stdafx.h.gch
 
 run: bin/client
 	./bin/client

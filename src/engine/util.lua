@@ -169,7 +169,7 @@ end
 function util.writeDataUncompressed(filename, dataStr)
 	local file, errMsg = io.open(filename, "w")
 	if file == nil then
-		util.err("client.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.err("util.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return false
 	end
 
@@ -181,7 +181,7 @@ end
 function util.readDataUncompressed(filename)
 	local file, errMsg = io.open(filename, "r")
 	if file == nil then
-		util.err("client.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.err("util.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return
 	end
 

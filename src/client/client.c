@@ -2,7 +2,7 @@
 #include "debug.h"
 #include "client.h"
 #include "window.h"
-#include "lua_wrapper.h"
+#include "lua_client.h"
 
 #define JE_CLIENT_LUA_MAIN_FILENAME "src/game/main.lua"
 
@@ -74,14 +74,14 @@ jeBool jeClient_run() {
 	luaResponse = luaL_loadfile(client.lua, JE_CLIENT_LUA_MAIN_FILENAME);
 
 	if (luaResponse != 0) {
-		JE_ERR("jeClient_run(): luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLua_getError(client.lua));
+		JE_ERR("jeClient_run(): luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLuaClient_getError(client.lua));
 		goto cleanup;
 	}
 
 	luaResponse = lua_pcall(client.lua, /* num args */ 0, /* num return vals */ LUA_MULTRET, /* err func */ 0);
 
 	if (luaResponse != 0) {
-		JE_ERR("jeClient_run(): lua_pcall() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLua_getError(client.lua));
+		JE_ERR("jeClient_run(): lua_pcall() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLuaClient_getError(client.lua));
 		goto cleanup;
 	}
 

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "lua_wrapper.h"
+#include "lua_client.h"
 #include "debug.h"
 #include "window.h"
 
@@ -34,7 +34,7 @@ size_t lua_objlen(lua_State *L, int index) {
 }
 #endif
 
-const char* jeLua_getError(lua_State* lua) {
+const char* jeLuaClient_getError(lua_State* lua) {
 	const char* error = "";
 
 	error = lua_tostring(lua, -1);
@@ -44,6 +44,50 @@ const char* jeLua_getError(lua_State* lua) {
 	}
 
 	return error;
+}
+void jeLuaClient_updateStates(lua_State* lua) {
+	jeWindow* window = jeWindow_get();
+
+	lua_settop(lua, 0);
+	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
+	lua_getfield(lua, -1, "state");
+
+	lua_pushboolean(lua, jeWindow_isOpen(window));
+	lua_setfield(lua, 2, "running");
+
+	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
+	lua_setfield(lua, 2, "fps");
+
+	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
+	lua_setfield(lua, 2, "logLevel");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
+	lua_setfield(lua, 2, "inputLeft");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
+	lua_setfield(lua, 2, "inputRight");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
+	lua_setfield(lua, 2, "inputUp");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
+	lua_setfield(lua, 2, "inputDown");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
+	lua_setfield(lua, 2, "inputA");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
+	lua_setfield(lua, 2, "inputB");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
+	lua_setfield(lua, 2, "inputX");
+
+	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
+	lua_setfield(lua, 2, "inputY");
+
+	/*cleanup:*/ {
+		lua_settop(lua, 0);
+	}
 }
 
 int jeLuaClient_writeData(lua_State* lua) {
@@ -234,6 +278,10 @@ int jeLuaClient_drawText(lua_State* lua) {
 	float x = 0.0f;
 	float y = 0.0f;
 	float z = 0;
+
+	float scaleX = 0.0f;
+	float scaleY = 0.0f;
+
 	const char* text = "";
 	int textLength = 0;
 
@@ -297,6 +345,11 @@ int jeLuaClient_drawText(lua_State* lua) {
 	lua_getfield(lua, 1, "textZ");
 	z = luaL_optnumber(lua, -1, z);
 
+	lua_getfield(lua, 1, "textScaleX");
+	scaleX = luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, 1, "textScaleY");
+	scaleY = luaL_optnumber(lua, -1, 1.0f);
+
 	lua_getfield(lua, 1, "text");
 	text = luaL_optstring(lua, -1, "");
 	textLength = strnlen(text, 256);
@@ -312,13 +365,28 @@ int jeLuaClient_drawText(lua_State* lua) {
 			charVal = charDefault;
 		}
 
-		charX = x + (charW * i);
+		charX = x + (charW * scaleX * i);
 		charY = y;
 
 		charIndex = (int)(charVal - charFirst[0]);
 		charU = u + (charW * (charIndex % charColumns));
 		charV = v + (charH * (charIndex / charColumns));
-		jeWindow_drawSprite(jeWindow_get(), z, charX, charY, charX + charW, charY + charH, r, g, b, a, charU, charV, charU + charW, charV + charH);
+		jeWindow_drawSprite(
+			jeWindow_get(),
+			z,
+			charX,
+			charY,
+			charX + (charW * scaleX),
+			charY + (charH * scaleY),
+			r,
+			g,
+			b,
+			a,
+			charU,
+			charV,
+			charU + charW,
+			charV + charH
+		);
 	}
 
 	/*font*/
@@ -350,51 +418,7 @@ int jeLuaClient_step(lua_State* lua) {
 
 	jeWindow_step(window);
 
-	luaL_checktype(lua, 1, LUA_TTABLE);
-
-	lua_pushstring(lua, "running");
-	lua_pushboolean(lua, jeWindow_isOpen(window));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "fps");
-	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "logLevel");
-	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputLeft");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputRight");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputUp");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputDown");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputA");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputB");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputX");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
-	lua_settable(lua, 1);
-
-	lua_pushstring(lua, "inputY");
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
-	lua_settable(lua, 1);
+	jeLuaClient_updateStates(lua);
 
 	return 0;
 }
@@ -422,7 +446,14 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	luaL_setfuncs(lua, clientBindings, /* num upvalues */ 0);
 	lua_pushvalue(lua, -1);
 	lua_setfield(lua, -1, "__index");
+
+	lua_pushvalue(lua, -1);
 	lua_setglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
+
+	lua_createtable(lua, /*numArrayElems*/ 0, /*numNonArrayElems*/ 16);
+	lua_setfield(lua, -2, "state");
+
+	jeLuaClient_updateStates(lua);
 
 	success = JE_TRUE;
 	cleanup: {

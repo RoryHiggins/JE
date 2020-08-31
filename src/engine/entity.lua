@@ -312,7 +312,8 @@ function Entity:create(template)
 end
 function Entity:onSimulationCreate()
 	self:addDependencies(World)
-
+end
+function Entity:onWorldCreate()
 	local world = self.simulation.state.world
 	world.entities = {}
 	world.tagEntities = {}

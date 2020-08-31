@@ -4,7 +4,7 @@
 #include "debug.c"
 #include "image.c"
 #include "window.c"
-#include "lua_wrapper.c"
+#include "lua_client.c"
 #include "client.c"
 
 

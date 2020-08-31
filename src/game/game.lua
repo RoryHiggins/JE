@@ -1,53 +1,56 @@
 local util = require("src/engine/util")
-local client = require("src/engine/client")
 local Simulation = require("src/engine/simulation")
 
 local Game = {}
 Game.DUMP_FILE = ".\\game_dump.sav"
 Game.SAVE_FILE = ".\\game_save.sav"
-function Game:populateTestWorld()
-	util.log("Game:populateTestWorld()")
+function Game:createTestWorld()
+	util.log("Game:createTestWorld()")
 
+	local wallSys = self.simulation:addSystem(require("src/game/entities/wall"))
+	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
+
+	local worldSys = self.simulation:addSystem(require("src/engine/world"))
 	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
 	local templateSys = self.simulation:addSystem(require("src/engine/template"))
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
 	local textSys = self.simulation:addSystem(require("src/engine/text"))
 
-	local playerTemplate = templateSys:get("player")
-	local wallTemplate = templateSys:get("wall")
+	worldSys:create()
 
-	-- print(util.toComparable(self.simulation))
-	-- print(util.toComparable(playerTemplate))
-	local player = templateSys:instantiate(playerTemplate, 120, -32)
+	local player = templateSys:instantiate(playerSys.template, 120, -32)
 
+	-- text
 	local font = textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
 	textSys:attach(player, font, "hello, world!")
-	player.textTranslationY = -8
-	player.textTranslationX = - (4 * #"hello, world!")
+	player.textTranslationY = -2
+	player.textTranslationX = - (0.25 * #"hello, world!")
 	player.textZ = -1
+	player.textScaleX = 0.125
+	player.textScaleY = 0.125
 
 	-- step floors
 	for i = 1, 7 do
 		local x = -48 + ((i - 1) * 32)
 		local y = -48 + ((i - 1) * 32)
-		spriteSys:attach(templateSys:instantiate(wallTemplate, x, y, 8, 8),
+		spriteSys:attach(templateSys:instantiate(wallSys.template, x, y, 8, 8),
 						 spriteSys:get("wallMetalVerticalLeft"))
-		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 8, y, 8, 8),
+		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 8, y, 8, 8),
 						 spriteSys:get("wallMetalVerticalMid"))
-		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 16, y, 8, 8),
+		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 16, y, 8, 8),
 						 spriteSys:get("wallMetalVerticalMid"))
-		spriteSys:attach(templateSys:instantiate(wallTemplate, x + 24, y, 8, 8),
+		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 24, y, 8, 8),
 						 spriteSys:get("wallMetalVerticalRight"))
 	end
 
 	-- side walls
 	local levelWidth = 160
 	local levelHeight = 120
-	templateSys:instantiate(wallTemplate, -64, -64, 8, levelHeight + 128)
-	templateSys:instantiate(wallTemplate, levelWidth + 56, -64, 8, levelHeight + 128)
+	templateSys:instantiate(wallSys.template, -64, -64, 8, levelHeight + 128)
+	templateSys:instantiate(wallSys.template, levelWidth + 56, -64, 8, levelHeight + 128)
 
-	templateSys:instantiate(wallTemplate, -64, -64, levelWidth + 128, 8)
-	templateSys:instantiate(wallTemplate, -64, levelHeight + 56, levelWidth + 128, 8)
+	templateSys:instantiate(wallSys.template, -64, -64, levelWidth + 128, 8)
+	templateSys:instantiate(wallSys.template, -64, levelHeight + 56, levelWidth + 128, 8)
 
 	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
 	local physicsObjectTemplate = templateSys:add("physicsObject", {
@@ -79,26 +82,23 @@ function Game:populateTestWorld()
 			entitySys:destroy(physicsObject)
 		end
 	end
-	util.log("Game:populateTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+	util.log("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
 function Game:run()
+	local logLevel = util.logLevel
+	util.logLevel = util.LOG_LEVEL_ERR
 	self.simulation:runTests()
-
-	client.step(client.state)
-	self.simulation:addSystem(require("src/game/entities/wall"))
-	self.simulation:addSystem(require("src/game/entities/player"))
+	util.logLevel = logLevel
 
 	self.simulation:create()
-	self:populateTestWorld()
+	self:createTestWorld()
 
-	while client.state.running do
-		client.step(client.state)
+	while self.simulation:isRunning() do
 		self.simulation:step()
 		self.simulation:draw()
 
-		if client.state.inputX then
-			self.simulation:create()
-			self:populateTestWorld()
+		if self.simulation.inputs.x.down then
+			self:createTestWorld()
 		end
 	end
 

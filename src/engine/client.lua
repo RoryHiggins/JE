@@ -5,17 +5,8 @@ function headlessClientMetatable.__index()
 	return util.noop
 end
 
-local headlessclient = setmetatable({}, headlessClientMetatable)
-function headlessclient.writeData(filename, dataStr)
-	return util.writeDataUncompressed(filename, dataStr)
-end
-function headlessclient.readData(filename)
-	return util.readDataUncompressed(filename)
-end
-
--- injected by the c client in main.c:jeGame_registerLuaClientBindings()
-local client = jeClientBindings or headlessclient  -- luacheck: globals jeClientBindings
-client.state = {
+local headlessClient = setmetatable({}, headlessClientMetatable)
+headlessClient.state = {
 	["running"] = false,
 	["fps"] = 0,
 	["logLevel"] = util.logLevel,
@@ -28,12 +19,19 @@ client.state = {
 	["inputX"] = false,
 	["inputY"] = false,
 }
-function client.runTests()
-	client.writeData("clientTestFile", "")
-	assert(client.readData("clientTestFile") == "")
-	os.remove("clientTestFile")
-
-	client.step(client.state)
+function headlessClient.writeData(filename, dataStr)
+	return util.writeDataUncompressed(filename, dataStr)
 end
+function headlessClient.readData(filename)
+	return util.readDataUncompressed(filename)
+end
+function headlessClient.onRunTests()
+	headlessClient.writeData("clientTestFile", "")
+	assert(headlessClient.readData("clientTestFile") == "")
+	os.remove("clientTestFile")
+end
+
+-- injected by the c client in main.c:jeGame_registerLuaClientBindings()
+local client = jeClientBindings or headlessClient  -- luacheck: globals jeClientBindings
 
 return client
