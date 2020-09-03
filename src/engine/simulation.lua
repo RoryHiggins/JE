@@ -89,8 +89,6 @@ function Simulation:step()
 	client.step()
 	self:getInputs()
 	self:broadcast("onSimulationStep")
-end
-function Simulation:draw()
 	self:broadcast("onSimulationDraw")
 end
 function Simulation:destroy()
@@ -184,7 +182,6 @@ function Simulation:load(filename)
 end
 function Simulation:onSimulationTests()
 	self:step()
-	self:draw()
 
 	local gameBeforeSave = util.toComparable(self.state)
 	assert(self:dump("test_dump.sav"))

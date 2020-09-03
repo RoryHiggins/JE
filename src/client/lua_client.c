@@ -85,7 +85,7 @@ void jeLuaClient_updateStates(lua_State* lua) {
 	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
 	lua_setfield(lua, 2, "inputY");
 
-	/*cleanup:*/ {
+	/*finalize:*/ {
 		lua_settop(lua, 0);
 	}
 }
@@ -107,20 +107,20 @@ int jeLuaClient_writeData(lua_State* lua) {
 	if (file == NULL) {
 		JE_ERR("jeLuaClient_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
-		goto cleanup;
+		goto finalize;
 	}
 
 	dataSizeWritten = gzwrite(file, data, dataSize);
 
 	if (dataSizeWritten == 0) {
 		JE_ERR("jeLuaClient_writeData(): gzwrite() failed to write data");
-		goto cleanup;
+		goto finalize;
 	}
 
 	JE_DEBUG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
 
 	success = JE_TRUE;
-	cleanup: {
+	finalize: {
 		if (file != NULL) {
 			gzclose(file);
 		}
@@ -147,7 +147,7 @@ int jeLuaClient_readData(lua_State* lua) {
 	if (file == NULL) {
 		JE_ERR("jeLuaClient_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
-		goto cleanup;
+		goto finalize;
 	}
 
 	dataSize = gzread(file, data, JE_LUA_DATA_BUFFER_SIZE);
@@ -166,7 +166,7 @@ int jeLuaClient_readData(lua_State* lua) {
 		numResponses++;
 	}
 
-	cleanup: {
+	finalize: {
 		if (file != NULL) {
 			gzclose(file);
 		}
@@ -210,13 +210,13 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
 	lua_getfield(lua, 2, "r");
-	r =  luaL_optnumber(lua, -1, 256.0f);
+	r =  luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 256.0f);
+	g = luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "b");
-	b =  luaL_optnumber(lua, -1, 256.0f);
+	b =  luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 256.0f);
+	a = luaL_optnumber(lua, -1, 1.0f);
 
 	lua_getfield(lua, 2, "u1");
 	u1 = luaL_checknumber(lua, -1);
@@ -312,7 +312,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 	lua_getfield(lua, 2, "b");
 	b = luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 256.0f);
+	a = luaL_optnumber(lua, -1, 1.0f);
 
 	lua_getfield(lua, 2, "u");
 	u = luaL_checknumber(lua, -1);
@@ -440,7 +440,7 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	createdResult = luaL_newmetatable(lua, "jeClientMetatable");
 	if (createdResult != 1) {
 		JE_ERR("jeLuaClient_registerLuaClientBindings(): luaL_newmetatable() failed, result=%d, metatableName=%s", createdResult, JE_LUA_CLIENT_BINDINGS_KEY);
-		goto cleanup;
+		goto finalize;
 	}
 
 	luaL_setfuncs(lua, clientBindings, /* num upvalues */ 0);
@@ -456,7 +456,7 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	jeLuaClient_updateStates(lua);
 
 	success = JE_TRUE;
-	cleanup: {
+	finalize: {
 		lua_settop(lua, 0);
 	}
 

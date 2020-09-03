@@ -49,10 +49,12 @@ function Game:createTestWorld()
 	templateSys:instantiate(wallSys.template, -64, -64, 8, levelHeight + 128)
 	templateSys:instantiate(wallSys.template, levelWidth + 56, -64, 8, levelHeight + 128)
 
+	-- top and bottom walls
 	templateSys:instantiate(wallSys.template, -64, -64, levelWidth + 128, 8)
 	templateSys:instantiate(wallSys.template, -64, levelHeight + 56, levelWidth + 128, 8)
 
 	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
+
 	local physicsObjectTemplate = templateSys:add("physicsObject", {
 		["spriteId"] = "physicsObject",
 		["w"] = 6,
@@ -77,8 +79,7 @@ function Game:createTestWorld()
 		physicsObject.z = physicsObject.y
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
-		if (entitySys:findRelative(physicsObject, 0, 0, "solid")
-			or entitySys:findRelative(physicsObject, 0, 0, "player")) then
+		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
 			entitySys:destroy(physicsObject)
 		end
 	end
@@ -95,7 +96,6 @@ function Game:run()
 
 	while self.simulation:isRunning() do
 		self.simulation:step()
-		self.simulation:draw()
 
 		if self.simulation.inputs.x.down then
 			self:createTestWorld()

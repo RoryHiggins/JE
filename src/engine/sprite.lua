@@ -16,10 +16,10 @@ function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 			["v1"] = v,
 			["u2"] = u + w,
 			["v2"] = v + h,
-			["r"] = r or 255,
-			["g"] = g or 255,
-			["b"] = b or 255,
-			["a"] = a or 255,
+			["r"] = r or 1,
+			["g"] = g or 1,
+			["b"] = b or 1,
+			["a"] = a or 1,
 		}
 		sprites[spriteId] = sprite
 	end

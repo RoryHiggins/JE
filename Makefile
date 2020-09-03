@@ -1,5 +1,6 @@
 CC := gcc
 CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
+# DEBUG, DEVELOPMENT, PROFILE, RELEASE
 BUILD_MODE := DEVELOPMENT
 
 CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows -D NDEBUG
@@ -14,8 +15,8 @@ LFLAGS_DEVELOPMENT := -lm -lpng -ljpeg -lz `sdl2-config --static-libs` -lopengl3
 CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -Og -g3 -fno-inline-functions
 LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
 
-bin/client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
-	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/main.c $(LFLAGS_$(BUILD_MODE)) -o bin/client
+client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
+	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/main.c $(LFLAGS_$(BUILD_MODE)) -o client
 release/client:
 	rm -rf release
 	mkdir release
@@ -27,14 +28,14 @@ release/client:
 stdafx.h.gch: Makefile src/client/stdafx.h
 	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/stdafx.h -o stdafx.h.gch
 
-run: bin/client
-	./bin/client
+run: client
+	./client
 run_release: release/client
 	release/client
 profile: gmon.out
-	gprof -b bin/client* gmon.out > profile.txt
+	gprof -b client* gmon.out > profile.txt
 clean:
-	rm -f bin/client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
+	rm -f client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
 	rm -rf release
 
 .PHONY: release/client run run_release clean

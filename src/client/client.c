@@ -34,25 +34,25 @@ jeBool jeClient_create(jeClient* client) {
 
 	if (jeWindow_create(jeWindow_get()) == JE_FALSE) {
 		JE_ERR("jeClient_create(): jeWindow_create() failed");
-		goto cleanup;
+		goto finalize;
 	}
 
 	client->lua = luaL_newstate();
 
 	if (client->lua == NULL) {
 		JE_ERR("jeClient_create(): luaL_newstate() failed");
-		goto cleanup;
+		goto finalize;
 	}
 
 	luaL_openlibs(client->lua);
 
 	if (jeLuaClient_registerLuaClientBindings(client->lua) == JE_FALSE) {
 		JE_ERR("jeClient_create(): jeLuaClient_registerLuaClientBindings() failed");
-		goto cleanup;
+		goto finalize;
 	}
 
 	success = JE_TRUE;
-	cleanup: {
+	finalize: {
 	}
 
 	return success;
@@ -68,25 +68,25 @@ jeBool jeClient_run() {
 
 	if (jeClient_create(&client) == JE_FALSE) {
 		JE_ERR("jeClient_run(): jeClient_create() failed");
-		goto cleanup;
+		goto finalize;
 	}
 
 	luaResponse = luaL_loadfile(client.lua, JE_CLIENT_LUA_MAIN_FILENAME);
 
 	if (luaResponse != 0) {
 		JE_ERR("jeClient_run(): luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLuaClient_getError(client.lua));
-		goto cleanup;
+		goto finalize;
 	}
 
 	luaResponse = lua_pcall(client.lua, /* num args */ 0, /* num return vals */ LUA_MULTRET, /* err func */ 0);
 
 	if (luaResponse != 0) {
 		JE_ERR("jeClient_run(): lua_pcall() failed, filename=%s luaResponse=%d error=%s", JE_CLIENT_LUA_MAIN_FILENAME, luaResponse, jeLuaClient_getError(client.lua));
-		goto cleanup;
+		goto finalize;
 	}
 
 	success = JE_TRUE;
-	cleanup: {
+	finalize: {
 		jeClient_destroy(&client);
 	}
 

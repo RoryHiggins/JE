@@ -21,7 +21,7 @@ jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
 
 	if (png_image_begin_read_from_file(&pngImage, filename) == 0) {
 		JE_ERR("jeImage_createFromFile(): png_image_begin_read_from_file() failed with filename=%s", filename);
-		goto cleanup;
+		goto finalize;
 	}
 
 	pngImage.format = PNG_FORMAT_RGBA;
@@ -31,7 +31,7 @@ jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
 
 	if (png_image_finish_read(&pngImage, /*background*/ NULL, image->buffer, /*row_stride*/ 0, /*colormap*/ NULL) == 0) {
 		JE_ERR("jeImage_createFromFile(): png_image_finish_read() failed with filename=%s", filename);
-		goto cleanup;
+		goto finalize;
 	}
 
 	image->width = pngImage.width;
@@ -40,7 +40,7 @@ jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
 	JE_ERR("jeImage_createFromFile(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
 
 	success = JE_TRUE;
-	cleanup: {
+	finalize: {
 		png_image_free(&pngImage);
 	}
 
