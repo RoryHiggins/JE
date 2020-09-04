@@ -578,8 +578,8 @@ jeBool jeWindow_initGL(jeWindow* window) {
 		goto finalize;
 	}
 
-	if (SDL_GL_SetSwapInterval(0) < 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to disable vsync, error=%s", SDL_GetError());
+	if (SDL_GL_SetSwapInterval(1) < 0) {
+		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
 	}
 
 	glewExperimental = JE_TRUE;
