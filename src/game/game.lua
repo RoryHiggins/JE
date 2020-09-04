@@ -97,7 +97,7 @@ function Game:run()
 	while self.simulation:isRunning() do
 		self.simulation:step()
 
-		if self.simulation.inputs.x.down then
+		if self.simulation.inputs.x.released then
 			self:createTestWorld()
 		end
 	end

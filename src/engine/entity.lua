@@ -1,6 +1,5 @@
 local json = require("./lib/json/json")
 local util = require("src/engine/util")
-local System = require("src/engine/system")
 local World = require("src/engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
@@ -8,7 +7,8 @@ local utilRectCollides = util.rectCollides
 local mathFloor = math.floor
 local stringFormat = string.format
 
-local Entity = System.new("entity")
+local Entity = {}
+Entity.SYSTEM_NAME = "entity"
 Entity.ENTITY_CHUNK_SIZE = 64
 function Entity:setBounds(entity, x, y, w, h)
 	local oldEntityX = entity.x
@@ -310,29 +310,29 @@ function Entity:create(template)
 
 	return entity
 end
-function Entity:onSimulationCreate()
-	self:addDependencies(World)
+function Entity:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.worldSys = self.simulation:addSystem(World)
 end
-function Entity:onWorldCreate()
-	local world = self.simulation.state.world
+function Entity.onWorldCreate(_, world)
 	world.entities = {}
 	world.tagEntities = {}
 	world.chunkEntities = {}
 	world.destroyedEntities = {}
 end
-function Entity:onSimulationTests()
+function Entity:onSimulationRunTests()
 	local entityChunkSizeBackup = self.ENTITY_CHUNK_SIZE
 	self.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size
 
 	local world = self.simulation.state.world
 	if world.entities == nil then
-		util.err("Entity:onSimulationTests(): entities object was not created during World.create()")
+		util.err("Entity:onSimulationRunTests(): entities object was not created during World.create()")
 	end
 	if world.tagEntities == nil then
-		util.err("Entity:onSimulationTests(): tagEntities object was not created during World.create()")
+		util.err("Entity:onSimulationRunTests(): tagEntities object was not created during World.create()")
 	end
 	if world.chunkEntities == nil then
-		util.err("Entity:onSimulationTests(): chunkEntities object was not created during World.create()")
+		util.err("Entity:onSimulationRunTests(): chunkEntities object was not created during World.create()")
 	end
 
 	local entity = self:create()

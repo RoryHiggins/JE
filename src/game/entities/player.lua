@@ -1,12 +1,11 @@
 local util = require("src/engine/util")
-local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Sprite = require("src/engine/sprite")
 local Template = require("src/engine/template")
-
 local Physics = require("src/game/physics")
 
-local Player = System.new("player")
+local Player = {}
+Player.SYSTEM_NAME = "player"
 function Player:tickEntity(entity)
 	local static = self.simulation.static
 
@@ -93,8 +92,12 @@ function Player:tickEntity(entity)
 		self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
 	end
 end
-function Player:onSimulationCreate()
-	self:addDependencies(Entity, Sprite, Template, Physics)
+function Player:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.templateSys = self.simulation:addSystem(Template)
+	self.physicsSys = self.simulation:addSystem(Physics)
 
 	self.spriteSys:addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
 	self.spriteSys:addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
@@ -128,7 +131,7 @@ function Player:onSimulationStep()
 		self:tickEntity(player)
 	end
 end
-function Player:onSimulationTests()
+function Player:onSimulationRunTests()
 	self:onSimulationStep()
 
 	self.templateSys:instantiate(self.template)

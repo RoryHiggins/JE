@@ -1,11 +1,11 @@
 local util = require("src/engine/util")
 local client = require("src/engine/client")
-local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 local Screen = require("src/engine/screen")
 
 
-local Sprite = System.new("sprite")
+local Sprite = {}
+Sprite.SYSTEM_NAME = "sprite"
 function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 	local sprites = self.simulation.static.sprites
 	local sprite = sprites[spriteId]
@@ -39,8 +39,10 @@ function Sprite:detach(entity)
 	self.entitySys:untag(entity, "sprite")
 	entity.spriteId = nil
 end
-function Sprite:onSimulationCreate()
-	self:addDependencies(Entity, Screen)
+function Sprite:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.screenSys = self.simulation:addSystem(Screen)
 
 	self.simulation.static.sprites = {}
 end
@@ -51,7 +53,7 @@ function Sprite:onScreenDraw(screen)
 		client.drawSprite(entity, sprites[entity.spriteId], screen)
 	end
 end
-function Sprite:onSimulationTests()
+function Sprite:onSimulationRunTests()
 	local entity = self.entitySys:create()
 	local testSprite = self:addSprite("test", 40, 0, 8, 8)
 

@@ -1,7 +1,7 @@
 local util = require("src/engine/util")
-local System = require("src/engine/system")
 
-local World = System.new("world")
+local World = {}
+World.SYSTEM_NAME = "world"
 function World:destroy()
 	if not self.created then
 		return
@@ -18,15 +18,17 @@ function World:create()
 
 	util.log("World:create()")
 
-	self.simulation.state.world = {}
-	self.simulation:broadcast("onWorldCreate")
+	local world = {}
+	self.simulation.state.world = world
+	self.simulation:broadcast("onWorldCreate", world)
 
 	self.created = true
 end
-function World:onSimulationCreate()
+function World:onSimulationCreate(simulation)
+	self.simulation = simulation
 	self:create()
 end
-function World:onSimulationTests()
+function World:onSimulationRunTests()
 	assert(self.simulation.state.world ~= nil)
 end
 

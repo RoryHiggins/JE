@@ -1,9 +1,10 @@
-local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 
-local Screen = System.new("screen")
-function Screen:onSimulationCreate()
-	self:addDependencies(Entity)
+local Screen = {}
+Screen.SYSTEM_NAME = "screen"
+function Screen:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.entitySys = self.simulation:addSystem(Entity)
 
 	self.simulation.state.screen = {
 		["x"] = 0,
@@ -20,7 +21,7 @@ function Screen:onSimulationDraw()
 
 	self.simulation:broadcast("onScreenDraw", screen)
 end
-function Screen:onSimulationTests()
+function Screen:onSimulationRunTests()
 	assert(self.simulation.state.screen ~= nil)
 	self:onSimulationDraw()
 end

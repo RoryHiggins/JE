@@ -1,10 +1,12 @@
-local System = require("src/engine/system")
 local Sprite = require("src/engine/sprite")
 local Template = require("src/engine/template")
 
-local Wall = System.new("wall")
-function Wall:onSimulationCreate()
-	self:addDependencies(Sprite, Template)
+local Wall = {}
+Wall.SYSTEM_NAME = "wall"
+function Wall:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.templateSys = self.simulation:addSystem(Template)
 
 	self.spriteSys:addSprite("wallMetal", 0, 40, 8, 8)
 	self.spriteSys:addSprite("wallMetalVerticalLeft", 8, 40, 8, 8)
@@ -25,7 +27,7 @@ function Wall:onSimulationCreate()
 		}
 	})
 end
-function Wall:onSimulationTests()
+function Wall:onSimulationRunTests()
 	self.templateSys:instantiate(self.template)
 	for _ = 1, 10 do
 		self.simulation:step()

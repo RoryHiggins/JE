@@ -1,9 +1,10 @@
-local System = require("src/engine/system")
 local Entity = require("src/engine/entity")
 
-local Material = System.new("material")
-function Material:onSimulationCreate()
-	self:addDependencies(Entity)
+local Material = {}
+Material.SYSTEM_NAME = "material"
+function Material:onSimulationCreate(simulation)
+	self.simulation = simulation
+	self.entitySys = self.simulation:addSystem(Entity)
 
 	self.simulation.static.materials = {
 		"air",
@@ -25,7 +26,7 @@ function Material:onEntityTag(entity, tag, tagId)
 		end
 	end
 end
-function Material:onSimulationTests()
+function Material:onSimulationRunTests()
 	assert(self.simulation.static.materials ~= nil)
 end
 

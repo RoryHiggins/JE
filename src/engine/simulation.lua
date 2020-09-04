@@ -31,18 +31,16 @@ function Simulation:addSystem(class)
 
 		class.__index = class
 		system = setmetatable({}, class)
-
-		system.simulation = self
-		system.created = false
-
 		self.systems[systemName] = system
+		self.systemsCreated[systemName] = false
 	end
 
-	if self.created and system.onSimulationCreate and not system.created then
+	if self.created and system.onSimulationCreate and not self.systemsCreated[systemName] then
 		util.debug("Simulation:addSystem() creating system, systemName=%s", systemName)
 
-		system.created = true  -- marking as created first, to prevent recursion with circular dependencies
-		system:onSimulationCreate()
+		-- marking as created first, to prevent recursion with circular dependencies
+		self.systemsCreated[systemName] = true
+		system:onSimulationCreate(self)
 	end
 
 	return system
@@ -101,8 +99,8 @@ function Simulation:destroy()
 	self:broadcast("onSimulationDestroy")
 	self.state = {}
 
-	for _, system in pairs(self.systems) do
-		system.created = false
+	for systemName, _ in pairs(self.systems) do
+		self.systemsCreated[systemName] = false
 	end
 
 	self.created = false
@@ -120,13 +118,14 @@ function Simulation:create()
 	self:getInputs()
 
 	for systemName, system in pairs(self.systems) do
-		if system.simulation and not system.created then
+		if system.simulation and not self.systemsCreated[systemName] then
 			util.debug("Simulation:create() creating system, name=%s", systemName)
 
-			system.created = true  -- marking as created first, to prevent recursion with circular dependencies
+			-- marking as created first, to prevent recursion with circular dependencies
+			self.systemsCreated[systemName] = true
 
 			if system.onSimulationCreate then
-				system:onSimulationCreate()
+				system:onSimulationCreate(self)
 			end
 		end
 	end
@@ -180,7 +179,7 @@ function Simulation:load(filename)
 
 	return true
 end
-function Simulation:onSimulationTests()
+function Simulation:onSimulationRunTests()
 	self:step()
 
 	local gameBeforeSave = util.toComparable(self.state)
@@ -192,7 +191,7 @@ function Simulation:onSimulationTests()
 
 	local gameAfterLoad = util.toComparable(self.state)
 	if gameBeforeSave ~= gameAfterLoad then
-		util.err("Simulation:onSimulationTests(): Mismatch between state before save and after load: before=%s, after=%s",
+		util.err("Simulation:onSimulationRunTests(): Mismatch between state before save and after load: before=%s, after=%s",
 					  gameBeforeSave, gameAfterLoad)
 	end
 end
@@ -200,13 +199,13 @@ function Simulation:runTests()
 	util.log("Simulation:runTests()")
 
 	for _, system in pairs(self.systems) do
-		if system.onSimulationTests then
+		if system.onSimulationRunTests then
 			util.log("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
 			self:create()
 
-			system:onSimulationTests()
+			system:onSimulationRunTests()
 		end
 	end
 
@@ -218,6 +217,7 @@ end
 function Simulation.new()
 	local simulation = {
 		["systems"] = {},
+		["systemsCreated"] = {},
 		["state"] = {},
 		["static"] = {},
 		["created"] = false,
