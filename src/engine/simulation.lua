@@ -1,4 +1,4 @@
-local json = require("lib/json")
+local json = require("lib/json/json")
 local util = require("src/engine/util")
 local client = require("src/engine/client")
 

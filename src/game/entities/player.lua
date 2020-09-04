@@ -53,7 +53,8 @@ function Player:tickEntity(entity)
 		"solid"
 	)
 	local tryingToJump = (
-		((util.sign(static.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(static.physicsGravityX)))
+		(self.simulation.inputs.a.down)
+		or ((util.sign(static.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(static.physicsGravityX)))
 		or ((util.sign(static.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(static.physicsGravityY)))
 	)
 

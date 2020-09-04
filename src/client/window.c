@@ -9,6 +9,7 @@
 #define JE_WINDOW_HEIGHT (120 * JE_WINDOW_SCALE)
 #define JE_WINDOW_FRAME_RATE 60
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
+#define JE_WINDOW_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
 #define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
@@ -153,35 +154,88 @@ void jeSpriteDepthQueue_sort(jeSpriteDepthQueue* spriteDepthQueue) {
 }
 
 struct jeController {
+	SDL_GameController* controller;
+
 	SDL_Scancode keys[JE_INPUT_COUNT];
 	SDL_Scancode altKeys[JE_INPUT_COUNT];
+	SDL_GameControllerButton controllerButtons[JE_INPUT_COUNT];
+	SDL_GameControllerAxis controllerAxis[JE_INPUT_COUNT];
+	float controllerAxisDir[JE_INPUT_COUNT];
+
+	float controllerAxisThreshold;
 };
 typedef struct jeController jeController;
-void jeController_setBindings(jeController* controller) {
+void jeController_destroy(jeController* controller) {
+	if (controller->controller != NULL) {
+		SDL_GameControllerClose(controller->controller);
+		controller->controller = NULL;
+	}
+}
+void jeController_create(jeController* controller) {
+	int i = 0;
+
 	memset((void*)controller, 0, sizeof(*controller));
 	controller->keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
 	controller->altKeys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_a);
+	controller->controllerButtons[JE_INPUT_LEFT] = SDL_CONTROLLER_BUTTON_DPAD_LEFT;
+	controller->controllerAxis[JE_INPUT_LEFT] = SDL_CONTROLLER_AXIS_LEFTX;
+	controller->controllerAxisDir[JE_INPUT_LEFT] = -1.0f;
 
 	controller->keys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_RIGHT);
 	controller->altKeys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_d);
+	controller->controllerButtons[JE_INPUT_RIGHT] = SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
+	controller->controllerAxis[JE_INPUT_RIGHT] = SDL_CONTROLLER_AXIS_LEFTX;
+	controller->controllerAxisDir[JE_INPUT_RIGHT] = 1.0f;
 
 	controller->keys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_UP);
 	controller->altKeys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_w);
+	controller->controllerButtons[JE_INPUT_UP] = SDL_CONTROLLER_BUTTON_DPAD_UP;
+	controller->controllerAxis[JE_INPUT_UP] = SDL_CONTROLLER_AXIS_LEFTY;
+	controller->controllerAxisDir[JE_INPUT_UP] = -1.0f;
 
 	controller->keys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_DOWN);
 	controller->altKeys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_s);
+	controller->controllerButtons[JE_INPUT_DOWN] = SDL_CONTROLLER_BUTTON_DPAD_DOWN;
+	controller->controllerAxis[JE_INPUT_DOWN] = SDL_CONTROLLER_AXIS_LEFTY;
+	controller->controllerAxisDir[JE_INPUT_DOWN] = 1.0f;
 
 	controller->keys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_RETURN);
 	controller->altKeys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_z);
+	controller->controllerButtons[JE_INPUT_A] = SDL_CONTROLLER_BUTTON_A;
+	controller->controllerAxis[JE_INPUT_A] = SDL_CONTROLLER_AXIS_INVALID;
+	controller->controllerAxisDir[JE_INPUT_A] = 0.0f;
 
 	controller->keys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
 	controller->altKeys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_x);
+	controller->controllerButtons[JE_INPUT_B] = SDL_CONTROLLER_BUTTON_B;
+	controller->controllerAxis[JE_INPUT_B] = SDL_CONTROLLER_AXIS_INVALID;
+	controller->controllerAxisDir[JE_INPUT_B] = 0.0f;
 
 	controller->keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_c);
 	controller->altKeys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_q);
+	controller->controllerButtons[JE_INPUT_X] = SDL_CONTROLLER_BUTTON_X;
+	controller->controllerAxis[JE_INPUT_X] = SDL_CONTROLLER_AXIS_INVALID;
+	controller->controllerAxisDir[JE_INPUT_X] = 0.0f;
 
 	controller->keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_v);
 	controller->altKeys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_e);
+	controller->controllerButtons[JE_INPUT_Y] = SDL_CONTROLLER_BUTTON_Y;
+	controller->controllerAxis[JE_INPUT_Y] = SDL_CONTROLLER_AXIS_INVALID;
+	controller->controllerAxisDir[JE_INPUT_Y] = 0.0f;
+
+	JE_DEBUG("jeController_create(): numJoysticks=%d", SDL_NumJoysticks());
+	for (i = 0; i < SDL_NumJoysticks(); ++i) {
+		if (SDL_IsGameController(i)) {
+			JE_DEBUG("jeController_create(): index=%d", i);
+			controller->controller = SDL_GameControllerOpen(i);
+			break;
+		}
+	}
+	if (controller->controller == NULL) {
+		JE_LOG("jeController_create(): No compatible game controller found", i);
+	}
+
+	controller->controllerAxisThreshold = 0.1;
 }
 
 struct jeWindow {
@@ -670,19 +724,8 @@ void jeWindow_step(jeWindow* window) {
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT: {
-				JE_DEBUG("jeWindow_step(): Quit event received");
+				JE_LOG("jeWindow_step(): Quit event received");
 				window->open = JE_FALSE;
-				break;
-			}
-			case SDL_KEYUP: {
-				switch (event.key.keysym.sym) {
-					case SDLK_ESCAPE: {
-						JE_DEBUG("jeWindow_step(): Escape key released");
-						window->open = JE_FALSE;
-						break;
-					}
-					default: break;
-				}
 				break;
 			}
 			case SDL_WINDOWEVENT: {
@@ -702,6 +745,69 @@ void jeWindow_step(jeWindow* window) {
 						break;
 					}
 				}
+				break;
+			}
+			case SDL_KEYUP: {
+				if (event.key.repeat == 0) {
+					JE_DEBUG("jeWindow_step(): SDL_KEYUP, key=%s", SDL_GetKeyName(event.key.keysym.sym));
+				}
+
+				switch (event.key.keysym.sym) {
+					case SDLK_ESCAPE: {
+						JE_LOG("jeWindow_step(): Escape key released");
+						window->open = JE_FALSE;
+						break;
+					}
+					default: {
+						break;
+					}
+				}
+
+				break;
+			}
+			case SDL_KEYDOWN: {
+				if (event.key.repeat == 0) {
+					JE_DEBUG("jeWindow_step(): SDL_KEYDOWN, key=%s", SDL_GetKeyName(event.key.keysym.sym));
+				}
+				break;
+			}
+			case SDL_CONTROLLERDEVICEADDED: {
+				JE_LOG("jeWindow_step(): SDL_CONTROLLERDEVICEADDED, index=%d", event.cdevice.which);
+				jeController_destroy(&window->controller);
+				jeController_create(&window->controller);
+				break;
+			}
+			case SDL_CONTROLLERDEVICEREMOVED: {
+				JE_LOG("jeWindow_step(): SDL_CONTROLLERDEVICEREMOVED, index=%d", event.cdevice.which);
+				jeController_destroy(&window->controller);
+				jeController_create(&window->controller);
+				break;
+			}
+			case SDL_CONTROLLERDEVICEREMAPPED: {
+				JE_DEBUG("jeWindow_step(): SDL_CONTROLLERDEVICEREMAPPED, index=%d", event.cdevice.which);
+				jeController_destroy(&window->controller);
+				jeController_create(&window->controller);
+				break;
+			}
+			case SDL_CONTROLLERBUTTONDOWN: {
+				JE_DEBUG("jeWindow_step(): SDL_CONTROLLERBUTTONDOWN, button=%s",
+						 SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
+				break;
+			}
+			case SDL_CONTROLLERBUTTONUP: {
+				JE_DEBUG("jeWindow_step(): SDL_CONTROLLERBUTTONUP, button=%s",
+						 SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
+				break;
+			}
+			case SDL_CONTROLLERAXISMOTION: {
+				/*Left commented out as this can be useful but is too verbose even for verbose logging...*/
+				/*JE_DEBUG("jeWindow_step(): SDL_CONTROLLERAXISMOTION, axis=%s, value=%d",
+						 SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)event.caxis.axis),
+						 (int)event.caxis.value);*/
+				break;
+			}
+			default: {
+				break;
 			}
 		}
 	}
@@ -720,6 +826,8 @@ void jeWindow_destroy(jeWindow* window) {
 
 	jeSpriteDepthQueue_destroy(&window->spriteDepthQueue);
 
+	jeController_destroy(&window->controller);
+
 	jeImage_destroy(&window->image);
 
 	if (window->window != NULL) {
@@ -732,9 +840,11 @@ void jeWindow_destroy(jeWindow* window) {
 jeBool jeWindow_create(jeWindow* window) {
 	jeBool success = JE_FALSE;
 
+	int controllerMappingsLoaded = -1;
+
 	memset((void*)window, 0, sizeof(*window));
 
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		JE_ERR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
 		goto finalize;
 	}
@@ -775,7 +885,14 @@ jeBool jeWindow_create(jeWindow* window) {
 		goto finalize;
 	}
 
-	jeController_setBindings(&window->controller);
+	controllerMappingsLoaded = SDL_GameControllerAddMappingsFromFile(JE_WINDOW_CONTROLLER_DB_FILENAME);
+	if (controllerMappingsLoaded == -1) {
+		JE_ERR("jeWindow_create(): SDL_GameControllerAddMappingsFromFile() failed with error=%s", SDL_GetError());
+	} else {
+		JE_DEBUG("jeWindow_create(): SDL_GameControllerAddMappingsFromFile() controllerMappingsLoaded=%d", controllerMappingsLoaded);
+	}
+
+	jeController_create(&window->controller);
 	window->keyState = SDL_GetKeyboardState(NULL);
 
 	window->open = JE_TRUE;
@@ -787,11 +904,41 @@ jeBool jeWindow_create(jeWindow* window) {
 	return success;
 }
 jeBool jeWindow_getInput(jeWindow* window, int inputId) {
-	const Uint8* keyState = window->keyState;
-	SDL_Scancode* keys = window->controller.keys;
-	SDL_Scancode* altKeys = window->controller.altKeys;
+	static const float axisMaxValue = 32767;
 
-	return (keyState[keys[inputId]] || keyState[altKeys[inputId]]);
+	jeBool pressed = JE_FALSE;
+
+	SDL_Scancode key = window->controller.keys[inputId];
+	SDL_Scancode altKey = window->controller.altKeys[inputId];
+	SDL_GameControllerButton controllerButton = SDL_CONTROLLER_BUTTON_INVALID;
+	SDL_GameControllerAxis controllerAxis = SDL_CONTROLLER_AXIS_INVALID;
+	float controllerAxisDir = 0;
+	float axisMinValue = axisMaxValue / window->controller.controllerAxisThreshold;
+
+	if (window->controller.controller != NULL) {
+		controllerButton = window->controller.controllerButtons[inputId];
+		controllerAxis = window->controller.controllerAxis[inputId];
+		controllerAxisDir = window->controller.controllerAxisDir[inputId];
+	}
+
+	if (key != SDL_SCANCODE_UNKNOWN) {
+		pressed = pressed || window->keyState[key];
+	}
+
+	if (altKey != SDL_SCANCODE_UNKNOWN) {
+		pressed = pressed || window->keyState[altKey];
+	}
+
+	if (controllerButton != SDL_CONTROLLER_BUTTON_INVALID) {
+		pressed = pressed || SDL_GameControllerGetButton(window->controller.controller, controllerButton);
+	}
+
+	if (controllerAxis != SDL_CONTROLLER_AXIS_INVALID) {
+		float axisValue = (float)SDL_GameControllerGetAxis(window->controller.controller, controllerAxis) * controllerAxisDir;
+		pressed = pressed || (axisValue > axisMinValue);
+	}
+
+	return pressed;
 }
 int jeWindow_getFramesPerSecond(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);

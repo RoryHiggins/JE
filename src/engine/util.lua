@@ -1,4 +1,4 @@
-local json = require("lib/json")
+local json = require("lib/json/json")
 
 local util = {}
 util.LOG_LEVEL_DEBUG = 0
