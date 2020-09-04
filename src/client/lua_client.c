@@ -105,7 +105,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 	file = gzopen(filename, "wb");
 
 	if (file == NULL) {
-		JE_ERR("jeLuaClient_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
+		JE_ERROR("jeLuaClient_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
 		goto finalize;
 	}
@@ -113,7 +113,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 	dataSizeWritten = gzwrite(file, data, dataSize);
 
 	if (dataSizeWritten == 0) {
-		JE_ERR("jeLuaClient_writeData(): gzwrite() failed to write data");
+		JE_ERROR("jeLuaClient_writeData(): gzwrite() failed to write data");
 		goto finalize;
 	}
 
@@ -145,7 +145,7 @@ int jeLuaClient_readData(lua_State* lua) {
 	file = gzopen(filename, "rb");
 
 	if (file == NULL) {
-		JE_ERR("jeLuaClient_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
+		JE_ERROR("jeLuaClient_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
 		goto finalize;
 	}
@@ -175,9 +175,14 @@ int jeLuaClient_readData(lua_State* lua) {
 	return numResponses;
 }
 int jeLuaClient_drawSprite(lua_State* lua) {
-	/*screen*/
-	float screenOriginX = 0.0f;
-	float screenOriginY = 0.0f;
+	/*camera*/
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float cameraW = 0.0f;
+	float cameraH = 0.0f;
+
+	float cameraOffsetX = 0.0f;
+	float cameraOffsetY = 0.0f;
 
 	/*sprite template*/
 	float r = 0.0f;
@@ -191,6 +196,8 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	float v2 = 0.0f;
 
 	/*sprite*/
+	float spriteScaleX = 1.0f;
+	float spriteScaleY = 1.0f;
 	float x1 = 0.0f;
 	float y1 = 0.0f;
 	float x2 = 0.0f;
@@ -201,20 +208,27 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	luaL_checktype(lua, 2, LUA_TTABLE);
 	luaL_checktype(lua, 1, LUA_TTABLE);
 
-	/*screen*/
+	/*camera*/
 	lua_getfield(lua, 3, "x");
-	screenOriginX = luaL_optnumber(lua, -1, 0.0f);
+	cameraX = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 3, "y");
-	screenOriginY = luaL_optnumber(lua, -1, 0.0f);
+	cameraY = luaL_checknumber(lua, -1);
+	lua_getfield(lua, 3, "w");
+	cameraW = luaL_checknumber(lua, -1);
+	lua_getfield(lua, 3, "h");
+	cameraH = luaL_checknumber(lua, -1);
+
+	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
+	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
 
 	/*sprite*/
 	/*TODO make sprite a seprate object fetched in lua code!*/
 	lua_getfield(lua, 2, "r");
-	r =  luaL_optnumber(lua, -1, 1.0f);
+	r = luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "g");
 	g = luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "b");
-	b =  luaL_optnumber(lua, -1, 1.0f);
+	b = luaL_optnumber(lua, -1, 1.0f);
 	lua_getfield(lua, 2, "a");
 	a = luaL_optnumber(lua, -1, 1.0f);
 
@@ -228,10 +242,15 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	v2 = luaL_checknumber(lua, -1);
 
 	/*render object*/
+	lua_getfield(lua, 1, "spriteScaleX");
+	spriteScaleX = spriteScaleX * luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, 1, "spriteScaleY");
+	spriteScaleY = spriteScaleY * luaL_optnumber(lua, -1, 1.0f);
+
 	lua_getfield(lua, 1, "x");
-	x1 = luaL_checknumber(lua, -1);
+	x1 = cameraOffsetX + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "y");
-	y1 = luaL_checknumber(lua, -1);
+	y1 = cameraOffsetY + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "spriteTranslationX");
 	x1 = x1 + luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 1, "spriteTranslationY");
@@ -240,14 +259,9 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	z = luaL_optnumber(lua, -1, 0.0f);
 
 	lua_getfield(lua, 1, "w");
-	x2 = x1 + luaL_optnumber(lua, -1, u2 - u1);
+	x2 = x1 + (luaL_optnumber(lua, -1, u2 - u1) * spriteScaleX);
 	lua_getfield(lua, 1, "h");
-	y2 = y1 + luaL_optnumber(lua, -1, y2 - y1);
-
-	x1 -= screenOriginX;
-	x2 -= screenOriginX;
-	y1 -= screenOriginY;
-	y2 -= screenOriginY;
+	y2 = y1 + (luaL_optnumber(lua, -1, y2 - y1) * spriteScaleY);
 
 	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 
@@ -255,9 +269,14 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 }
 int jeLuaClient_drawText(lua_State* lua) {
 	static const char charDefault = ' ';
-	/*screen*/
-	float screenOriginX = 0.0f;
-	float screenOriginY = 0.0f;
+	/*camera*/
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float cameraW = 0.0f;
+	float cameraH = 0.0f;
+
+	float cameraOffsetX = 0.0f;
+	float cameraOffsetY = 0.0f;
 
 	/*font*/
 	float r = 0.0f;
@@ -274,17 +293,6 @@ int jeLuaClient_drawText(lua_State* lua) {
 	const char* charFirst = "\0";
 	const char* charLast = "\0";
 
-	/*text*/
-	float x = 0.0f;
-	float y = 0.0f;
-	float z = 0;
-
-	float scaleX = 0.0f;
-	float scaleY = 0.0f;
-
-	const char* text = "";
-	int textLength = 0;
-
 	/*char*/
 	int i = 0;
 	char charVal = charDefault;
@@ -294,15 +302,33 @@ int jeLuaClient_drawText(lua_State* lua) {
 	float charU = 0.0f;
 	float charV = 0.0f;
 
+	float charScaleX = 1.0f;
+	float charScaleY = 1.0f;
+
+	/*render object*/
+	float x = 0.0f;
+	float y = 0.0f;
+	float z = 0;
+
+	const char* text = "";
+	int textLength = 0;
+
 	luaL_checktype(lua, 3, LUA_TTABLE);
 	luaL_checktype(lua, 2, LUA_TTABLE);
 	luaL_checktype(lua, 1, LUA_TTABLE);
 
-	/*screen*/
+	/*camera*/
 	lua_getfield(lua, 3, "x");
-	screenOriginX = luaL_checknumber(lua, -1);
+	cameraX = luaL_checknumber(lua, -1);
 	lua_getfield(lua, 3, "y");
-	screenOriginY = luaL_checknumber(lua, -1);
+	cameraY = luaL_checknumber(lua, -1);
+	lua_getfield(lua, 3, "w");
+	cameraW = luaL_checknumber(lua, -1);
+	lua_getfield(lua, 3, "h");
+	cameraH = luaL_checknumber(lua, -1);
+
+	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
+	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
 
 	/*font*/
 	lua_getfield(lua, 2, "r");
@@ -332,10 +358,15 @@ int jeLuaClient_drawText(lua_State* lua) {
 	charColumns = luaL_checknumber(lua, -1);
 
 	/*render object*/
+	lua_getfield(lua, 1, "textScaleX");
+	charScaleX = charScaleX * luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, 1, "textScaleY");
+	charScaleY = charScaleY * luaL_optnumber(lua, -1, 1.0f);
+
 	lua_getfield(lua, 1, "x");
-	x = luaL_checknumber(lua, -1);
+	x = cameraOffsetX + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "y");
-	y = luaL_checknumber(lua, -1);
+	y = cameraOffsetY + luaL_checknumber(lua, -1);
 	lua_getfield(lua, 1, "textTranslationX");
 	x = x + luaL_optnumber(lua, -1, 0.0f);
 	lua_getfield(lua, 1, "textTranslationY");
@@ -345,17 +376,9 @@ int jeLuaClient_drawText(lua_State* lua) {
 	lua_getfield(lua, 1, "textZ");
 	z = luaL_optnumber(lua, -1, z);
 
-	lua_getfield(lua, 1, "textScaleX");
-	scaleX = luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 1, "textScaleY");
-	scaleY = luaL_optnumber(lua, -1, 1.0f);
-
 	lua_getfield(lua, 1, "text");
 	text = luaL_optstring(lua, -1, "");
 	textLength = strnlen(text, 256);
-
-	x -= screenOriginX;
-	y -= screenOriginY;
 
 	/*TODO*/
 	for (i = 0; i < textLength; i++) {
@@ -365,7 +388,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 			charVal = charDefault;
 		}
 
-		charX = x + (charW * scaleX * i);
+		charX = x + (charW * charScaleX * i);
 		charY = y;
 
 		charIndex = (int)(charVal - charFirst[0]);
@@ -376,8 +399,8 @@ int jeLuaClient_drawText(lua_State* lua) {
 			z,
 			charX,
 			charY,
-			charX + (charW * scaleX),
-			charY + (charH * scaleY),
+			charX + (charW * charScaleX),
+			charY + (charH * charScaleY),
 			r,
 			g,
 			b,
@@ -439,7 +462,7 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 
 	createdResult = luaL_newmetatable(lua, "jeClientMetatable");
 	if (createdResult != 1) {
-		JE_ERR("jeLuaClient_registerLuaClientBindings(): luaL_newmetatable() failed, result=%d, metatableName=%s", createdResult, JE_LUA_CLIENT_BINDINGS_KEY);
+		JE_ERROR("jeLuaClient_registerLuaClientBindings(): luaL_newmetatable() failed, result=%d, metatableName=%s", createdResult, JE_LUA_CLIENT_BINDINGS_KEY);
 		goto finalize;
 	}
 

@@ -3,11 +3,13 @@
 #include "debug.h"
 #include "image.h"
 
-#define JE_WINDOW_CAPTION ""
-#define JE_WINDOW_SCALE 8
-#define JE_WINDOW_WIDTH (160 * JE_WINDOW_SCALE)
-#define JE_WINDOW_HEIGHT (120 * JE_WINDOW_SCALE)
 #define JE_WINDOW_FRAME_RATE 60
+#define JE_WINDOW_MIN_WIDTH 160
+#define JE_WINDOW_MIN_HEIGHT 120
+#define JE_WINDOW_START_SCALE 8
+#define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
+#define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
+#define JE_WINDOW_START_CAPTION ""
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
 #define JE_WINDOW_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
 #define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
@@ -232,7 +234,7 @@ void jeController_create(jeController* controller) {
 		}
 	}
 	if (controller->controller == NULL) {
-		JE_LOG("jeController_create(): No compatible game controller found", i);
+		JE_INFO("jeController_create(): No compatible game controller found", i);
 	}
 
 	controller->controllerAxisThreshold = 0.1;
@@ -389,8 +391,8 @@ void jeWindow_drawSpriteImpl(jeWindow* window, jeSprite sprite) {
 	}
 
 	/*Transform pos from world coords (+/- windowSize) to screen coords (-1.0 to 1.0)*/
-	worldScaleX = (2.0f * (float)JE_WINDOW_SCALE) / (float)jeWindow_getWidth(window);
-	worldScaleY = (2.0f * (float)JE_WINDOW_SCALE) / (float)jeWindow_getHeight(window);
+	worldScaleX = 2.0f / JE_WINDOW_MIN_WIDTH;
+	worldScaleY = 2.0f / JE_WINDOW_MIN_HEIGHT;
 	sprite.x1 = (sprite.x1 * worldScaleX);
 	sprite.x2 = (sprite.x2 * worldScaleX);
 	sprite.y1 = (-sprite.y1 * worldScaleY);
@@ -519,6 +521,15 @@ void jeWindow_flushSpriteDepthQueue(jeWindow* window) {
 	}
 	window->spriteDepthQueue.count = 0;
 }
+void jeWindow_clear(jeWindow* window) {
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	JE_MAYBE_UNUSED(window);
+}
 void jeWindow_destroyGL(jeWindow* window) {
 	if (window->vao != 0) {
 		glBindVertexArray(window->vao);
@@ -569,22 +580,22 @@ jeBool jeWindow_initGL(jeWindow* window) {
 
 	window->context = SDL_GL_CreateContext(window->window);
 	if (window->context == 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_CreateContext() failed with error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_GL_CreateContext() failed with error=%s", SDL_GetError());
 		goto finalize;
 	}
 
 	if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
 		goto finalize;
 	}
 
 	if (SDL_GL_SetSwapInterval(1) < 0) {
-		JE_ERR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
 	}
 
 	glewExperimental = JE_TRUE;
 	if (glewInit() != GLEW_OK) {
-		JE_ERR("jeWindow_create(): glewInit() failed");
+		JE_ERROR("jeWindow_create(): glewInit() failed");
 		goto finalize;
 	}
 
@@ -599,7 +610,7 @@ jeBool jeWindow_initGL(jeWindow* window) {
 
 	glViewport(0, 0, jeWindow_getWidth(window), jeWindow_getHeight(window));
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
@@ -607,11 +618,11 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glShaderSource(window->vertShader, 1, &jeWindow_vertShaderPtr, &jeWindow_vertShaderSize);
 	glCompileShader(window->vertShader);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 	if (!jeWindow_getShaderCompiledOk(window, window->vertShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
 		goto finalize;
 	}
 
@@ -619,11 +630,11 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glShaderSource(window->fragShader, 1, &jeWindow_fragShaderPtr, &jeWindow_fragShaderSize);
 	glCompileShader(window->fragShader);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 	if (!jeWindow_getShaderCompiledOk(window, window->fragShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
 		goto finalize;
 	}
 
@@ -635,11 +646,11 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glBindAttribLocation(window->program, 2, "srcUv");
 	glLinkProgram(window->program);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 	if (!jeWindow_getProgramLinkedOk(window, window->program, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getProgramLinkedOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getProgramLinkedOk() failed");
 		goto finalize;
 	}
 
@@ -649,7 +660,7 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
@@ -661,28 +672,28 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glBindBuffer(GL_ARRAY_BUFFER, window->vbo);
 	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)0);
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(3 * sizeof(GLfloat)));
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(7 * sizeof(GLfloat)));
 	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERR("jeWindow_create(): jeWindow_getGlOk() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
 
@@ -724,7 +735,7 @@ void jeWindow_step(jeWindow* window) {
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT: {
-				JE_LOG("jeWindow_step(): Quit event received");
+				JE_DEBUG("jeWindow_step(): Quit event received");
 				window->open = JE_FALSE;
 				break;
 			}
@@ -739,7 +750,7 @@ void jeWindow_step(jeWindow* window) {
 						);
 						jeWindow_destroyGL(window);
 						if (!jeWindow_initGL(window)) {
-							JE_ERR("jeWindow_step(): jeWindow_initGL failed");
+							JE_ERROR("jeWindow_step(): jeWindow_initGL failed");
 							window->open = JE_FALSE;
 						}
 						break;
@@ -748,13 +759,13 @@ void jeWindow_step(jeWindow* window) {
 				break;
 			}
 			case SDL_KEYUP: {
-				if (event.key.repeat == 0) {
+				if ((event.key.repeat == 0) || (JE_LOG_LEVEL <= JE_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("jeWindow_step(): SDL_KEYUP, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 
 				switch (event.key.keysym.sym) {
 					case SDLK_ESCAPE: {
-						JE_LOG("jeWindow_step(): Escape key released");
+						JE_DEBUG("jeWindow_step(): Escape key released");
 						window->open = JE_FALSE;
 						break;
 					}
@@ -766,19 +777,19 @@ void jeWindow_step(jeWindow* window) {
 				break;
 			}
 			case SDL_KEYDOWN: {
-				if (event.key.repeat == 0) {
+				if ((event.key.repeat == 0) || (JE_LOG_LEVEL <= JE_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("jeWindow_step(): SDL_KEYDOWN, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 				break;
 			}
 			case SDL_CONTROLLERDEVICEADDED: {
-				JE_LOG("jeWindow_step(): SDL_CONTROLLERDEVICEADDED, index=%d", event.cdevice.which);
+				JE_DEBUG("jeWindow_step(): SDL_CONTROLLERDEVICEADDED, index=%d", event.cdevice.which);
 				jeController_destroy(&window->controller);
 				jeController_create(&window->controller);
 				break;
 			}
 			case SDL_CONTROLLERDEVICEREMOVED: {
-				JE_LOG("jeWindow_step(): SDL_CONTROLLERDEVICEREMOVED, index=%d", event.cdevice.which);
+				JE_DEBUG("jeWindow_step(): SDL_CONTROLLERDEVICEREMOVED, index=%d", event.cdevice.which);
 				jeController_destroy(&window->controller);
 				jeController_create(&window->controller);
 				break;
@@ -800,10 +811,9 @@ void jeWindow_step(jeWindow* window) {
 				break;
 			}
 			case SDL_CONTROLLERAXISMOTION: {
-				/*Left commented out as this can be useful but is too verbose even for verbose logging...*/
-				/*JE_DEBUG("jeWindow_step(): SDL_CONTROLLERAXISMOTION, axis=%s, value=%d",
+				JE_TRACE("jeWindow_step(): SDL_CONTROLLERAXISMOTION, axis=%s, value=%d",
 						 SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)event.caxis.axis),
-						 (int)event.caxis.value);*/
+						 (int)event.caxis.value);
 				break;
 			}
 			default: {
@@ -812,8 +822,7 @@ void jeWindow_step(jeWindow* window) {
 		}
 	}
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	jeWindow_clear(window);
 
 	window->keyState = SDL_GetKeyboardState(NULL);
 }
@@ -845,7 +854,7 @@ jeBool jeWindow_create(jeWindow* window) {
 	memset((void*)window, 0, sizeof(*window));
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-		JE_ERR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_Init() failed with error=%s", SDL_GetError());
 		goto finalize;
 	}
 
@@ -861,39 +870,41 @@ jeBool jeWindow_create(jeWindow* window) {
 #endif
 
 	window->window = SDL_CreateWindow(
-		JE_WINDOW_CAPTION,
+		JE_WINDOW_START_CAPTION,
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		JE_WINDOW_WIDTH,
-		JE_WINDOW_HEIGHT,
+		JE_WINDOW_START_WIDTH,
+		JE_WINDOW_START_HEIGHT,
 		/*flags*/ SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 	);
 	if (window->window == NULL) {
-		JE_ERR("jeWindow_create(): SDL_CreateWindow() failed with error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_CreateWindow() failed with error=%s", SDL_GetError());
 		goto finalize;
 	}
 
 	if (jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME) == JE_FALSE) {
-		JE_ERR("jeWindow_create(): jeImage_createFromFile() failed");
+		JE_ERROR("jeWindow_create(): jeImage_createFromFile() failed");
 		goto finalize;
 	}
 
 	jeSpriteDepthQueue_create(&window->spriteDepthQueue);
 
 	if (jeWindow_initGL(window) == JE_FALSE) {
-		JE_ERR("jeWindow_create(): jeWindow_initGL() failed");
+		JE_ERROR("jeWindow_create(): jeWindow_initGL() failed");
 		goto finalize;
 	}
 
 	controllerMappingsLoaded = SDL_GameControllerAddMappingsFromFile(JE_WINDOW_CONTROLLER_DB_FILENAME);
 	if (controllerMappingsLoaded == -1) {
-		JE_ERR("jeWindow_create(): SDL_GameControllerAddMappingsFromFile() failed with error=%s", SDL_GetError());
+		JE_ERROR("jeWindow_create(): SDL_GameControllerAddMappingsFromFile() failed with error=%s", SDL_GetError());
 	} else {
 		JE_DEBUG("jeWindow_create(): SDL_GameControllerAddMappingsFromFile() controllerMappingsLoaded=%d", controllerMappingsLoaded);
 	}
 
 	jeController_create(&window->controller);
 	window->keyState = SDL_GetKeyboardState(NULL);
+
+	jeWindow_clear(window);
 
 	window->open = JE_TRUE;
 

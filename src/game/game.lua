@@ -5,7 +5,7 @@ local Game = {}
 Game.DUMP_FILE = ".\\game_dump.sav"
 Game.SAVE_FILE = ".\\game_save.sav"
 function Game:createTestWorld()
-	util.log("Game:createTestWorld()")
+	util.info("Game:createTestWorld()")
 
 	local wallSys = self.simulation:addSystem(require("src/game/entities/wall"))
 	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
@@ -18,16 +18,19 @@ function Game:createTestWorld()
 
 	worldSys:create()
 
-	local player = templateSys:instantiate(playerSys.template, 120, -32)
+	templateSys:instantiate(playerSys.template, 120, -32)
 
 	-- text
 	local font = textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
-	textSys:attach(player, font, "hello, world!")
-	player.textTranslationY = -2
-	player.textTranslationX = - (0.25 * #"hello, world!")
-	player.textZ = -1
-	player.textScaleX = 0.125
-	player.textScaleY = 0.125
+
+	local label = entitySys:create()
+	textSys:attach(label, font, "hello, world!")
+	label.drawRelativeToScreen = true
+	label.textZ = -1
+	-- label.textTranslationY = -2
+	-- label.textTranslationX = - (0.25 * #"hello, world!")
+	-- label.textScaleX = 1 / 8
+	-- label.textScaleY = 1 / 8
 
 	-- step floors
 	for i = 1, 7 do
@@ -83,7 +86,7 @@ function Game:createTestWorld()
 			entitySys:destroy(physicsObject)
 		end
 	end
-	util.log("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+	util.info("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
 function Game:run()
 	local logLevel = util.logLevel

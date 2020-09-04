@@ -14,14 +14,14 @@ function Simulation:broadcast(event, ...)
 end
 function Simulation:addSystem(class)
 	if type(class) ~= "table" then
-		util.err("Simulation:addSystem() class is not a table, class=%s", util.toComparable(class))
+		util.error("Simulation:addSystem() class is not a table, class=%s", util.toComparable(class))
 		return {}
 	end
 
 	local systemName = class.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.err("Simulation:addSystem() class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
+		util.error("Simulation:addSystem() class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
 		return {}
 	end
 
@@ -94,7 +94,7 @@ function Simulation:destroy()
 		return
 	end
 
-	util.log("Simulation:destroy()")
+	util.info("Simulation:destroy()")
 
 	self:broadcast("onSimulationDestroy")
 	self.state = {}
@@ -108,7 +108,7 @@ end
 function Simulation:create()
 	self:destroy()
 
-	util.log("Simulation:create()")
+	util.info("Simulation:create()")
 
 	math.randomseed(0)
 
@@ -139,7 +139,7 @@ function Simulation:dump(filename)
 		["systems"] = util.getKeys(self.systems),
 	}
 	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
-		util.err("Simulation:dump(): client.writeData() failed")
+		util.error("Simulation:dump(): client.writeData() failed")
 		return false
 	end
 
@@ -149,14 +149,14 @@ function Simulation:save(filename)
 	util.debug("Simulation:save(): filename=%s", filename)
 
 	if not client.writeData(filename, json.encode(self.state)) then
-		util.err("Simulation:save(): client.writeData() failed")
+		util.error("Simulation:save(): client.writeData() failed")
 		return false
 	end
 
 	return true
 end
 function Simulation:load(filename)
-	util.log("Simulation:load(): filename=%s", filename)
+	util.info("Simulation:load(): filename=%s", filename)
 
 	local loadedStateStr = client.readData(filename)
 	if not loadedStateStr then
@@ -166,12 +166,12 @@ function Simulation:load(filename)
 	local loadedState = json.decode(loadedStateStr)
 
 	if loadedState.saveVersion and (loadedState.saveVersion > self.state.saveVersion) then
-		util.err("Simulation:load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
+		util.error("Simulation:load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
 				   self.state.saveVersion, loadedState.saveVersion)
 		return false
 	end
 	if loadedState.saveVersion and (loadedState.saveVersion < self.state.saveVersion) then
-		util.log("Simulation:load(): save version is older, saveVersion=%d, save.saveVersion=%d",
+		util.info("Simulation:load(): save version is older, saveVersion=%d, save.saveVersion=%d",
 				   self.state.saveVersion, loadedState.saveVersion)
 	end
 
@@ -191,16 +191,16 @@ function Simulation:onSimulationRunTests()
 
 	local gameAfterLoad = util.toComparable(self.state)
 	if gameBeforeSave ~= gameAfterLoad then
-		util.err("Simulation:onSimulationRunTests(): Mismatch between state before save and after load: before=%s, after=%s",
+		util.error("Simulation:onSimulationRunTests(): Mismatch between state before save and after load: before=%s, after=%s",
 					  gameBeforeSave, gameAfterLoad)
 	end
 end
 function Simulation:runTests()
-	util.log("Simulation:runTests()")
+	util.info("Simulation:runTests()")
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
-			util.log("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
+			util.info("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
 			self:create()
@@ -211,7 +211,7 @@ function Simulation:runTests()
 
 	self:destroy()
 
-	util.log("Simulation:runTests() complete")
+	util.info("Simulation:runTests() complete")
 end
 
 function Simulation.new()

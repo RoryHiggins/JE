@@ -27,6 +27,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
+
 #define JE_TRUE 1
 #define JE_FALSE 0
 typedef unsigned char jeBool;

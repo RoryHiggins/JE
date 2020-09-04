@@ -118,7 +118,7 @@ function Player:onSimulationCreate(simulation)
 		["physicsCanCarry"] = false,  -- it is tremendously annoying for a player; crates stick to your head
 		["tags"] = {
 			["sprite"] = true,
-			["screenTarget"] = true,
+			["cameraTarget"] = true,
 			["material"] = true,
 			["solid"] = true,
 			["physics"] = true,

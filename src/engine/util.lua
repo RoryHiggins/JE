@@ -1,37 +1,36 @@
 local json = require("lib/json/json")
 
 local util = {}
-util.LOG_LEVEL_DEBUG = 0
-util.LOG_LEVEL_LOG = 1
-util.LOG_LEVEL_ERR = 2
-util.LOG_LEVEL_NONE = 3
+util.LOG_LEVEL_TRACE = 0
+util.LOG_LEVEL_DEBUG = 1
+util.LOG_LEVEL_LOG = 2
+util.LOG_LEVEL_WARN = 3
+util.LOG_LEVEL_ERR = 4
+util.LOG_LEVEL_NONE = 5
 util.logLevel = util.LOG_LEVEL_LOG
+local function logImpl(level, format, ...)
+	if util.logLevel > level then
+		return
+	end
+
+	local callee_info = debug.getinfo(2, "Sl")
+	print(string.format(format, callee_info.short_src, callee_info.currentline, ...))
+	io.flush()
+end
+function util.trace(format, ...)
+	logImpl(util.LOG_LEVEL_TRACE, "[trace %s:%d] "..format, ...)
+end
 function util.debug(format, ...)
-	if util.logLevel > util.LOG_LEVEL_DEBUG then
-		return
-	end
-
-	local callee_info = debug.getinfo(2, "Sl")
-	print(string.format("[DBG %s:%d] "..format, callee_info.short_src, callee_info.currentline, ...))
-	io.flush()
+	logImpl(util.LOG_LEVEL_DEBUG, "[debug %s:%d] "..format, ...)
 end
-function util.log(format, ...)
-	if util.logLevel > util.LOG_LEVEL_LOG then
-		return
-	end
-
-	local callee_info = debug.getinfo(2, "Sl")
-	print(string.format("[LOG %s:%d] "..format, callee_info.short_src, callee_info.currentline, ...))
-	io.flush()
+function util.info(format, ...)
+	logImpl(util.LOG_LEVEL_LOG, "[info  %s:%d] "..format, ...)
 end
-function util.err(format, ...)
-	if util.logLevel > util.LOG_LEVEL_ERR then
-		return
-	end
-
-	local callee_info = debug.getinfo(2, "Sl")
-	print(string.format("[ERR %s:%d] "..format, callee_info.short_src, callee_info.currentline, ...))
-	io.flush()
+function util.warn(format, ...)
+	logImpl(util.LOG_LEVEL_WARN, "[WARN  %s:%d] "..format, ...)
+end
+function util.error(format, ...)
+	logImpl(util.LOG_LEVEL_ERR, "[ERROR %s:%d] "..format, ...)
 end
 function util.noop()
 end
@@ -169,7 +168,7 @@ end
 function util.writeDataUncompressed(filename, dataStr)
 	local file, errMsg = io.open(filename, "w")
 	if file == nil then
-		util.err("util.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.error("util.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return false
 	end
 
@@ -181,7 +180,7 @@ end
 function util.readDataUncompressed(filename)
 	local file, errMsg = io.open(filename, "r")
 	if file == nil then
-		util.err("util.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.error("util.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return
 	end
 

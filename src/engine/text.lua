@@ -1,6 +1,6 @@
 local client = require("src/engine/client")
 local Entity = require("src/engine/entity")
-local Screen = require("src/engine/screen")
+local Camera = require("src/engine/camera")
 
 local Text = {}
 Text.SYSTEM_NAME = "text"
@@ -39,15 +39,26 @@ end
 function Text:onSimulationCreate(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
-	self.screenSys = self.simulation:addSystem(Screen)
+	self.cameraSys = self.simulation:addSystem(Camera)
 
 	self.simulation.static.fonts = {}
+end
+function Text:onCameraDraw(camera)
+	local fonts = self.simulation.static.fonts
+
+	for _, entity in ipairs(self.entitySys:findAll("text")) do
+		if not entity.drawRelativeToScreen then
+			client.drawText(entity, fonts[entity.fontId], camera)
+		end
+	end
 end
 function Text:onScreenDraw(screen)
 	local fonts = self.simulation.static.fonts
 
 	for _, entity in ipairs(self.entitySys:findAll("text")) do
-		client.drawText(entity, fonts[entity.fontId], screen)
+		if entity.drawRelativeToScreen then
+			client.drawText(entity, fonts[entity.fontId], screen)
+		end
 	end
 end
 function Text:onSimulationRunTests()

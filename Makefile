@@ -1,5 +1,5 @@
-# RELEASE, PROFILED, DEVELOPMENT, DEBUG
-BUILD_MODE := DEVELOPMENT
+# RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
+BUILD_MODE := TRACE
 
 CC := gcc
 CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
@@ -13,8 +13,11 @@ LFLAGS_PROFILED := $(LFLAGS_RELEASE)
 CFLAGS_DEVELOPMENT := $(CFLAGS) -Winvalid-pch -O0
 LFLAGS_DEVELOPMENT := `sdl2-config --libs` -lm -lpng -ljpeg -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1
 
-CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -Og -g3 -fno-inline-functions
+CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -Og -g3 -fno-inline-functions -fno-omit-frame-pointer -fexceptions -D JE_BUILD_DEBUG
 LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
+
+CFLAGS_TRACE := $(CFLAGS_DEBUG) -D JE_BUILD_TRACE
+LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
 client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
 	$(CC) $(CFLAGS_$(BUILD_MODE)) -D JE_BUILD_$(BUILD_MODE) src/client/main.c $(LFLAGS_$(BUILD_MODE)) -o client

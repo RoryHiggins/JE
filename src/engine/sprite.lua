@@ -1,7 +1,7 @@
 local util = require("src/engine/util")
 local client = require("src/engine/client")
 local Entity = require("src/engine/entity")
-local Screen = require("src/engine/screen")
+local Camera = require("src/engine/camera")
 
 
 local Sprite = {}
@@ -42,15 +42,26 @@ end
 function Sprite:onSimulationCreate(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
-	self.screenSys = self.simulation:addSystem(Screen)
+	self.cameraSys = self.simulation:addSystem(Camera)
 
 	self.simulation.static.sprites = {}
+end
+function Sprite:onCameraDraw(camera)
+	local sprites = self.simulation.static.sprites
+
+	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
+		if not entity.drawRelativeToScreen then
+			client.drawSprite(entity, sprites[entity.spriteId], camera)
+		end
+	end
 end
 function Sprite:onScreenDraw(screen)
 	local sprites = self.simulation.static.sprites
 
 	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
-		client.drawSprite(entity, sprites[entity.spriteId], screen)
+		if entity.drawRelativeToScreen then
+			client.drawSprite(entity, sprites[entity.spriteId], screen)
+		end
 	end
 end
 function Sprite:onSimulationRunTests()
