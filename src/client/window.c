@@ -12,7 +12,6 @@
 #define JE_WINDOW_START_CAPTION ""
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
 #define JE_WINDOW_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
-#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
@@ -44,11 +43,7 @@
 	"}"
 
 
-static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
-static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
-static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
-static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
-
+typedef struct jeVertex jeVertex;
 struct jeVertex {
 	float x;
 	float y;
@@ -62,8 +57,8 @@ struct jeVertex {
 	float u;
 	float v;
 };
-typedef struct jeVertex jeVertex;
 
+typedef struct jeSprite jeSprite;
 struct jeSprite {
 	float z;
 
@@ -82,18 +77,17 @@ struct jeSprite {
 	float u2;
 	float v2;
 };
-typedef struct jeSprite jeSprite;
 int jeSprite_less(const void* a, const void* b) {
 	return ((const jeSprite*)a)->z < ((const jeSprite*)b)->z;
 }
 
 /*Z-sorted queue of sprites, used for sorting translucent sprites before drawing*/
+typedef struct jeSpriteDepthQueue jeSpriteDepthQueue;
 struct jeSpriteDepthQueue {
 	jeSprite* sprites;
 	int capacity;
 	int count;
 };
-typedef struct jeSpriteDepthQueue jeSpriteDepthQueue;
 void jeSpriteDepthQueue_destroy(jeSpriteDepthQueue* spriteDepthQueue) {
 	spriteDepthQueue->count = 0;
 	spriteDepthQueue->capacity = 0;
@@ -155,6 +149,7 @@ void jeSpriteDepthQueue_sort(jeSpriteDepthQueue* spriteDepthQueue) {
 	qsort(spriteDepthQueue->sprites, spriteDepthQueue->count, sizeof(jeSprite), jeSprite_less);
 }
 
+typedef struct jeController jeController;
 struct jeController {
 	SDL_GameController* controller;
 
@@ -166,7 +161,6 @@ struct jeController {
 
 	float controllerAxisThreshold;
 };
-typedef struct jeController jeController;
 void jeController_destroy(jeController* controller) {
 	if (controller->controller != NULL) {
 		SDL_GameControllerClose(controller->controller);
@@ -261,10 +255,10 @@ struct jeWindow {
 	jeVertex vboData[JE_WINDOW_VERTEX_BUFFER_CAPACITY];
 	GLuint vboVertexCount;
 };
-jeWindow* jeWindow_get() {
-	static jeWindow window;
-	return &window;
-}
+static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
+static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
+static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
+static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
 jeBool jeWindow_getGlOk(jeWindow* window, const char* file, int line, const char* function) {
 	jeBool ok = JE_TRUE;
 	GLenum glError = GL_NO_ERROR;
@@ -281,7 +275,7 @@ jeBool jeWindow_getGlOk(jeWindow* window, const char* file, int line, const char
 
 	return ok;
 }
-jeBool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char* file, int line, const char* function) {
+jeBool jeWindow_getShaderOk(jeWindow* window, GLuint shader, const char* file, int line, const char* function) {
 	jeBool ok = JE_TRUE;
 	GLint compileStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -313,7 +307,7 @@ jeBool jeWindow_getShaderCompiledOk(jeWindow* window, GLuint shader, const char*
 
 	return ok;
 }
-jeBool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char* file, int line, const char* function) {
+jeBool jeWindow_getProgramOk(jeWindow* window, GLuint program, const char* file, int line, const char* function) {
 	jeBool ok = JE_TRUE;
 	GLint linkStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -345,7 +339,7 @@ jeBool jeWindow_getProgramLinkedOk(jeWindow* window, GLuint program, const char*
 
 	return ok;
 }
-jeBool jeWindow_isOpen(jeWindow* window) {
+jeBool jeWindow_getIsOpen(jeWindow* window) {
 	return window->open;
 }
 int jeWindow_getWidth(jeWindow* window) {
@@ -621,8 +615,8 @@ jeBool jeWindow_initGL(jeWindow* window) {
 		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getShaderCompiledOk(window, window->vertShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERROR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
+	if (!jeWindow_getShaderOk(window, window->vertShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		JE_ERROR("jeWindow_create(): jeWindow_getShaderOk() failed");
 		goto finalize;
 	}
 
@@ -633,8 +627,8 @@ jeBool jeWindow_initGL(jeWindow* window) {
 		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getShaderCompiledOk(window, window->fragShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERROR("jeWindow_create(): jeWindow_getShaderCompiledOk() failed");
+	if (!jeWindow_getShaderOk(window, window->fragShader, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		JE_ERROR("jeWindow_create(): jeWindow_getShaderOk() failed");
 		goto finalize;
 	}
 
@@ -649,8 +643,8 @@ jeBool jeWindow_initGL(jeWindow* window) {
 		JE_ERROR("jeWindow_create(): jeWindow_getGlOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getProgramLinkedOk(window, window->program, JE_LOG_CONTEXT, "jeWindow_create()")) {
-		JE_ERROR("jeWindow_create(): jeWindow_getProgramLinkedOk() failed");
+	if (!jeWindow_getProgramOk(window, window->program, JE_LOG_CONTEXT, "jeWindow_create()")) {
+		JE_ERROR("jeWindow_create(): jeWindow_getProgramOk() failed");
 		goto finalize;
 	}
 
@@ -844,12 +838,14 @@ void jeWindow_destroy(jeWindow* window) {
 		window->window = NULL;
 	}
 
-	memset((void*)window, 0, sizeof(*window));
+	free(window);
 }
-jeBool jeWindow_create(jeWindow* window) {
+jeWindow* jeWindow_create() {
 	jeBool success = JE_FALSE;
 
 	int controllerMappingsLoaded = -1;
+
+	jeWindow* window = (jeWindow*)malloc(sizeof(jeWindow));
 
 	memset((void*)window, 0, sizeof(*window));
 
@@ -910,11 +906,15 @@ jeBool jeWindow_create(jeWindow* window) {
 
 	success = JE_TRUE;
 	finalize: {
+		if ((success == JE_FALSE) && (window != NULL)) {
+			free(window);
+			window = NULL;
+		}
 	}
 
-	return success;
+	return window;
 }
-jeBool jeWindow_getInput(jeWindow* window, int inputId) {
+jeBool jeWindow_getInputState(jeWindow* window, int inputId) {
 	static const float axisMaxValue = 32767;
 
 	jeBool pressed = JE_FALSE;

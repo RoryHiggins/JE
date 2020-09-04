@@ -10,8 +10,9 @@
 
 int main(int argc, char** argv) {
 	jeBool success = JE_TRUE;
+	jeClient client;
 
-	success = jeClient_run();
+	success = jeClient_run(&client);
 
 	JE_MAYBE_UNUSED(argc);
 	JE_MAYBE_UNUSED(argv);

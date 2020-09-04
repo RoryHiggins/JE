@@ -6,7 +6,8 @@
 /*https://www.lua.org/manual/5.3/manual.html*/
 #define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeClientBindings"
-#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLuaClient_##BINDING_NAME}
+#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLua_##BINDING_NAME}
+
 
 /*Adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
 #if LUA_VERSION_NUM < 520
@@ -34,7 +35,7 @@ size_t lua_objlen(lua_State *L, int index) {
 }
 #endif
 
-const char* jeLuaClient_getError(lua_State* lua) {
+const char* jeLua_getError(lua_State* lua) {
 	const char* error = "";
 
 	error = lua_tostring(lua, -1);
@@ -45,14 +46,33 @@ const char* jeLuaClient_getError(lua_State* lua) {
 
 	return error;
 }
-void jeLuaClient_updateStates(lua_State* lua) {
-	jeWindow* window = jeWindow_get();
+jeWindow* jeLua_getWindow(lua_State* lua) {
+	jeWindow *window = NULL;
+
+	lua_settop(lua, 0);
+	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
+	lua_getfield(lua, -1, "window");
+
+	if (lua_islightuserdata(lua, -1) == 0) {
+		JE_ERROR("jeLua_getWindow(): %s.window is not set", JE_LUA_CLIENT_BINDINGS_KEY);
+		goto finalize;
+	}
+
+	window = (jeWindow*)lua_touserdata(lua, -1);
+
+	finalize: {
+
+	}
+	return window;
+}
+void jeLua_updateStates(lua_State* lua) {
+	jeWindow* window = jeLua_getWindow(lua);
 
 	lua_settop(lua, 0);
 	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
 	lua_getfield(lua, -1, "state");
 
-	lua_pushboolean(lua, jeWindow_isOpen(window));
+	lua_pushboolean(lua, jeWindow_getIsOpen(window));
 	lua_setfield(lua, 2, "running");
 
 	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
@@ -61,28 +81,28 @@ void jeLuaClient_updateStates(lua_State* lua) {
 	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
 	lua_setfield(lua, 2, "logLevel");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_LEFT));
 	lua_setfield(lua, 2, "inputLeft");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_RIGHT));
 	lua_setfield(lua, 2, "inputRight");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_UP));
 	lua_setfield(lua, 2, "inputUp");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_DOWN));
 	lua_setfield(lua, 2, "inputDown");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_A));
 	lua_setfield(lua, 2, "inputA");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_B));
 	lua_setfield(lua, 2, "inputB");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_X));
 	lua_setfield(lua, 2, "inputX");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
+	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_Y));
 	lua_setfield(lua, 2, "inputY");
 
 	/*finalize:*/ {
@@ -90,7 +110,7 @@ void jeLuaClient_updateStates(lua_State* lua) {
 	}
 }
 
-int jeLuaClient_writeData(lua_State* lua) {
+int jeLua_writeData(lua_State* lua) {
 	jeBool success = JE_FALSE;
 	char const* filename = "";
 	char const* data = "";
@@ -105,7 +125,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 	file = gzopen(filename, "wb");
 
 	if (file == NULL) {
-		JE_ERROR("jeLuaClient_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
+		JE_ERROR("jeLua_writeData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
 		goto finalize;
 	}
@@ -113,11 +133,11 @@ int jeLuaClient_writeData(lua_State* lua) {
 	dataSizeWritten = gzwrite(file, data, dataSize);
 
 	if (dataSizeWritten == 0) {
-		JE_ERROR("jeLuaClient_writeData(): gzwrite() failed to write data");
+		JE_ERROR("jeLua_writeData(): gzwrite() failed to write data");
 		goto finalize;
 	}
 
-	JE_DEBUG("jeLuaClient_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
+	JE_DEBUG("jeLua_writeData(): gzwrite() bytes=%d (before compression) written to filename=%s", dataSizeWritten, filename);
 
 	success = JE_TRUE;
 	finalize: {
@@ -129,7 +149,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 	lua_pushboolean(lua, success);
 	return 1;
 }
-int jeLuaClient_readData(lua_State* lua) {
+int jeLua_readData(lua_State* lua) {
 	static char data[JE_LUA_DATA_BUFFER_SIZE] = {0};
 
 	jeBool success = JE_FALSE;
@@ -145,7 +165,7 @@ int jeLuaClient_readData(lua_State* lua) {
 	file = gzopen(filename, "rb");
 
 	if (file == NULL) {
-		JE_ERROR("jeLuaClient_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
+		JE_ERROR("jeLua_readData(): gzopen() failed with filename=%s, errno=%d err=%s",
 			   filename, errno, strerror(errno));
 		goto finalize;
 	}
@@ -157,7 +177,7 @@ int jeLuaClient_readData(lua_State* lua) {
 		dataSize--;
 	}
 
-	JE_DEBUG("jeLuaClient_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
+	JE_DEBUG("jeLua_readData(): fread() bytes=%d (after decompression) read from filename=%s", dataSize, filename);
 
 	success = JE_TRUE;
 
@@ -174,7 +194,7 @@ int jeLuaClient_readData(lua_State* lua) {
 	
 	return numResponses;
 }
-int jeLuaClient_drawSprite(lua_State* lua) {
+int jeLua_drawSprite(lua_State* lua) {
 	/*camera*/
 	float cameraX = 0.0f;
 	float cameraY = 0.0f;
@@ -263,11 +283,11 @@ int jeLuaClient_drawSprite(lua_State* lua) {
 	lua_getfield(lua, 1, "h");
 	y2 = y1 + (luaL_optnumber(lua, -1, y2 - y1) * spriteScaleY);
 
-	jeWindow_drawSprite(jeWindow_get(), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
+	jeWindow_drawSprite(jeLua_getWindow(lua), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
 
 	return 0;
 }
-int jeLuaClient_drawText(lua_State* lua) {
+int jeLua_drawText(lua_State* lua) {
 	static const char charDefault = ' ';
 	/*camera*/
 	float cameraX = 0.0f;
@@ -384,7 +404,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 	for (i = 0; i < textLength; i++) {
 		charVal = (char)toupper((int)text[i]);
 		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
-			JE_DEBUG("jeLuaClient_drawText(): character outside range, char=%d, min=%d, max=%d", (int)charVal, (int)charFirst[0], (int)charLast[0]);
+			JE_DEBUG("jeLua_drawText(): character outside range, char=%d, min=%d, max=%d", (int)charVal, (int)charFirst[0], (int)charLast[0]);
 			charVal = charDefault;
 		}
 
@@ -395,7 +415,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 		charU = u + (charW * (charIndex % charColumns));
 		charV = v + (charH * (charIndex / charColumns));
 		jeWindow_drawSprite(
-			jeWindow_get(),
+			jeLua_getWindow(lua),
 			z,
 			charX,
 			charY,
@@ -436,16 +456,16 @@ int jeLuaClient_drawText(lua_State* lua) {
 
 	return 0;
 }
-int jeLuaClient_step(lua_State* lua) {
-	jeWindow* window = jeWindow_get();
+int jeLua_step(lua_State* lua) {
+	jeWindow* window = jeLua_getWindow(lua);
 
 	jeWindow_step(window);
 
-	jeLuaClient_updateStates(lua);
+	jeLua_updateStates(lua);
 
 	return 0;
 }
-jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
+jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua, jeWindow* window) {
 	static const luaL_Reg clientBindings[] = {
 		JE_LUA_CLIENT_BINDING(readData),
 		JE_LUA_CLIENT_BINDING(writeData),
@@ -476,7 +496,10 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 	lua_createtable(lua, /*numArrayElems*/ 0, /*numNonArrayElems*/ 16);
 	lua_setfield(lua, -2, "state");
 
-	jeLuaClient_updateStates(lua);
+	lua_pushlightuserdata(lua, (void*)window);
+	lua_setfield(lua, -2, "window");
+
+	jeLua_updateStates(lua);
 
 	success = JE_TRUE;
 	finalize: {
@@ -485,3 +508,63 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua) {
 
 	return success;
 }
+void jeLuaClient_destroy(jeLuaClient* luaClient) {
+	if (luaClient->lua != NULL) {
+		lua_close(luaClient->lua);
+		luaClient->lua = NULL;
+	}
+}
+jeBool jeLuaClient_create(jeLuaClient* luaClient, jeWindow* window) {
+	jeBool success = JE_FALSE;
+
+	memset((void*)luaClient, 0, sizeof(*luaClient));
+
+	luaClient->lua = luaL_newstate();
+
+	if (luaClient->lua == NULL) {
+		JE_ERROR("jeLuaClient_create(): luaL_newstate() failed");
+		goto finalize;
+	}
+
+	luaL_openlibs(luaClient->lua);
+
+	if (jeLuaClient_registerLuaClientBindings(luaClient->lua, window) == JE_FALSE) {
+		JE_ERROR("jeLuaClient_create(): jeLuaClient_registerLuaClientBindings() failed");
+		goto finalize;
+	}
+
+	success = JE_TRUE;
+	finalize: {
+	}
+
+	return success;
+}
+jeBool jeLuaClient_run(jeLuaClient* luaClient, jeWindow* window, const char* filename) {
+	jeBool success = JE_FALSE;
+	int luaResponse = 0;
+
+	if (jeLuaClient_create(luaClient, window) == JE_FALSE) {
+		JE_ERROR("jeLuaClient_run(): jeLuaClient_create() failed");
+		goto finalize;
+	}
+
+	luaResponse = luaL_loadfile(luaClient->lua, filename);
+	if (luaResponse != 0) {
+		JE_ERROR("jeLuaClient_run(): luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(luaClient->lua));
+		goto finalize;
+	}
+
+	luaResponse = lua_pcall(luaClient->lua, /* num args */ 0, /* num return vals */ LUA_MULTRET, /* err func */ 0);
+	if (luaResponse != 0) {
+		JE_ERROR("jeLuaClient_run(): lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(luaClient->lua));
+		goto finalize;
+	}
+
+	success = JE_TRUE;
+	finalize: {
+		jeLuaClient_destroy(luaClient);
+	}
+
+	return success;
+}
+

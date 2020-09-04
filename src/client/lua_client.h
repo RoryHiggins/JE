@@ -2,10 +2,15 @@
 #define JE_LUA_CLIENT_H
 
 #include "stdafx.h"
+#include "window.h"
 
 
-const char* jeLuaClient_getError(lua_State* lua);
-void jeLuaClient_updateStates(lua_State* lua);
-jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua);
+typedef struct jeLuaClient jeLuaClient;
+
+struct jeLuaClient {
+	lua_State* lua;
+};
+
+jeBool jeLuaClient_run(jeLuaClient* luaClient, jeWindow* window, const char* filename);
 
 #endif

@@ -11,12 +11,12 @@ function Game:createTestWorld()
 	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
 
 	local worldSys = self.simulation:addSystem(require("src/engine/world"))
+	worldSys:create()
+
 	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
 	local templateSys = self.simulation:addSystem(require("src/engine/template"))
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
 	local textSys = self.simulation:addSystem(require("src/engine/text"))
-
-	worldSys:create()
 
 	templateSys:instantiate(playerSys.template, 120, -32)
 
@@ -86,7 +86,7 @@ function Game:createTestWorld()
 			entitySys:destroy(physicsObject)
 		end
 	end
-	util.info("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+	util.debug("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
 function Game:run()
 	local logLevel = util.logLevel

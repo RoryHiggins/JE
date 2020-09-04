@@ -37,7 +37,7 @@ jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
 	image->width = pngImage.width;
 	image->height = pngImage.height;
 
-	JE_ERROR("jeImage_createFromFile(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
+	JE_DEBUG("jeImage_createFromFile(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
 
 	success = JE_TRUE;
 	finalize: {

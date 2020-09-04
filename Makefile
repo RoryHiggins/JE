@@ -1,5 +1,5 @@
 # RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
-BUILD_MODE := TRACE
+BUILD_MODE := DEVELOPMENT
 
 CC := gcc
 CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
