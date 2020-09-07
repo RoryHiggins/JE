@@ -9,12 +9,15 @@ function Camera:onSimulationCreate(simulation)
 	self.simulation.state.camera = {
 		["x"] = 0,
 		["y"] = 0,
-		["w"] = 160,
-		["h"] = 120,
+		["w"] = self.simulation.screen.w,
+		["h"] = self.simulation.screen.h,
 	}
 end
-function Camera:onSimulationDraw()
+function Camera:onSimulationDraw(screen)
 	local camera = self.simulation.state.camera
+
+	camera.w = screen.w
+	camera.h = screen.h
 
 	local cameraTarget = self.entitySys:find("cameraTarget")
 	if cameraTarget then
@@ -23,18 +26,10 @@ function Camera:onSimulationDraw()
 	end
 
 	self.simulation:broadcast("onCameraDraw", camera)
-
-	local screen = {
-		["x"] = 0,
-		["y"] = 0,
-		["w"] = camera.w,
-		["h"] = camera.h,
-	}
-	self.simulation:broadcast("onScreenDraw", screen)
 end
 function Camera:onSimulationRunTests()
 	assert(self.simulation.state.camera ~= nil)
-	self:onSimulationDraw()
+	self:onSimulationDraw(self.simulation.screen)
 end
 
 return Camera

@@ -3,15 +3,13 @@
 #include "debug.h"
 #include "image.h"
 
-#define JE_WINDOW_FRAME_RATE 60
-#define JE_WINDOW_MIN_WIDTH 160
-#define JE_WINDOW_MIN_HEIGHT 120
 #define JE_WINDOW_START_SCALE 8
 #define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_CAPTION ""
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
 #define JE_WINDOW_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
+#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
@@ -81,7 +79,7 @@ int jeSprite_less(const void* a, const void* b) {
 	return ((const jeSprite*)a)->z < ((const jeSprite*)b)->z;
 }
 
-/*Z-sorted queue of sprites, used for sorting translucent sprites before drawing*/
+/*Z-sorted queue of sprites*/
 typedef struct jeSpriteDepthQueue jeSpriteDepthQueue;
 struct jeSpriteDepthQueue {
 	jeSprite* sprites;
@@ -492,16 +490,7 @@ void jeWindow_drawSprite(jeWindow* window, float z, float x1, float y1, float x2
 	sprite.u2 = u2;
 	sprite.v2 = v2;
 
-	/*If this is a translucent sprite, defer drawing to end of frame, after sorting all translucent sprites*/
-	if ((a > 0.0f) && (a < 1.0f)) {
-		jeSpriteDepthQueue_insert(&window->spriteDepthQueue, sprite);
-		goto finalize;
-	}
-
-	jeWindow_drawSpriteImpl(window, sprite);
-
-	finalize: {
-	}
+	jeSpriteDepthQueue_insert(&window->spriteDepthQueue, sprite);
 }
 void jeWindow_flushSpriteDepthQueue(jeWindow* window) {
 	int i = 0;
@@ -509,7 +498,7 @@ void jeWindow_flushSpriteDepthQueue(jeWindow* window) {
 
 	jeSpriteDepthQueue_sort(&window->spriteDepthQueue);
 
-	for (i = (window->spriteDepthQueue.count - 1); i >= 0; i--) {
+	for (i = 0; i < window->spriteDepthQueue.count; i++) {
 		sprite = window->spriteDepthQueue.sprites[i];
 		jeWindow_drawSpriteImpl(window, sprite);
 	}
@@ -821,6 +810,8 @@ void jeWindow_step(jeWindow* window) {
 	window->keyState = SDL_GetKeyboardState(NULL);
 }
 void jeWindow_destroy(jeWindow* window) {
+	JE_INFO("jeWindow_destroy()");
+
 	window->open = JE_FALSE;
 
 	SDL_Quit();
@@ -846,6 +837,8 @@ jeWindow* jeWindow_create() {
 	int controllerMappingsLoaded = -1;
 
 	jeWindow* window = (jeWindow*)malloc(sizeof(jeWindow));
+
+	JE_INFO("jeWindow_create()");
 
 	memset((void*)window, 0, sizeof(*window));
 

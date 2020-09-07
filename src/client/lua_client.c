@@ -75,6 +75,12 @@ void jeLua_updateStates(lua_State* lua) {
 	lua_pushboolean(lua, jeWindow_getIsOpen(window));
 	lua_setfield(lua, 2, "running");
 
+	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_WIDTH);
+	lua_setfield(lua, 2, "width");
+
+	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_HEIGHT);
+	lua_setfield(lua, 2, "height");
+
 	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
 	lua_setfield(lua, 2, "fps");
 
@@ -397,7 +403,7 @@ int jeLua_drawText(lua_State* lua) {
 	z = luaL_optnumber(lua, -1, z);
 
 	lua_getfield(lua, 1, "text");
-	text = luaL_optstring(lua, -1, "");
+	text = luaL_checkstring(lua, -1);
 	textLength = strnlen(text, 256);
 
 	/*TODO*/
@@ -509,6 +515,8 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua, jeWindow* window) {
 	return success;
 }
 void jeLuaClient_destroy(jeLuaClient* luaClient) {
+	JE_INFO("jeLuaClient_destroy()");
+
 	if (luaClient->lua != NULL) {
 		lua_close(luaClient->lua);
 		luaClient->lua = NULL;
@@ -516,6 +524,8 @@ void jeLuaClient_destroy(jeLuaClient* luaClient) {
 }
 jeBool jeLuaClient_create(jeLuaClient* luaClient, jeWindow* window) {
 	jeBool success = JE_FALSE;
+
+	JE_INFO("jeLuaClient_create()");
 
 	memset((void*)luaClient, 0, sizeof(*luaClient));
 
@@ -542,6 +552,8 @@ jeBool jeLuaClient_create(jeLuaClient* luaClient, jeWindow* window) {
 jeBool jeLuaClient_run(jeLuaClient* luaClient, jeWindow* window, const char* filename) {
 	jeBool success = JE_FALSE;
 	int luaResponse = 0;
+
+	JE_INFO("jeLuaClient_run()");
 
 	if (jeLuaClient_create(luaClient, window) == JE_FALSE) {
 		JE_ERROR("jeLuaClient_run(): jeLuaClient_create() failed");

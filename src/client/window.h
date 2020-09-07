@@ -14,7 +14,9 @@
 #define JE_INPUT_Y 7
 #define JE_INPUT_COUNT 8
 
-#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
+#define JE_WINDOW_FRAME_RATE 60
+#define JE_WINDOW_MIN_WIDTH 160
+#define JE_WINDOW_MIN_HEIGHT 120
 
 
 typedef struct jeWindow jeWindow;

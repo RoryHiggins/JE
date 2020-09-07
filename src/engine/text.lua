@@ -26,6 +26,9 @@ end
 function Text:getFont(fontId)
 	return self.simulation.static.fonts[fontId]
 end
+function Text.draw(_, renderable, font, camera)
+	client.drawText(renderable, font, camera)
+end
 function Text:attach(entity, font, text)
 	entity.fontId = font.fontId
 	entity.text = text

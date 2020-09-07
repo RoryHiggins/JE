@@ -8,7 +8,7 @@
 
 
 void jeClient_destroy(jeClient* client) {
-	JE_DEBUG("jeClient_destroy()");
+	JE_INFO("jeClient_destroy()");
 
 	jeWindow_destroy(client->window);
 
@@ -17,7 +17,7 @@ void jeClient_destroy(jeClient* client) {
 jeBool jeClient_create(jeClient* client) {
 	jeBool success = JE_FALSE;
 
-	JE_DEBUG("jeClient_create()");
+	JE_INFO("jeClient_create()");
 
 	memset((void*)client, 0, sizeof(*client));
 

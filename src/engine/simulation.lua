@@ -6,6 +6,16 @@ local client = require("src/engine/client")
 local Simulation = {}
 Simulation.DUMP_FILE = ".\\game_dump.sav"
 Simulation.SAVE_FILE = ".\\game_save.sav"
+Simulation.CLIENT_INPUT_MAP = {
+	["left"] = "inputLeft",
+	["right"] = "inputRight",
+	["up"] = "inputUp",
+	["down"] = "inputDown",
+	["a"] = "inputA",
+	["b"] = "inputB",
+	["x"] = "inputX",
+	["y"] = "inputY",
+}
 function Simulation:broadcast(event, ...)
 	for _, system in pairs(self.systems) do
 		local eventHandler = system[event]
@@ -16,20 +26,20 @@ function Simulation:broadcast(event, ...)
 end
 function Simulation:addSystem(class)
 	if type(class) ~= "table" then
-		util.error("Simulation:addSystem() class is not a table, class=%s", util.toComparable(class))
+		util.error("Simulation:addSystem(): class is not a table, class=%s", util.toComparable(class))
 		return {}
 	end
 
 	local systemName = class.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.error("Simulation:addSystem() class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
+		util.error("Simulation:addSystem(): class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
 		return {}
 	end
 
 	local system = self.systems[systemName]
 	if system == nil then
-		util.debug("Simulation:addSystem() instantiating system, systemName=%s", systemName)
+		util.debug("Simulation:addSystem(): instantiating system, systemName=%s", systemName)
 
 		class.__index = class
 		system = setmetatable({}, class)
@@ -38,7 +48,7 @@ function Simulation:addSystem(class)
 	end
 
 	if self.created and not self.systemsCreated[systemName] then
-		util.debug("Simulation:addSystem() creating system, systemName=%s", systemName)
+		util.debug("Simulation:addSystem(): creating system, systemName=%s", systemName)
 
 		-- marking as created first, to prevent recursion with circular dependencies
 		self.systemsCreated[systemName] = true
@@ -49,22 +59,14 @@ function Simulation:addSystem(class)
 
 	return system
 end
-function Simulation:getInputs()
+function Simulation:stepClient()
+	client.step()
+
 	local previousInputs = self.inputs or {}
-	local clientInputMap = {
-		["left"] = "inputLeft",
-		["right"] = "inputRight",
-		["up"] = "inputUp",
-		["down"] = "inputDown",
-		["a"] = "inputA",
-		["b"] = "inputB",
-		["x"] = "inputX",
-		["y"] = "inputY",
-	}
 
 	local inputs = {}
 
-	for inputKey, clientInputKey in pairs(clientInputMap) do
+	for inputKey, clientInputKey in pairs(self.CLIENT_INPUT_MAP) do
 		local input = {}
 		input.down = client.state[clientInputKey]
 
@@ -83,15 +85,23 @@ function Simulation:getInputs()
 	end
 
 	self.inputs = inputs
+
+	self.screen = {
+		["x"] = 0,
+		["y"] = 0,
+		["w"] = client.state.width,
+		["h"] = client.state.height,
+	}
+
+	self.fps = client.state.fps
 end
 function Simulation.isRunning()
 	return client.state.running
 end
 function Simulation:step()
-	client.step()
-	self:getInputs()
+	self:stepClient()
 	self:broadcast("onSimulationStep")
-	self:broadcast("onSimulationDraw")
+	self:broadcast("onSimulationDraw", self.screen)
 end
 function Simulation:destroy()
 	if not self.created then
@@ -119,12 +129,10 @@ function Simulation:create()
 	self.created = true
 	self.state.saveVersion = 1
 
-	self:getInputs()
-
 	for systemName, system in pairs(self.systems) do
-		util.trace("Simulation:create() systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
+		util.trace("Simulation:create(): systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
 		if not self.systemsCreated[systemName] then
-			util.debug("Simulation:create() creating system, name=%s", systemName)
+			util.debug("Simulation:create(): creating system, name=%s", systemName)
 
 			-- marking as created first, to prevent recursion with circular dependencies
 			self.systemsCreated[systemName] = true
@@ -204,7 +212,10 @@ function Simulation:onSimulationRunTests()
 	self:destroy()
 end
 function Simulation:runTests()
-	util.info("Simulation:runTests()")
+	util.info("Simulation:runTests(): starting")
+
+	local logLevelBackup = util.logLevel
+	util.logLevel = util.testLogLevel
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
@@ -219,16 +230,22 @@ function Simulation:runTests()
 
 	self:destroy()
 
-	util.info("Simulation:runTests() complete")
+	util.logLevel = logLevelBackup
+
+	util.info("Simulation:runTests(): complete")
 end
 function Simulation:run()
-	self:runTests()
+	util.info("Simulation:run(): starting")
+	if util.logLevel <= util.LOG_LEVEL_LOG then
+		self:runTests()
+	end
 	self:create()
 
 	while self:isRunning() do
 		self:step()
 	end
 
+	util.info("Simulation:run(): ending")
 	self:dump(self.DUMP_FILE)
 	self:save(self.SAVE_FILE)
 	self:destroy()
@@ -241,7 +258,19 @@ function Simulation.new()
 		["state"] = {},
 		["static"] = {},
 		["created"] = false,
+		["inputs"] = {},
+		["screen"] = {
+			["x"] = 0,
+			["y"] = 0,
+			["w"] = 0,
+			["h"] = 0,
+		},
+		["fps"] = 0,
 	}
+
+	for inputKey, _ in pairs(Simulation.CLIENT_INPUT_MAP) do
+		simulation.inputs[inputKey] = {["down"] = false, ["pressed"] = false, ["released"] = false}
+	end
 
 	Simulation.__index = Simulation
 	setmetatable(simulation, Simulation)

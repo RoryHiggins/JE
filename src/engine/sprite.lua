@@ -28,6 +28,9 @@ function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 
 	return sprite
 end
+function Sprite.draw(_, renderable, sprite, camera)
+	client.drawSprite(renderable, sprite, camera)
+end
 function Sprite:get(spriteId)
 	return self.simulation.static.sprites[spriteId]
 end

@@ -14,16 +14,8 @@ function Game:createTestWorld()
 	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
 	local templateSys = self.simulation:addSystem(require("src/engine/template"))
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
-	local textSys = self.simulation:addSystem(require("src/engine/text"))
 
-	local player = templateSys:instantiate(playerSys.template, 120, -32)
-
-	-- text
-	local font = textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
-
-	textSys:attach(player, font, "!!!")
-	player.textZ = -1
-	player.textTranslationX = 8
+	templateSys:instantiate(playerSys.template, 120, -32)
 
 	-- step floors
 	for i = 1, 7 do
@@ -40,14 +32,14 @@ function Game:createTestWorld()
 	end
 
 	-- side walls
-	local levelWidth = 160
-	local levelHeight = 120
-	templateSys:instantiate(wallSys.template, -64, -64, 8, levelHeight + 128)
-	templateSys:instantiate(wallSys.template, levelWidth + 56, -64, 8, levelHeight + 128)
+	local levelW = self.simulation.screen.w
+	local levelH = self.simulation.screen.h
+	templateSys:instantiate(wallSys.template, -64, -64, 8, levelH + 128)
+	templateSys:instantiate(wallSys.template, levelW + 56, -64, 8, levelH + 128)
 
 	-- top and bottom walls
-	templateSys:instantiate(wallSys.template, -64, -64, levelWidth + 128, 8)
-	templateSys:instantiate(wallSys.template, -64, levelHeight + 56, levelWidth + 128, 8)
+	templateSys:instantiate(wallSys.template, -64, -64, levelW + 128, 8)
+	templateSys:instantiate(wallSys.template, -64, levelH + 56, levelW + 128, 8)
 
 	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
 
@@ -70,8 +62,8 @@ function Game:createTestWorld()
 	for _ = 1, 10 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
 		entitySys:setBounds(physicsObject,
-			-48 + math.floor(math.random(levelWidth + 96)),
-			-48 + math.floor(math.random(levelHeight + 96)), 6, 6)
+			-48 + math.floor(math.random(levelW + 96)),
+			-48 + math.floor(math.random(levelH + 96)), 6, 6)
 		physicsObject.z = physicsObject.y
 		physicsObject.speedX = math.random(3) - 1.5
 		physicsObject.speedY = math.random(3) - 1.5
@@ -83,13 +75,25 @@ function Game:createTestWorld()
 end
 function Game:onSimulationCreate(simulation)
 	self.simulation = simulation
+	self.textSys = self.simulation:addSystem(require("src/engine/text"))
 
+	self.font = self.textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
 	self:createTestWorld()
 end
 function Game:onSimulationStep()
 	if self.simulation.inputs.x.released then
 		self:createTestWorld()
 	end
+end
+function Game:onSimulationDraw(screen)
+	-- TODO "Renderable" class
+	local fps = {
+		["x"] = 0,
+		["y"] = 0,
+		["z"] = -10,
+		["text"] = tostring(self.simulation.fps)
+	}
+	self.textSys:draw(fps, self.font, screen)
 end
 
 return Game

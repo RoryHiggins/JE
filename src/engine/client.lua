@@ -8,6 +8,8 @@ end
 local headlessClient = setmetatable({}, headlessClientMetatable)
 headlessClient.state = {
 	["running"] = false,
+	["width"] = 0,
+	["height"] = 0,
 	["fps"] = 0,
 	["logLevel"] = util.logLevel,
 	["inputLeft"] = false,

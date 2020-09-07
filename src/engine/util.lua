@@ -7,7 +7,8 @@ util.LOG_LEVEL_LOG = 2
 util.LOG_LEVEL_WARN = 3
 util.LOG_LEVEL_ERR = 4
 util.LOG_LEVEL_NONE = 5
-util.logLevel = util.LOG_LEVEL_TRACE
+util.testLogLevel = util.LOG_LEVEL_WARN
+util.logLevel = util.LOG_LEVEL_LOG
 local function logImpl(level, format, ...)
 	if util.logLevel > level then
 		return
