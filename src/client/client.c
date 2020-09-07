@@ -21,7 +21,7 @@ jeBool jeClient_create(jeClient* client) {
 
 	memset((void*)client, 0, sizeof(*client));
 
-	client->window = jeWindow_create(client->window);
+	client->window = jeWindow_create();
 	if (client->window == NULL) {
 		JE_ERROR("jeClient_create(): jeWindow_create() failed");
 		goto finalize;

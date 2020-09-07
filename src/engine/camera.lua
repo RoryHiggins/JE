@@ -12,13 +12,6 @@ function Camera:onSimulationCreate(simulation)
 		["w"] = 160,
 		["h"] = 120,
 	}
-
-	self.simulation.state.screen = {
-		["x"] = 0,
-		["y"] = 0,
-		["w"] = 160,
-		["h"] = 120,
-	}
 end
 function Camera:onSimulationDraw()
 	local camera = self.simulation.state.camera
@@ -31,7 +24,12 @@ function Camera:onSimulationDraw()
 
 	self.simulation:broadcast("onCameraDraw", camera)
 
-	local screen = self.simulation.state.screen
+	local screen = {
+		["x"] = 0,
+		["y"] = 0,
+		["w"] = camera.w,
+		["h"] = camera.h,
+	}
 	self.simulation:broadcast("onScreenDraw", screen)
 end
 function Camera:onSimulationRunTests()

@@ -7,7 +7,7 @@ util.LOG_LEVEL_LOG = 2
 util.LOG_LEVEL_WARN = 3
 util.LOG_LEVEL_ERR = 4
 util.LOG_LEVEL_NONE = 5
-util.logLevel = util.LOG_LEVEL_LOG
+util.logLevel = util.LOG_LEVEL_TRACE
 local function logImpl(level, format, ...)
 	if util.logLevel > level then
 		return
@@ -125,6 +125,8 @@ function util.toComparable(input, stack)
 		return "null"
 	elseif inputType == "function" then
 		return util.toComparable(tostring(input))
+	elseif inputType == "userdata" then
+		return "\"<unserializable userdata>\""
 	else
 		return tostring(input)
 	end

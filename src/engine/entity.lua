@@ -321,6 +321,8 @@ function Entity.onWorldCreate(_, world)
 	world.destroyedEntities = {}
 end
 function Entity:onSimulationRunTests()
+	self.worldSys:create()
+
 	local entityChunkSizeBackup = self.ENTITY_CHUNK_SIZE
 	self.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size
 

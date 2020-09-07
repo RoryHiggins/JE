@@ -11,9 +11,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <luajit-2.0/lua.h>
 #include <luajit-2.0/lualib.h>
 #include <luajit-2.0/lauxlib.h>
+#ifdef __cplusplus
+} /*extern "C"*/
+#endif
 
 #include <zlib.h>
 #include <png.h>

@@ -47,18 +47,7 @@ function Text:onCameraDraw(camera)
 	local fonts = self.simulation.static.fonts
 
 	for _, entity in ipairs(self.entitySys:findAll("text")) do
-		if not entity.drawRelativeToScreen then
-			client.drawText(entity, fonts[entity.fontId], camera)
-		end
-	end
-end
-function Text:onScreenDraw(screen)
-	local fonts = self.simulation.static.fonts
-
-	for _, entity in ipairs(self.entitySys:findAll("text")) do
-		if entity.drawRelativeToScreen then
-			client.drawText(entity, fonts[entity.fontId], screen)
-		end
+		client.drawText(entity, fonts[entity.fontId], camera)
 	end
 end
 function Text:onSimulationRunTests()

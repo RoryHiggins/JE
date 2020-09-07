@@ -132,8 +132,6 @@ function Player:onSimulationStep()
 	end
 end
 function Player:onSimulationRunTests()
-	self:onSimulationStep()
-
 	self.templateSys:instantiate(self.template)
 	for _ = 1, 10 do
 		self:onSimulationStep()

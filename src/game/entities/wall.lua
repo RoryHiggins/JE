@@ -29,9 +29,6 @@ function Wall:onSimulationCreate(simulation)
 end
 function Wall:onSimulationRunTests()
 	self.templateSys:instantiate(self.template)
-	for _ = 1, 10 do
-		self.simulation:step()
-	end
 end
 
 return Wall

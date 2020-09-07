@@ -4,6 +4,8 @@ local client = require("src/engine/client")
 
 
 local Simulation = {}
+Simulation.DUMP_FILE = ".\\game_dump.sav"
+Simulation.SAVE_FILE = ".\\game_save.sav"
 function Simulation:broadcast(event, ...)
 	for _, system in pairs(self.systems) do
 		local eventHandler = system[event]
@@ -35,12 +37,14 @@ function Simulation:addSystem(class)
 		self.systemsCreated[systemName] = false
 	end
 
-	if self.created and system.onSimulationCreate and not self.systemsCreated[systemName] then
+	if self.created and not self.systemsCreated[systemName] then
 		util.debug("Simulation:addSystem() creating system, systemName=%s", systemName)
 
 		-- marking as created first, to prevent recursion with circular dependencies
 		self.systemsCreated[systemName] = true
-		system:onSimulationCreate(self)
+		if system.onSimulationCreate then
+			system:onSimulationCreate(self)
+		end
 	end
 
 	return system
@@ -118,7 +122,8 @@ function Simulation:create()
 	self:getInputs()
 
 	for systemName, system in pairs(self.systems) do
-		if system.simulation and not self.systemsCreated[systemName] then
+		util.trace("Simulation:create() systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
+		if not self.systemsCreated[systemName] then
 			util.debug("Simulation:create() creating system, name=%s", systemName)
 
 			-- marking as created first, to prevent recursion with circular dependencies
@@ -180,6 +185,7 @@ function Simulation:load(filename)
 	return true
 end
 function Simulation:onSimulationRunTests()
+	self:create()
 	self:step()
 
 	local gameBeforeSave = util.toComparable(self.state)
@@ -194,6 +200,8 @@ function Simulation:onSimulationRunTests()
 		util.error("Simulation:onSimulationRunTests(): Mismatch between state before save and after load: before=%s, after=%s",
 					  gameBeforeSave, gameAfterLoad)
 	end
+
+	self:destroy()
 end
 function Simulation:runTests()
 	util.info("Simulation:runTests()")
@@ -212,6 +220,18 @@ function Simulation:runTests()
 	self:destroy()
 
 	util.info("Simulation:runTests() complete")
+end
+function Simulation:run()
+	self:runTests()
+	self:create()
+
+	while self:isRunning() do
+		self:step()
+	end
+
+	self:dump(self.DUMP_FILE)
+	self:save(self.SAVE_FILE)
+	self:destroy()
 end
 
 function Simulation.new()

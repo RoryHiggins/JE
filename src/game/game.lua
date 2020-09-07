@@ -1,9 +1,7 @@
 local util = require("src/engine/util")
-local Simulation = require("src/engine/simulation")
 
 local Game = {}
-Game.DUMP_FILE = ".\\game_dump.sav"
-Game.SAVE_FILE = ".\\game_save.sav"
+Game.SYSTEM_NAME = "game"
 function Game:createTestWorld()
 	util.info("Game:createTestWorld()")
 
@@ -18,19 +16,14 @@ function Game:createTestWorld()
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
 	local textSys = self.simulation:addSystem(require("src/engine/text"))
 
-	templateSys:instantiate(playerSys.template, 120, -32)
+	local player = templateSys:instantiate(playerSys.template, 120, -32)
 
 	-- text
 	local font = textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
 
-	local label = entitySys:create()
-	textSys:attach(label, font, "hello, world!")
-	label.drawRelativeToScreen = true
-	label.textZ = -1
-	-- label.textTranslationY = -2
-	-- label.textTranslationX = - (0.25 * #"hello, world!")
-	-- label.textScaleX = 1 / 8
-	-- label.textScaleY = 1 / 8
+	textSys:attach(player, font, "!!!")
+	player.textZ = -1
+	player.textTranslationX = 8
 
 	-- step floors
 	for i = 1, 7 do
@@ -88,37 +81,15 @@ function Game:createTestWorld()
 	end
 	util.debug("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
-function Game:run()
-	local logLevel = util.logLevel
-	util.logLevel = util.LOG_LEVEL_ERR
-	self.simulation:runTests()
-	util.logLevel = logLevel
+function Game:onSimulationCreate(simulation)
+	self.simulation = simulation
 
-	self.simulation:create()
 	self:createTestWorld()
-
-	while self.simulation:isRunning() do
-		self.simulation:step()
-
-		if self.simulation.inputs.x.released then
-			self:createTestWorld()
-		end
-	end
-
-	-- self.simulation:dump(self.DUMP_FILE)
-	-- self.simulation:save(self.SAVE_FILE)
-	self.simulation:destroy()
 end
-function Game.new()
-	local game = {
-		["created"] = false,
-		["simulation"] = Simulation.new(),
-	}
-
-	Game.__index = Game
-	setmetatable(game, Game)
-
-	return game
+function Game:onSimulationStep()
+	if self.simulation.inputs.x.released then
+		self:createTestWorld()
+	end
 end
 
 return Game

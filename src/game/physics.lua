@@ -1,4 +1,5 @@
 local util = require("src/engine/util")
+local World = require("src/engine/world")
 local Entity = require("src/engine/entity")
 local Template = require("src/engine/template")
 local Material = require("src/game/material")
@@ -269,6 +270,7 @@ function Physics:tick(entity)
 end
 function Physics:onSimulationCreate(simulation)
 	self.simulation = simulation
+	self.worldSys = self.simulation:addSystem(World)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.materialSys = self.simulation:addSystem(Material)
@@ -315,6 +317,8 @@ function Physics.onEntityTag(_, entity, tag, tagId)
 	end
 end
 function Physics:onSimulationRunTests()
+	self.worldSys:create()
+
 	local static = self.simulation.static
 
 	local gridSize = 8

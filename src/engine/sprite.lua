@@ -50,18 +50,7 @@ function Sprite:onCameraDraw(camera)
 	local sprites = self.simulation.static.sprites
 
 	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
-		if not entity.drawRelativeToScreen then
-			client.drawSprite(entity, sprites[entity.spriteId], camera)
-		end
-	end
-end
-function Sprite:onScreenDraw(screen)
-	local sprites = self.simulation.static.sprites
-
-	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
-		if entity.drawRelativeToScreen then
-			client.drawSprite(entity, sprites[entity.spriteId], screen)
-		end
+		client.drawSprite(entity, sprites[entity.spriteId], camera)
 	end
 end
 function Sprite:onSimulationRunTests()
