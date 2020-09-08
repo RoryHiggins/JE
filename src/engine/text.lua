@@ -10,8 +10,8 @@ function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColum
 	if font == nil then
 		font = {
 			["fontId"] = fontId,
-			["u"] = u,
-			["v"] = v,
+			["u1"] = u,
+			["v1"] = v,
 			["charW"] = charW,
 			["charH"] = charH,
 			["charFirst"] = charFirst,

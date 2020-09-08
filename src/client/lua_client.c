@@ -4,6 +4,7 @@
 #include "window.h"
 
 /*https://www.lua.org/manual/5.3/manual.html*/
+#define JE_LUA_STACK_TOP -1
 #define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeClientBindings"
 #define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLua_##BINDING_NAME}
@@ -38,7 +39,7 @@ size_t lua_objlen(lua_State *L, int index) {
 const char* jeLua_getError(lua_State* lua) {
 	const char* error = "";
 
-	error = lua_tostring(lua, -1);
+	error = lua_tostring(lua, JE_LUA_STACK_TOP);
 
 	if (error == NULL) {
 		error = "";
@@ -51,14 +52,14 @@ jeWindow* jeLua_getWindow(lua_State* lua) {
 
 	lua_settop(lua, 0);
 	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
-	lua_getfield(lua, -1, "window");
+	lua_getfield(lua, JE_LUA_STACK_TOP, "window");
 
-	if (lua_islightuserdata(lua, -1) == 0) {
+	if (lua_islightuserdata(lua, JE_LUA_STACK_TOP) == 0) {
 		JE_ERROR("jeLua_getWindow(): %s.window is not set", JE_LUA_CLIENT_BINDINGS_KEY);
 		goto finalize;
 	}
 
-	window = (jeWindow*)lua_touserdata(lua, -1);
+	window = (jeWindow*)lua_touserdata(lua, JE_LUA_STACK_TOP);
 
 	finalize: {
 
@@ -66,56 +67,59 @@ jeWindow* jeLua_getWindow(lua_State* lua) {
 	return window;
 }
 void jeLua_updateStates(lua_State* lua) {
+	int stateIndex = 0;
 	jeWindow* window = jeLua_getWindow(lua);
 
 	lua_settop(lua, 0);
 	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
-	lua_getfield(lua, -1, "state");
+	lua_getfield(lua, JE_LUA_STACK_TOP, "state");
+
+	stateIndex = lua_gettop(lua);
 
 	lua_pushboolean(lua, jeWindow_getIsOpen(window));
-	lua_setfield(lua, 2, "running");
+	lua_setfield(lua, stateIndex, "running");
 
 	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_WIDTH);
-	lua_setfield(lua, 2, "width");
+	lua_setfield(lua, stateIndex, "width");
 
 	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_HEIGHT);
-	lua_setfield(lua, 2, "height");
+	lua_setfield(lua, stateIndex, "height");
 
 	lua_pushnumber(lua, (lua_Number)jeWindow_getFramesPerSecond(window));
-	lua_setfield(lua, 2, "fps");
+	lua_setfield(lua, stateIndex, "fps");
 
 	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
-	lua_setfield(lua, 2, "logLevel");
+	lua_setfield(lua, stateIndex, "logLevel");
 
 	lua_pushboolean(lua, JE_TRUE);
-	lua_setfield(lua, 2, "testsEnabled");
+	lua_setfield(lua, stateIndex, "testsEnabled");
 
 	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL_WARN);
-	lua_setfield(lua, 2, "testsLogLevel");
+	lua_setfield(lua, stateIndex, "testsLogLevel");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_LEFT));
-	lua_setfield(lua, 2, "inputLeft");
+	lua_setfield(lua, stateIndex, "inputLeft");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_RIGHT));
-	lua_setfield(lua, 2, "inputRight");
+	lua_setfield(lua, stateIndex, "inputRight");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_UP));
-	lua_setfield(lua, 2, "inputUp");
+	lua_setfield(lua, stateIndex, "inputUp");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_DOWN));
-	lua_setfield(lua, 2, "inputDown");
+	lua_setfield(lua, stateIndex, "inputDown");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_A));
-	lua_setfield(lua, 2, "inputA");
+	lua_setfield(lua, stateIndex, "inputA");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_B));
-	lua_setfield(lua, 2, "inputB");
+	lua_setfield(lua, stateIndex, "inputB");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_X));
-	lua_setfield(lua, 2, "inputX");
+	lua_setfield(lua, stateIndex, "inputX");
 
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_Y));
-	lua_setfield(lua, 2, "inputY");
+	lua_setfield(lua, stateIndex, "inputY");
 
 	/*finalize:*/ {
 		lua_settop(lua, 0);
@@ -123,16 +127,19 @@ void jeLua_updateStates(lua_State* lua) {
 }
 
 int jeLua_writeData(lua_State* lua) {
+	static const int filenameArg = 1;
+	static const int dataArg = 2;
+
 	jeBool success = JE_FALSE;
-	char const* filename = "";
-	char const* data = "";
+	const char* filename = "";
+	const char* data = "";
 	size_t dataSize = 0;
 	int dataSizeWritten = 0;
 	gzFile file = NULL;
 
-	filename = luaL_checkstring(lua, 1);
-	data = luaL_checkstring(lua, 2);
-	dataSize = lua_objlen(lua, 2) + 1;
+	filename = luaL_checkstring(lua, filenameArg);
+	data = luaL_checkstring(lua, dataArg);
+	dataSize = lua_objlen(lua, dataArg) + 1;
 
 	file = gzopen(filename, "wb");
 
@@ -166,7 +173,7 @@ int jeLua_readData(lua_State* lua) {
 
 	jeBool success = JE_FALSE;
 	int numResponses = 0;
-	char const* filename = "";
+	const char* filename = "";
 	int dataSize = 0;
 	gzFile file = NULL;
 
@@ -206,7 +213,13 @@ int jeLua_readData(lua_State* lua) {
 	
 	return numResponses;
 }
-int jeLua_drawSprite(lua_State* lua) {
+int jeLua_drawRenderableImpl(lua_State* lua, int primitiveType) {
+	static const int cameraArg = 3;
+	static const int defaultsArg = 2;
+	static const int renderableArg = 1;
+
+	jeRenderable renderable;
+
 	/*camera*/
 	float cameraX = 0.0f;
 	float cameraY = 0.0f;
@@ -216,91 +229,166 @@ int jeLua_drawSprite(lua_State* lua) {
 	float cameraOffsetX = 0.0f;
 	float cameraOffsetY = 0.0f;
 
-	/*sprite template*/
-	float r = 0.0f;
-	float g = 0.0f;
-	float b = 0.0f;
-	float a = 0.0f;
+	/*primitive*/
+	float renderScaleX = 1.0f;
+	float renderScaleY = 1.0f;
 
-	float u1 = 0.0f;
-	float v1 = 0.0f;
-	float u2 = 0.0f;
-	float v2 = 0.0f;
+	memset(&renderable, 0, sizeof(renderable));
 
-	/*sprite*/
-	float spriteScaleX = 1.0f;
-	float spriteScaleY = 1.0f;
-	float x1 = 0.0f;
-	float y1 = 0.0f;
-	float x2 = 0.0f;
-	float y2 = 0.0f;
-	float z = 0;
+	luaL_checktype(lua, cameraArg, LUA_TTABLE);
+	luaL_checktype(lua, defaultsArg, LUA_TTABLE);
+	luaL_checktype(lua, renderableArg, LUA_TTABLE);
 
-	luaL_checktype(lua, 3, LUA_TTABLE);
-	luaL_checktype(lua, 2, LUA_TTABLE);
-	luaL_checktype(lua, 1, LUA_TTABLE);
+	renderable.primitiveType = primitiveType;
 
 	/*camera*/
-	lua_getfield(lua, 3, "x");
-	cameraX = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "y");
-	cameraY = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "w");
-	cameraW = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "h");
-	cameraH = luaL_checknumber(lua, -1);
+	lua_getfield(lua, cameraArg, "x1");
+	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
+		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "y1");
+		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "x2");
+		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraX;
+
+		lua_getfield(lua, cameraArg, "y2");
+		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraY;
+	} else {
+		lua_getfield(lua, cameraArg, "x");
+		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "y");
+		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "w");
+		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "h");
+		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	}
 
 	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
 	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
 
-	/*sprite*/
-	/*TODO make sprite a seprate object fetched in lua code!*/
-	lua_getfield(lua, 2, "r");
-	r = luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 2, "b");
-	b = luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 1.0f);
+	/*defaults*/
+	lua_getfield(lua, defaultsArg, "r");
+	renderable.r = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsArg, "g");
+	renderable.g = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsArg, "b");
+	renderable.b = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsArg, "a");
+	renderable.a = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
 
-	lua_getfield(lua, 2, "u1");
-	u1 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 2, "v1");
-	v1 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 2, "u2");
-	u2 = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 2, "v2");
-	v2 = luaL_checknumber(lua, -1);
+	lua_getfield(lua, defaultsArg, "u1");
+	renderable.u1 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsArg, "v1");
+	renderable.v1 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsArg, "u2");
+	renderable.u2 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsArg, "v2");
+	renderable.v2 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsArg, "u3");
+	renderable.u3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsArg, "v3");
+	renderable.v3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
 
 	/*render object*/
-	lua_getfield(lua, 1, "spriteScaleX");
-	spriteScaleX = spriteScaleX * luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 1, "spriteScaleY");
-	spriteScaleY = spriteScaleY * luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, renderableArg, "x1");
+	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
+		renderable.x1 = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	lua_getfield(lua, 1, "x");
-	x1 = cameraOffsetX + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "y");
-	y1 = cameraOffsetY + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "spriteTranslationX");
-	x1 = x1 + luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 1, "spriteTranslationY");
-	y1 = y1 + luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 1, "z");
-	z = luaL_optnumber(lua, -1, 0.0f);
+		lua_getfield(lua, renderableArg, "y1");
+		renderable.y1 = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	lua_getfield(lua, 1, "w");
-	x2 = x1 + (luaL_optnumber(lua, -1, u2 - u1) * spriteScaleX);
-	lua_getfield(lua, 1, "h");
-	y2 = y1 + (luaL_optnumber(lua, -1, y2 - y1) * spriteScaleY);
+		lua_getfield(lua, renderableArg, "x2");
+		renderable.x2 = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	jeWindow_drawSprite(jeLua_getWindow(lua), z, x1, y1, x2, y2, r, g, b, a, u1, v1, u2, v2);
+		lua_getfield(lua, renderableArg, "y2");
+		renderable.y2 = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableArg, "x3");
+		renderable.x3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+
+		lua_getfield(lua, renderableArg, "y3");
+		renderable.y3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	} else {
+		lua_getfield(lua, renderableArg, "x");
+		renderable.x1 = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableArg, "y");
+		renderable.y1 = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableArg, "w");
+		renderable.x2 = renderable.x1 + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableArg, "h");
+		renderable.y2 = renderable.y1 + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	}
+
+	lua_getfield(lua, renderableArg, "z");
+	renderable.z = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+
+	lua_getfield(lua, renderableArg, "renderScaleX");
+	renderScaleX = renderScaleX * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableArg, "renderScaleY");
+	renderScaleY = renderScaleY * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+
+	renderable.x2 = renderable.x1 + ((renderable.x2 - renderable.x1) * renderScaleX);
+	renderable.y2 = renderable.y1 + ((renderable.y2 - renderable.y1) * renderScaleY);
+	renderable.x3 = renderable.x1 + ((renderable.x3 - renderable.x1) * renderScaleX);
+	renderable.y3 = renderable.y1 + ((renderable.y3 - renderable.y1) * renderScaleY);
+
+	lua_getfield(lua, renderableArg, "r");
+	renderable.r = renderable.r * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.r);
+	lua_getfield(lua, renderableArg, "g");
+	renderable.g = renderable.g * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.g);
+	lua_getfield(lua, renderableArg, "b");
+	renderable.b = renderable.b * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.b);
+	lua_getfield(lua, renderableArg, "a");
+	renderable.a = renderable.a * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.a);
+
+	lua_getfield(lua, defaultsArg, "u1");
+	renderable.u1 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.u1);
+	lua_getfield(lua, defaultsArg, "v1");
+	renderable.v1 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.v1);
+	lua_getfield(lua, defaultsArg, "u2");
+	renderable.u2 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.u2);
+	lua_getfield(lua, defaultsArg, "v2");
+	renderable.v2 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.v2);
+	lua_getfield(lua, defaultsArg, "u3");
+	renderable.u3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.u3);
+	lua_getfield(lua, defaultsArg, "v3");
+	renderable.v3 = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.v3);
+
+	JE_TRACE("jeLua_drawRenderableImpl(): drawing renderable, %s", jeRenderable_toDebugString(&renderable));
+	jeWindow_drawRenderable(jeLua_getWindow(lua), renderable);
 
 	return 0;
 }
+int jeLua_drawPoint(lua_State* lua) {
+	return jeLua_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_POINTS);
+}
+int jeLua_drawLine(lua_State* lua) {
+	return jeLua_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_LINES);
+}
+int jeLua_drawTriangle(lua_State* lua) {
+	return jeLua_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
+}
+int jeLua_drawSprite(lua_State* lua) {
+	return jeLua_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_SPRITES);
+}
 int jeLua_drawText(lua_State* lua) {
+	static const int cameraArg = 3;
+	static const int fontArg = 2;
+	static const int renderableArg = 1;
+
 	static const char charDefault = ' ';
+
+	jeRenderable renderable;
+	jeRenderable charRenderable;
+
 	/*camera*/
 	float cameraX = 0.0f;
 	float cameraY = 0.0f;
@@ -311,14 +399,6 @@ int jeLua_drawText(lua_State* lua) {
 	float cameraOffsetY = 0.0f;
 
 	/*font*/
-	float r = 0.0f;
-	float g = 0.0f;
-	float b = 0.0f;
-	float a = 0.0f;
-
-	float u = 0.0f;
-	float v = 0.0f;
-
 	int charW = 0;
 	int charH = 0;
 	int charColumns = 0;
@@ -329,142 +409,142 @@ int jeLua_drawText(lua_State* lua) {
 	int i = 0;
 	char charVal = charDefault;
 	int charIndex = 0;
-	float charX = 0.0f;
-	float charY = 0.0f;
-	float charU = 0.0f;
-	float charV = 0.0f;
 
 	float charScaleX = 1.0f;
 	float charScaleY = 1.0f;
 
-	/*render object*/
-	float x = 0.0f;
-	float y = 0.0f;
-	float z = 0;
-
 	const char* text = "";
 	int textLength = 0;
 
-	luaL_checktype(lua, 3, LUA_TTABLE);
-	luaL_checktype(lua, 2, LUA_TTABLE);
-	luaL_checktype(lua, 1, LUA_TTABLE);
+	memset(&renderable, 0, sizeof(renderable));
+	memset(&charRenderable, 0, sizeof(charRenderable));
+
+	luaL_checktype(lua, cameraArg, LUA_TTABLE);
+	luaL_checktype(lua, fontArg, LUA_TTABLE);
+	luaL_checktype(lua, renderableArg, LUA_TTABLE);
+
+	renderable.primitiveType = JE_PRIMITIVE_TYPE_SPRITES;
 
 	/*camera*/
-	lua_getfield(lua, 3, "x");
-	cameraX = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "y");
-	cameraY = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "w");
-	cameraW = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 3, "h");
-	cameraH = luaL_checknumber(lua, -1);
+	lua_getfield(lua, cameraArg, "x1");
+	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
+		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "y1");
+		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "x2");
+		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraX;
+
+		lua_getfield(lua, cameraArg, "y2");
+		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraY;
+	} else {
+		lua_getfield(lua, cameraArg, "x");
+		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "y");
+		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "w");
+		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, cameraArg, "h");
+		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	}
 
 	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
 	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
 
 	/*font*/
-	lua_getfield(lua, 2, "r");
-	r = luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 2, "g");
-	g = luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 2, "b");
-	b = luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 2, "a");
-	a = luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, fontArg, "r");
+	renderable.r = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, fontArg, "g");
+	renderable.g = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, fontArg, "b");
+	renderable.b = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, fontArg, "a");
+	renderable.a = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
 
-	lua_getfield(lua, 2, "u");
-	u = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 2, "v");
-	v = luaL_checknumber(lua, -1);
+	lua_getfield(lua, fontArg, "u1");
+	renderable.u1 = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	lua_getfield(lua, fontArg, "v1");
+	renderable.v1 = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	renderable.u2 = renderable.u1;
+	renderable.v2 = renderable.v1;
 
-	lua_getfield(lua, 2, "charW");
-	charW = luaL_checknumber(lua, -1);
-	lua_getfield(lua, 2, "charH");
-	charH = luaL_checknumber(lua, -1);
+	lua_getfield(lua, fontArg, "charW");
+	charW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	lua_getfield(lua, fontArg, "charH");
+	charH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	lua_getfield(lua, 2, "charFirst");
-	charFirst = luaL_checkstring(lua, -1);
-	lua_getfield(lua, 2, "charLast");
-	charLast = luaL_checkstring(lua, -1);
-	lua_getfield(lua, 2, "charColumns");
-	charColumns = luaL_checknumber(lua, -1);
+	lua_getfield(lua, fontArg, "charFirst");
+	charFirst = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	lua_getfield(lua, fontArg, "charLast");
+	charLast = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	lua_getfield(lua, fontArg, "charColumns");
+	charColumns = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
 	/*render object*/
-	lua_getfield(lua, 1, "textScaleX");
-	charScaleX = charScaleX * luaL_optnumber(lua, -1, 1.0f);
-	lua_getfield(lua, 1, "textScaleY");
-	charScaleY = charScaleY * luaL_optnumber(lua, -1, 1.0f);
+	lua_getfield(lua, renderableArg, "renderScaleX");
+	charScaleX = charScaleX * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableArg, "renderScaleY");
+	charScaleY = charScaleY * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
 
-	lua_getfield(lua, 1, "x");
-	x = cameraOffsetX + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "y");
-	y = cameraOffsetY + luaL_checknumber(lua, -1);
-	lua_getfield(lua, 1, "textTranslationX");
-	x = x + luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 1, "textTranslationY");
-	y = y + luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 1, "z");
-	z = luaL_optnumber(lua, -1, 0.0f);
-	lua_getfield(lua, 1, "textZ");
-	z = luaL_optnumber(lua, -1, z);
+	lua_getfield(lua, renderableArg, "x1");
+	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
+		renderable.x1 = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	lua_getfield(lua, 1, "text");
-	text = luaL_checkstring(lua, -1);
-	textLength = strnlen(text, 256);
+		lua_getfield(lua, renderableArg, "y1");
+		renderable.y1 = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	} else {
+		lua_getfield(lua, renderableArg, "x");
+		renderable.x1 = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	/*TODO*/
+		lua_getfield(lua, renderableArg, "y");
+		renderable.y1 = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	}
+	renderable.x2 = renderable.x1;
+	renderable.y2 = renderable.y1;
+	lua_getfield(lua, renderableArg, "z");
+	renderable.z = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+
+	lua_getfield(lua, renderableArg, "text");
+	text = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	textLength = lua_objlen(lua, JE_LUA_STACK_TOP);
+
+	lua_getfield(lua, renderableArg, "r");
+	renderable.r = renderable.r * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableArg, "g");
+	renderable.g = renderable.g * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableArg, "b");
+	renderable.b = renderable.b * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableArg, "a");
+	renderable.a = renderable.a * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+
+	JE_TRACE("jeLua_drawText(): drawing text, text=%s, %s", text, jeRenderable_toDebugString(&renderable));
 	for (i = 0; i < textLength; i++) {
 		charVal = (char)toupper((int)text[i]);
 		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
-			JE_DEBUG("jeLua_drawText(): character outside range, char=%d, min=%d, max=%d", (int)charVal, (int)charFirst[0], (int)charLast[0]);
+			JE_WARN("jeLua_drawText(): character outside range, char=%d, min=%d, max=%d",
+					(int)charVal, (int)charFirst[0], (int)charLast[0]);
 			charVal = charDefault;
 		}
 
-		charX = x + (charW * charScaleX * i);
-		charY = y;
-
 		charIndex = (int)(charVal - charFirst[0]);
-		charU = u + (charW * (charIndex % charColumns));
-		charV = v + (charH * (charIndex / charColumns));
-		jeWindow_drawSprite(
-			jeLua_getWindow(lua),
-			z,
-			charX,
-			charY,
-			charX + (charW * charScaleX),
-			charY + (charH * charScaleY),
-			r,
-			g,
-			b,
-			a,
-			charU,
-			charV,
-			charU + charW,
-			charV + charH
-		);
+
+		charRenderable = renderable;
+		charRenderable.x1 += (charW * charScaleX * i);
+		charRenderable.x2 = charRenderable.x1 + (charW * charScaleX);
+		charRenderable.y2 = charRenderable.y1 + (charH * charScaleY);
+
+		charRenderable.u1 += (charW * (charIndex % charColumns));
+		charRenderable.v1 += (charH * (charIndex / charColumns));
+		charRenderable.u2 = charRenderable.u1 + charW;
+		charRenderable.v2 = charRenderable.v1 + charH;
+
+		JE_TRACE("jeLua_drawText(): drawing renderable, %s", jeRenderable_toDebugString(&renderable));
+		jeWindow_drawRenderable(jeLua_getWindow(lua), charRenderable);
 	}
-
-	/*font*/
-	JE_MAYBE_UNUSED(r);
-	JE_MAYBE_UNUSED(g);
-	JE_MAYBE_UNUSED(b);
-	JE_MAYBE_UNUSED(a);
-
-	JE_MAYBE_UNUSED(u);
-	JE_MAYBE_UNUSED(v);
-
-	JE_MAYBE_UNUSED(charW);
-	JE_MAYBE_UNUSED(charH);
-	JE_MAYBE_UNUSED(charFirst);
-	JE_MAYBE_UNUSED(charLast);
-	JE_MAYBE_UNUSED(charColumns);
-
-	/*text*/
-	JE_MAYBE_UNUSED(x);
-	JE_MAYBE_UNUSED(y);
-	JE_MAYBE_UNUSED(z);
-
-	JE_MAYBE_UNUSED(text);
 
 	return 0;
 }
@@ -481,8 +561,12 @@ jeBool jeLuaClient_registerLuaClientBindings(lua_State* lua, jeWindow* window) {
 	static const luaL_Reg clientBindings[] = {
 		JE_LUA_CLIENT_BINDING(readData),
 		JE_LUA_CLIENT_BINDING(writeData),
+		JE_LUA_CLIENT_BINDING(drawPoint),
+		JE_LUA_CLIENT_BINDING(drawLine),
+		JE_LUA_CLIENT_BINDING(drawTriangle),
 		JE_LUA_CLIENT_BINDING(drawSprite),
 		JE_LUA_CLIENT_BINDING(drawText),
+		JE_LUA_CLIENT_BINDING(drawLine),
 		JE_LUA_CLIENT_BINDING(step),
 		{NULL, NULL}  /*sentinel value*/
 	};

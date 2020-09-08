@@ -44,7 +44,7 @@ function Game:createTestWorld()
 	templateSys:instantiate(wallSys.template, 0, 0, levelW, 8)
 	templateSys:instantiate(wallSys.template, 0, levelH - 8, levelW, 8)
 
-	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
+	spriteSys:addSprite("physicsObject", 0 + 1, 8 + 2, 6, 6)
 
 	local physicsObjectTemplate = templateSys:add("physicsObject", {
 		["properties"] = {

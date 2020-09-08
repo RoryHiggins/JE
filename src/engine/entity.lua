@@ -1,4 +1,3 @@
-local json = require("./lib/json/json")
 local util = require("src/engine/util")
 local World = require("src/engine/world")
 

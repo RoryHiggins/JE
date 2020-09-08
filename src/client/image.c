@@ -9,7 +9,7 @@ void jeImage_destroy(jeImage* image) {
 		image->buffer = NULL;
 	}
 }
-jeBool jeImage_createFromFile(jeImage* image, char const* filename) {
+jeBool jeImage_createFromFile(jeImage* image, const char* filename) {
 	jeBool success = JE_FALSE;
 	int imageSize = 0;
 	png_image pngImage;

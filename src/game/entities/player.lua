@@ -101,9 +101,9 @@ function Player:onSimulationCreate(simulation)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.physicsSys = self.simulation:addSystem(Physics)
 
-	self.spriteSys:addSprite("playerRight", 8 + 1, 0 + 2, 6, 6)
-	self.spriteSys:addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
-	self.spriteSys:addSprite("playerUp", 24 + 1, 0 + 2, 6, 6)
+	self.spriteSys:addSprite("playerRight", 16 + 1, 0 + 2, 6, 6)
+	self.spriteSys:addSprite("playerLeft", 24 + 1, 0 + 2, 6, 6)
+	self.spriteSys:addSprite("playerUp", 32 + 1, 0 + 2, 6, 6)
 	self.template = self.templateSys:add("player", {
 		["properties"] = {
 			["w"] = 6,

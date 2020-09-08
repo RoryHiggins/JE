@@ -13,7 +13,7 @@ LFLAGS_PROFILED := $(LFLAGS_RELEASE)
 CFLAGS_DEVELOPMENT := $(CFLAGS) -Winvalid-pch -O0
 LFLAGS_DEVELOPMENT := `sdl2-config --libs` -lm -lpng -ljpeg -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1
 
-CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -Og -ggdb3 -fno-inline-functions -fno-omit-frame-pointer -fexceptions -D JE_BUILD_DEBUG
+CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -O0 -ggdb3 -fno-inline-functions -fno-omit-frame-pointer -fexceptions -D JE_BUILD_DEBUG
 LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
 
 CFLAGS_TRACE := $(CFLAGS_DEBUG) -D JE_BUILD_TRACE
