@@ -17,14 +17,19 @@ function Wall:onSimulationCreate(simulation)
 	self.spriteSys:addSprite("wallMetalHorizontalRight", 0, 64, 8, 8)
 	self.spriteSys:addSprite("wallMetalBackground", 32, 40, 8, 8)
 	self.template = self.templateSys:add("wall", {
-		["w"] = 8,
-		["h"] = 8,
-		["spriteId"] = "wallMetalBackground",
+		["properties"] = {
+			["w"] = 8,
+			["h"] = 8,
+			["spriteId"] = "wallMetalBackground",
+		},
 		["tags"] = {
 			["sprite"] = true,
 			["material"] = true,
 			["solid"] = true,
-		}
+		},
+		["editor"] = {
+			["category"] = "wall",
+		},
 	})
 end
 function Wall:onSimulationRunTests()

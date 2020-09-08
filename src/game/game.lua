@@ -1,4 +1,6 @@
 local util = require("src/engine/util")
+local Input = require("src/engine/input")
+local Text = require("src/engine/text")
 
 local Game = {}
 Game.SYSTEM_NAME = "game"
@@ -15,12 +17,15 @@ function Game:createTestWorld()
 	local templateSys = self.simulation:addSystem(require("src/engine/template"))
 	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
 
-	templateSys:instantiate(playerSys.template, 120, -32)
+	local levelW = 256
+	local levelH = 256
+
+	templateSys:instantiate(playerSys.template, 64, 16)
 
 	-- step floors
 	for i = 1, 7 do
-		local x = -48 + ((i - 1) * 32)
-		local y = -48 + ((i - 1) * 32)
+		local x = 16 + ((i - 1) * 32)
+		local y = 16 + ((i - 1) * 32)
 		spriteSys:attach(templateSys:instantiate(wallSys.template, x, y, 8, 8),
 						 spriteSys:get("wallMetalVerticalLeft"))
 		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 8, y, 8, 8),
@@ -32,23 +37,23 @@ function Game:createTestWorld()
 	end
 
 	-- side walls
-	local levelW = self.simulation.screen.w
-	local levelH = self.simulation.screen.h
-	templateSys:instantiate(wallSys.template, -64, -64, 8, levelH + 128)
-	templateSys:instantiate(wallSys.template, levelW + 56, -64, 8, levelH + 128)
+	templateSys:instantiate(wallSys.template, 0, 0, 8, levelH)
+	templateSys:instantiate(wallSys.template, levelW - 8, 0, 8, levelH)
 
 	-- top and bottom walls
-	templateSys:instantiate(wallSys.template, -64, -64, levelW + 128, 8)
-	templateSys:instantiate(wallSys.template, -64, levelH + 56, levelW + 128, 8)
+	templateSys:instantiate(wallSys.template, 0, 0, levelW, 8)
+	templateSys:instantiate(wallSys.template, 0, levelH - 8, levelW, 8)
 
 	spriteSys:addSprite("physicsObject", 1, 10, 6, 6)
 
 	local physicsObjectTemplate = templateSys:add("physicsObject", {
-		["spriteId"] = "physicsObject",
-		["w"] = 6,
-		["h"] = 6,
-		["physicsCanPush"] = true,
-		["physicsCanCarry"] = true,
+		["properties"] = {
+			["spriteId"] = "physicsObject",
+			["w"] = 6,
+			["h"] = 6,
+			["physicsCanPush"] = true,
+			["physicsCanCarry"] = true,
+		},
 		["tags"] = {
 			["sprite"] = true,
 			["material"] = true,
@@ -57,16 +62,16 @@ function Game:createTestWorld()
 			["physicsPushable"] = true,
 			["physicsCarryable"] = true,
 			["physicsObject"] = true,
-		}
+		},
 	})
 	for _ = 1, 10 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
-		entitySys:setBounds(physicsObject,
-			-48 + math.floor(math.random(levelW + 96)),
-			-48 + math.floor(math.random(levelH + 96)), 6, 6)
-		physicsObject.z = physicsObject.y
-		physicsObject.speedX = math.random(3) - 1.5
-		physicsObject.speedY = math.random(3) - 1.5
+		entitySys:setBounds(
+			physicsObject,
+			16 + math.floor(math.random(levelW - 16)),
+			16 + math.floor(math.random(levelH - 16)),
+			6,
+			6)
 		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
 			entitySys:destroy(physicsObject)
 		end
@@ -75,13 +80,14 @@ function Game:createTestWorld()
 end
 function Game:onSimulationCreate(simulation)
 	self.simulation = simulation
-	self.textSys = self.simulation:addSystem(require("src/engine/text"))
+	self.inputSys = self.simulation:addSystem(Input)
+	self.textSys = self.simulation:addSystem(Text)
 
 	self.font = self.textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
 	self:createTestWorld()
 end
 function Game:onSimulationStep()
-	if self.simulation.inputs.x.released then
+	if self.inputSys:getReleased("x") then
 		self:createTestWorld()
 	end
 end

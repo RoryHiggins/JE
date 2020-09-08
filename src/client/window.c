@@ -170,49 +170,49 @@ void jeController_create(jeController* controller) {
 
 	memset((void*)controller, 0, sizeof(*controller));
 	controller->keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
-	controller->altKeys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_a);
+	controller->altKeys[JE_INPUT_LEFT] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_LEFT] = SDL_CONTROLLER_BUTTON_DPAD_LEFT;
 	controller->controllerAxis[JE_INPUT_LEFT] = SDL_CONTROLLER_AXIS_LEFTX;
 	controller->controllerAxisDir[JE_INPUT_LEFT] = -1.0f;
 
 	controller->keys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_RIGHT);
-	controller->altKeys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_d);
+	controller->altKeys[JE_INPUT_RIGHT] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_RIGHT] = SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
 	controller->controllerAxis[JE_INPUT_RIGHT] = SDL_CONTROLLER_AXIS_LEFTX;
 	controller->controllerAxisDir[JE_INPUT_RIGHT] = 1.0f;
 
 	controller->keys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_UP);
-	controller->altKeys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_w);
+	controller->altKeys[JE_INPUT_UP] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_UP] = SDL_CONTROLLER_BUTTON_DPAD_UP;
 	controller->controllerAxis[JE_INPUT_UP] = SDL_CONTROLLER_AXIS_LEFTY;
 	controller->controllerAxisDir[JE_INPUT_UP] = -1.0f;
 
 	controller->keys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_DOWN);
-	controller->altKeys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_s);
+	controller->altKeys[JE_INPUT_DOWN] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_DOWN] = SDL_CONTROLLER_BUTTON_DPAD_DOWN;
 	controller->controllerAxis[JE_INPUT_DOWN] = SDL_CONTROLLER_AXIS_LEFTY;
 	controller->controllerAxisDir[JE_INPUT_DOWN] = 1.0f;
 
 	controller->keys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_RETURN);
-	controller->altKeys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_z);
+	controller->altKeys[JE_INPUT_A] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_A] = SDL_CONTROLLER_BUTTON_A;
 	controller->controllerAxis[JE_INPUT_A] = SDL_CONTROLLER_AXIS_INVALID;
 	controller->controllerAxisDir[JE_INPUT_A] = 0.0f;
 
 	controller->keys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
-	controller->altKeys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_x);
+	controller->altKeys[JE_INPUT_B] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_B] = SDL_CONTROLLER_BUTTON_B;
 	controller->controllerAxis[JE_INPUT_B] = SDL_CONTROLLER_AXIS_INVALID;
 	controller->controllerAxisDir[JE_INPUT_B] = 0.0f;
 
-	controller->keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_c);
-	controller->altKeys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_q);
+	controller->keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_F1);
+	controller->altKeys[JE_INPUT_X] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_X] = SDL_CONTROLLER_BUTTON_X;
 	controller->controllerAxis[JE_INPUT_X] = SDL_CONTROLLER_AXIS_INVALID;
 	controller->controllerAxisDir[JE_INPUT_X] = 0.0f;
 
-	controller->keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_v);
-	controller->altKeys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_e);
+	controller->keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_F2);
+	controller->altKeys[JE_INPUT_Y] = SDL_SCANCODE_UNKNOWN;
 	controller->controllerButtons[JE_INPUT_Y] = SDL_CONTROLLER_BUTTON_Y;
 	controller->controllerAxis[JE_INPUT_Y] = SDL_CONTROLLER_AXIS_INVALID;
 	controller->controllerAxisDir[JE_INPUT_Y] = 0.0f;

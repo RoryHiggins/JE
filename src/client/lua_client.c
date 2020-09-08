@@ -87,6 +87,12 @@ void jeLua_updateStates(lua_State* lua) {
 	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
 	lua_setfield(lua, 2, "logLevel");
 
+	lua_pushboolean(lua, JE_TRUE);
+	lua_setfield(lua, 2, "testsEnabled");
+
+	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL_WARN);
+	lua_setfield(lua, 2, "testsLogLevel");
+
 	lua_pushboolean(lua, jeWindow_getInputState(window, JE_INPUT_LEFT));
 	lua_setfield(lua, 2, "inputLeft");
 

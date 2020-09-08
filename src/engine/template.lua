@@ -45,7 +45,9 @@ function Template:onSimulationRunTests()
 	assert(self.simulation.static.templates ~= nil)
 
 	local template = self:add("yee", {
-		["x"] = 2,
+		["properties"] = {
+			["x"] = 2,
+		},
 		["tags"] = {
 			["yee"] = true
 		},

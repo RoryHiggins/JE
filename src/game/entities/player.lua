@@ -1,4 +1,5 @@
 local util = require("src/engine/util")
+local Input = require("src/engine/input")
 local Entity = require("src/engine/entity")
 local Sprite = require("src/engine/sprite")
 local Template = require("src/engine/template")
@@ -12,11 +13,11 @@ function Player:tickEntity(entity)
 	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
 
 	local inputDirX = (
-		util.boolToNumber(self.simulation.inputs.right.down)
-		- util.boolToNumber(self.simulation.inputs.left.down))
+		util.boolToNumber(self.inputSys:get("right"))
+		- util.boolToNumber(self.inputSys:get("left")))
 	local inputDirY = (
-		util.boolToNumber(self.simulation.inputs.down.down)
-		- util.boolToNumber(self.simulation.inputs.up.down))
+		util.boolToNumber(self.inputSys:get("down"))
+		- util.boolToNumber(self.inputSys:get("up")))
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
 	local moveDirX = inputDirX * math.abs(util.sign(static.physicsGravityY))
@@ -52,7 +53,7 @@ function Player:tickEntity(entity)
 		"solid"
 	)
 	local tryingToJump = (
-		(self.simulation.inputs.a.down)
+		(self.inputSys:get("a"))
 		or ((util.sign(static.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(static.physicsGravityX)))
 		or ((util.sign(static.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(static.physicsGravityY)))
 	)
@@ -94,6 +95,7 @@ function Player:tickEntity(entity)
 end
 function Player:onSimulationCreate(simulation)
 	self.simulation = simulation
+	self.inputSys = self.simulation:addSystem(Input)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.templateSys = self.simulation:addSystem(Template)
@@ -103,19 +105,21 @@ function Player:onSimulationCreate(simulation)
 	self.spriteSys:addSprite("playerLeft", 16 + 1, 0 + 2, 6, 6)
 	self.spriteSys:addSprite("playerUp", 24 + 1, 0 + 2, 6, 6)
 	self.template = self.templateSys:add("player", {
-		["w"] = 6,
-		["h"] = 6,
-		["spriteId"] = "playerRight",
-		["playerJumpFramesCur"] = 0,
-		["playerJumpForce"] = 4,
-		["playerJumpFrameForce"] = 0.5,
-		["playerJumpFrames"] = 15,
-		["playerMoveForce"] = 0.25,
-		["playerChangeDirForceMultiplier"] = 0.8,
-		["playerTargetMovementSpeed"] = 2,
-		["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
-		["physicsCanPush"] = true,
-		["physicsCanCarry"] = false,  -- it is tremendously annoying for a player; crates stick to your head
+		["properties"] = {
+			["w"] = 6,
+			["h"] = 6,
+			["spriteId"] = "playerRight",
+			["playerJumpFramesCur"] = 0,
+			["playerJumpForce"] = 4,
+			["playerJumpFrameForce"] = 0.5,
+			["playerJumpFrames"] = 15,
+			["playerMoveForce"] = 0.25,
+			["playerChangeDirForceMultiplier"] = 0.8,
+			["playerTargetMovementSpeed"] = 2,
+			["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
+			["physicsCanPush"] = true,
+			["physicsCanCarry"] = false,  -- it is tremendously annoying for a player; crates stick to your head
+		},
 		["tags"] = {
 			["sprite"] = true,
 			["cameraTarget"] = true,
@@ -123,7 +127,10 @@ function Player:onSimulationCreate(simulation)
 			["solid"] = true,
 			["physics"] = true,
 			["player"] = true,
-		}
+		},
+		["editor"] = {
+			["category"] = "special",
+		},
 	})
 end
 function Player:onSimulationStep()

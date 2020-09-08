@@ -280,11 +280,13 @@ function Entity:create(template)
 		entityId = entitiesCount + 1
 	end
 
-	local entity
+	local entity = {}
+	local templateProps
 	if template ~= nil then
-		entity = json.decode(json.encode(template))
-	else
-		entity = {}
+		templateProps = template.properties
+		if templateProps ~= nil then
+			entity = util.deepcopy(templateProps)
+		end
 	end
 
 	entity.id = entityId
@@ -296,7 +298,9 @@ function Entity:create(template)
 	entity.tags = {}
 
 	if template ~= nil then
-		self:setBounds(entity, template.x or 0, template.y or 0, template.w or 0, template.h or 0)
+		if templateProps ~= nil then
+			self:setBounds(entity, templateProps.x or 0, templateProps.y or 0, templateProps.w or 0, templateProps.h or 0)
+		end
 
 		local templateTags = template.tags
 		if templateTags ~= nil then

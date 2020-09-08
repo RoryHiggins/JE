@@ -6,16 +6,6 @@ local client = require("src/engine/client")
 local Simulation = {}
 Simulation.DUMP_FILE = ".\\game_dump.sav"
 Simulation.SAVE_FILE = ".\\game_save.sav"
-Simulation.CLIENT_INPUT_MAP = {
-	["left"] = "inputLeft",
-	["right"] = "inputRight",
-	["up"] = "inputUp",
-	["down"] = "inputDown",
-	["a"] = "inputA",
-	["b"] = "inputB",
-	["x"] = "inputX",
-	["y"] = "inputY",
-}
 function Simulation:broadcast(event, ...)
 	for _, system in pairs(self.systems) do
 		local eventHandler = system[event]
@@ -59,32 +49,11 @@ function Simulation:addSystem(class)
 
 	return system
 end
+function Simulation.isRunning()
+	return client.state.running
+end
 function Simulation:stepClient()
 	client.step()
-
-	local previousInputs = self.inputs or {}
-
-	local inputs = {}
-
-	for inputKey, clientInputKey in pairs(self.CLIENT_INPUT_MAP) do
-		local input = {}
-		input.down = client.state[clientInputKey]
-
-		input.pressed = false
-		input.released = false
-		input.framesDown = 0
-		if previousInputs[inputKey] then
-			input.pressed = input.down and not previousInputs[inputKey].down
-			input.released = not input.down and previousInputs[inputKey].down
-			if input.down then
-				input.framesDown = previousInputs[inputKey].framesDown + 1
-			end
-		end
-
-		inputs[inputKey] = input
-	end
-
-	self.inputs = inputs
 
 	self.screen = {
 		["x"] = 0,
@@ -95,11 +64,7 @@ function Simulation:stepClient()
 
 	self.fps = client.state.fps
 end
-function Simulation.isRunning()
-	return client.state.running
-end
 function Simulation:step()
-	self:stepClient()
 	self:broadcast("onSimulationStep")
 	self:broadcast("onSimulationDraw", self.screen)
 end
@@ -143,21 +108,6 @@ function Simulation:create()
 		end
 	end
 end
-function Simulation:dump(filename)
-	util.debug("Simulation:dump(): filename=%s", filename)
-
-	local dump = {
-		["state"] = self.state,
-		["static"] = self.static,
-		["systems"] = util.getKeys(self.systems),
-	}
-	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
-		util.error("Simulation:dump(): client.writeData() failed")
-		return false
-	end
-
-	return true
-end
 function Simulation:save(filename)
 	util.debug("Simulation:save(): filename=%s", filename)
 
@@ -192,6 +142,21 @@ function Simulation:load(filename)
 
 	return true
 end
+function Simulation:dump(filename)
+	util.debug("Simulation:dump(): filename=%s", filename)
+
+	local dump = {
+		["state"] = self.state,
+		["static"] = self.static,
+		["systems"] = util.getKeys(self.systems),
+	}
+	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
+		util.error("Simulation:dump(): client.writeData() failed")
+		return false
+	end
+
+	return true
+end
 function Simulation:onSimulationRunTests()
 	self:create()
 	self:step()
@@ -205,17 +170,14 @@ function Simulation:onSimulationRunTests()
 
 	local gameAfterLoad = util.toComparable(self.state)
 	if gameBeforeSave ~= gameAfterLoad then
-		util.error("Simulation:onSimulationRunTests(): Mismatch between state before save and after load: before=%s, after=%s",
-					  gameBeforeSave, gameAfterLoad)
+		util.error("Simulation:onSimulationRunTests(): Mismatched state before save and after load: before=%s, after=%s",
+				   gameBeforeSave, gameAfterLoad)
 	end
 
 	self:destroy()
 end
 function Simulation:runTests()
 	util.info("Simulation:runTests(): starting")
-
-	local logLevelBackup = util.logLevel
-	util.logLevel = util.testLogLevel
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
@@ -230,24 +192,31 @@ function Simulation:runTests()
 
 	self:destroy()
 
-	util.logLevel = logLevelBackup
-
 	util.info("Simulation:runTests(): complete")
 end
 function Simulation:run()
-	util.info("Simulation:run(): starting")
-	if util.logLevel <= util.LOG_LEVEL_LOG then
+	self:stepClient()
+	util.logLevel = client.state.logLevel
+
+	util.info("Simulation:run(): running tests")
+	if client.state.testsEnabled then
+		util.logLevel = client.state.testsLogLevel
 		self:runTests()
+		util.logLevel = client.state.logLevel
 	end
+
+	util.info("Simulation:run(): starting")
+
 	self:create()
 
 	while self:isRunning() do
+		self:stepClient()
 		self:step()
 	end
 
 	util.info("Simulation:run(): ending")
-	self:dump(self.DUMP_FILE)
 	self:save(self.SAVE_FILE)
+	self:dump(self.DUMP_FILE)
 	self:destroy()
 end
 
@@ -258,7 +227,6 @@ function Simulation.new()
 		["state"] = {},
 		["static"] = {},
 		["created"] = false,
-		["inputs"] = {},
 		["screen"] = {
 			["x"] = 0,
 			["y"] = 0,
@@ -267,10 +235,6 @@ function Simulation.new()
 		},
 		["fps"] = 0,
 	}
-
-	for inputKey, _ in pairs(Simulation.CLIENT_INPUT_MAP) do
-		simulation.inputs[inputKey] = {["down"] = false, ["pressed"] = false, ["released"] = false}
-	end
 
 	Simulation.__index = Simulation
 	setmetatable(simulation, Simulation)
@@ -283,7 +247,5 @@ function Simulation.new()
 
 	return simulation
 end
-
-util.logLevel = client.state.logLevel
 
 return Simulation

@@ -330,10 +330,12 @@ function Physics:onSimulationRunTests()
 	local gridDownY = gridSize * gravitySignY
 
 	local physicsTemplate = self.templateSys:add("physicsTest", {
-		["w"] = gridSize,
-		["h"] = gridSize,
-		["physicsCanPush"] = true,
-		["physicsCanCarry"] = true,
+		["properties"] = {
+			["w"] = gridSize,
+			["h"] = gridSize,
+			["physicsCanPush"] = true,
+			["physicsCanCarry"] = true,
+		},
 		["tags"] = {
 			["material"] = true,
 			["solid"] = true,
@@ -341,15 +343,17 @@ function Physics:onSimulationRunTests()
 			["physicsPushable"] = true,
 			["physicsCarryable"] = true,
 			["physicsObject"] = true,
-		}
+		},
 	})
 	local wallTemplate = self.templateSys:add("physicsWallTest", {
-		["w"] = gridSize,
-		["h"] = gridSize,
+		["properties"] = {
+			["w"] = gridSize,
+			["h"] = gridSize,
+		},
 		["tags"] = {
 			["material"] = true,
 			["solid"] = true,
-		}
+		},
 	})
 
 	-- sanity check; physics system only supports gravity on one axis
