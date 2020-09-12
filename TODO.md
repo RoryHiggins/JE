@@ -1,4 +1,11 @@
 
+Correct scaling:
+- TODO rethink- how would split screen be done?
+	- client stores multiple viewports keyed by id.  fields: isActivated, depth, size, and window pos+size.  max 16
+	- simulation maintans a table representing the viewport, and calls client.updateViewport() on the table every frame
+	- client stores min, max viewport for each renderable
+	- simulation optionally specifies renderViewport field to 
+
 Editor thoughts: keyboard+mouse focused
 - 2x or maybe even 1x scale
 - Mouse wheel to zoom

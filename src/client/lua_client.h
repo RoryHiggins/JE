@@ -4,13 +4,6 @@
 #include "stdafx.h"
 #include "window.h"
 
-
-typedef struct jeLuaClient jeLuaClient;
-
-struct jeLuaClient {
-	lua_State* lua;
-};
-
-jeBool jeLuaClient_run(jeLuaClient* luaClient, jeWindow* window, const char* filename);
+jeBool jeLuaClient_run(jeWindow* window, const char* filename);
 
 #endif

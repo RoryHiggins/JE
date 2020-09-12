@@ -36,6 +36,6 @@ function headlessClient.onRunTests()
 end
 
 -- injected by the c client in main.c:jeGame_registerLuaClientBindings()
-local client = jeClientBindings or headlessClient  -- luacheck: globals jeClientBindings
+local client = jeLuaClientBindings or headlessClient  -- luacheck: globals jeLuaClientBindings
 
 return client

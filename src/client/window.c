@@ -43,116 +43,72 @@
 	"}"
 
 
-typedef struct jeVertex jeVertex;
-struct jeVertex {
-	float x;
-	float y;
-	float z;
-
-	float r;
-	float g;
-	float b;
-	float a;
-
-	float u;
-	float v;
-};
-
-const char* jeRenderable_toDebugString(const jeRenderable* renderable) {
-	static char buffer[1024];
-
-	memset((void*)buffer, 0, sizeof(buffer));
-
-	sprintf(
-		buffer,
-		"z=%f, primitiveType=%d, "
-		"x1=%f, y1=%f, x2=%f, y2=%f, x3=%f, y3=%f, "
-		"r=%f, g=%f, b=%f, a=%f, "
-		"u1=%f, v1=%f, u2=%f, v2=%f, u3=%f, v3=%f",
-		renderable->z, renderable->primitiveType,
-		renderable->x1, renderable->y1, renderable->x2, renderable->y2, renderable->x3, renderable->y3,
-		renderable->r, renderable->g, renderable->b, renderable->a,
-		renderable->u1, renderable->v1, renderable->u2, renderable->v2, renderable->u3, renderable->v3
-	);
-
-	return buffer;
-}
-int jeRenderable_qsort_less(const void* aRaw, const void* bRaw) {
-	const jeRenderable* a = (const jeRenderable*)aRaw;
-	const jeRenderable* b = (const jeRenderable*)bRaw;
-
-	if (a->z == b->z) {
-		return a->primitiveType < b->primitiveType;
-	}
-	return (a->z < b->z);
-}
-
 /*Z-sorted queue of sprites*/
-typedef struct jeDepthQueue jeDepthQueue;
-struct jeDepthQueue {
+typedef struct jeRenderQueue jeRenderQueue;
+struct jeRenderQueue {
 	jeRenderable* renderables;
 	int capacity;
 	int count;
 };
-void jeDepthQueue_destroy(jeDepthQueue* depthQueue) {
-	depthQueue->count = 0;
-	depthQueue->capacity = 0;
+void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
+	renderQueue->count = 0;
+	renderQueue->capacity = 0;
 
-	if (depthQueue->renderables != NULL) {
-		free(depthQueue->renderables);
-		depthQueue->renderables = NULL;
+	if (renderQueue->renderables != NULL) {
+		free(renderQueue->renderables);
+		renderQueue->renderables = NULL;
 	}
 }
-void jeDepthQueue_create(jeDepthQueue* depthQueue) {
-	depthQueue->renderables = NULL;
-	depthQueue->capacity = 0;
-	depthQueue->count = 0;
+void jeRenderQueue_create(jeRenderQueue* renderQueue) {
+	renderQueue->renderables = NULL;
+	renderQueue->capacity = 0;
+	renderQueue->count = 0;
 }
-void jeDepthQueue_setCapacity(jeDepthQueue* depthQueue, int capacity) {
-	JE_DEBUG("jeDepthQueue_setCapacity(): newCapacity=%d, currentCapacity=%d", capacity, depthQueue->capacity);
+void jeRenderQueue_setCapacity(jeRenderQueue* renderQueue, int capacity) {
+	JE_DEBUG("jeRenderQueue_setCapacity(): newCapacity=%d, currentCapacity=%d", capacity, renderQueue->capacity);
 
-	if (capacity == depthQueue->capacity) {
+	if (capacity == renderQueue->capacity) {
 		goto finalize;
 	}
 
 	if (capacity == 0) {
-		jeDepthQueue_destroy(depthQueue);
+		jeRenderQueue_destroy(renderQueue);
 		goto finalize;
 	}
 
-	if (depthQueue->renderables == NULL) {
-		depthQueue->renderables = (jeRenderable*)malloc(sizeof(jeRenderable) * capacity);
+	if (renderQueue->renderables == NULL) {
+		renderQueue->renderables = (jeRenderable*)malloc(sizeof(jeRenderable) * capacity);
 	} else {
-		depthQueue->renderables = (jeRenderable*)realloc(depthQueue->renderables, sizeof(jeRenderable) * capacity);
+		renderQueue->renderables = (jeRenderable*)realloc(renderQueue->renderables, sizeof(jeRenderable) * capacity);
 	}
 
-	depthQueue->capacity = capacity;
+	renderQueue->capacity = capacity;
 
-	if (depthQueue->count > capacity) {
-		depthQueue->count = capacity;
+	if (renderQueue->count > capacity) {
+		renderQueue->count = capacity;
 	}
 
 	finalize: {
 	}
 }
-void jeDepthQueue_insert(jeDepthQueue* depthQueue, jeRenderable renderable) {
+void jeRenderQueue_insert(jeRenderQueue* renderQueue, jeRenderable* renderable) {
 	static const int startCapacity = 32;
 
 	int newCapacity = 0;
 
-	if (depthQueue->count >= depthQueue->capacity) {
+	if (renderQueue->count >= renderQueue->capacity) {
 		newCapacity = startCapacity;
-		if (depthQueue->capacity >= startCapacity) {
-			newCapacity = depthQueue->capacity * 4;
+		if (renderQueue->capacity >= startCapacity) {
+			newCapacity = renderQueue->capacity * 4;
 		}
-		jeDepthQueue_setCapacity(depthQueue, newCapacity);
+		jeRenderQueue_setCapacity(renderQueue, newCapacity);
 	}
 
-	depthQueue->renderables[depthQueue->count] = renderable;
-	depthQueue->count++;
+	renderQueue->renderables[renderQueue->count] = *renderable;
+	renderQueue->count++;
 }
-void jeDepthQueue_sort(jeDepthQueue* depthQueue) {
-	qsort(depthQueue->renderables, depthQueue->count, sizeof(jeRenderable), jeRenderable_qsort_less);
+void jeRenderQueue_sort(jeRenderQueue* renderQueue) {
+	qsort(renderQueue->renderables, renderQueue->count, sizeof(jeRenderable), jeRenderable_less);
 }
 
 typedef struct jeController jeController;
@@ -244,7 +200,7 @@ struct jeWindow {
 	jeBool open;
 	Uint32 nextFrameTimeMs;
 	jeImage image;
-	jeDepthQueue depthQueue;
+	jeRenderQueue renderQueue;
 	SDL_Window* window;
 
 	jeController controller;
@@ -677,8 +633,8 @@ void jeWindow_drawSprite(jeWindow* window, jeRenderable sprite) {
 	window->vboData[window->vboVertexCount].v = sprite.v2;
 	window->vboVertexCount++;
 }
-void jeWindow_drawRenderable(jeWindow* window, jeRenderable sprite) {
-	jeDepthQueue_insert(&window->depthQueue, sprite);
+void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable) {
+	jeRenderQueue_insert(&window->renderQueue, renderable);
 }
 void jeWindow_flushDepthQueue(jeWindow* window) {
 	int i = 0;
@@ -687,10 +643,10 @@ void jeWindow_flushDepthQueue(jeWindow* window) {
 
 	memset((void*)&renderable, 0, sizeof(renderable));
 
-	jeDepthQueue_sort(&window->depthQueue);
+	jeRenderQueue_sort(&window->renderQueue);
 
-	for (i = 0; i < window->depthQueue.count; i++) {
-		renderable = window->depthQueue.renderables[i];
+	for (i = 0; i < window->renderQueue.count; i++) {
+		renderable = window->renderQueue.renderables[i];
 		switch (renderable.primitiveType) {
 			case JE_PRIMITIVE_TYPE_POINTS: {
 				jeWindow_drawPoint(window, renderable);
@@ -710,12 +666,12 @@ void jeWindow_flushDepthQueue(jeWindow* window) {
 			}
 			default: {
 				JE_WARN("jeWindow_flushDepthQueue(): unrecognized type, primitive=%d, index=%d, count=%d",
-						renderable.primitiveType, i, window->depthQueue.count);
+						renderable.primitiveType, i, window->renderQueue.count);
 				break;
 			}
 		}
 	}
-	window->depthQueue.count = 0;
+	window->renderQueue.count = 0;
 }
 void jeWindow_clear(jeWindow* window) {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1043,7 +999,7 @@ void jeWindow_destroy(jeWindow* window) {
 
 	jeWindow_destroyGL(window);
 
-	jeDepthQueue_destroy(&window->depthQueue);
+	jeRenderQueue_destroy(&window->renderQueue);
 
 	jeController_destroy(&window->controller);
 
@@ -1098,12 +1054,12 @@ jeWindow* jeWindow_create() {
 		goto finalize;
 	}
 
-	if (jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME) == JE_FALSE) {
-		JE_ERROR("jeWindow_create(): jeImage_createFromFile() failed");
+	if (jeImage_create(&window->image, JE_WINDOW_SPRITE_FILENAME) == JE_FALSE) {
+		JE_ERROR("jeWindow_create(): jeImage_create() failed");
 		goto finalize;
 	}
 
-	jeDepthQueue_create(&window->depthQueue);
+	jeRenderQueue_create(&window->renderQueue);
 
 	if (jeWindow_initGL(window) == JE_FALSE) {
 		JE_ERROR("jeWindow_create(): jeWindow_initGL() failed");
@@ -1134,7 +1090,7 @@ jeWindow* jeWindow_create() {
 
 	return window;
 }
-jeBool jeWindow_getInputState(jeWindow* window, int inputId) {
+jeBool jeWindow_getInput(jeWindow* window, int inputId) {
 	static const float axisMaxValue = 32767;
 
 	jeBool pressed = JE_FALSE;
@@ -1171,7 +1127,7 @@ jeBool jeWindow_getInputState(jeWindow* window, int inputId) {
 
 	return pressed;
 }
-int jeWindow_getFramesPerSecond(jeWindow* window) {
+int jeWindow_getFPS(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
 
 	return 0;

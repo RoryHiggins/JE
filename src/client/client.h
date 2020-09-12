@@ -9,7 +9,7 @@ typedef struct jeClient jeClient;
 
 struct jeClient {
 	jeWindow* window;
-	jeLuaClient luaClient;
+	lua_State* lua;
 };
 
 jeBool jeClient_run();

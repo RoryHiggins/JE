@@ -9,7 +9,7 @@ void jeImage_destroy(jeImage* image) {
 		image->buffer = NULL;
 	}
 }
-jeBool jeImage_createFromFile(jeImage* image, const char* filename) {
+jeBool jeImage_create(jeImage* image, const char* filename) {
 	jeBool success = JE_FALSE;
 	int imageSize = 0;
 	png_image pngImage;
@@ -20,7 +20,7 @@ jeBool jeImage_createFromFile(jeImage* image, const char* filename) {
 	pngImage.version = PNG_IMAGE_VERSION;
 
 	if (png_image_begin_read_from_file(&pngImage, filename) == 0) {
-		JE_ERROR("jeImage_createFromFile(): png_image_begin_read_from_file() failed with filename=%s", filename);
+		JE_ERROR("jeImage_create(): png_image_begin_read_from_file() failed with filename=%s", filename);
 		goto finalize;
 	}
 
@@ -30,14 +30,14 @@ jeBool jeImage_createFromFile(jeImage* image, const char* filename) {
 	image->buffer = malloc(imageSize);
 
 	if (png_image_finish_read(&pngImage, /*background*/ NULL, image->buffer, /*row_stride*/ 0, /*colormap*/ NULL) == 0) {
-		JE_ERROR("jeImage_createFromFile(): png_image_finish_read() failed with filename=%s", filename);
+		JE_ERROR("jeImage_create(): png_image_finish_read() failed with filename=%s", filename);
 		goto finalize;
 	}
 
 	image->width = pngImage.width;
 	image->height = pngImage.height;
 
-	JE_DEBUG("jeImage_createFromFile(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
+	JE_DEBUG("jeImage_create(): load complete with filename=%s, width=%d, height=%d", filename, image->width, image->height);
 
 	success = JE_TRUE;
 	finalize: {

@@ -13,6 +13,6 @@ struct jeImage {
 };
 
 void jeImage_destroy(jeImage* image);
-jeBool jeImage_createFromFile(jeImage* image, const char* filename);
+jeBool jeImage_create(jeImage* image, const char* filename);
 
 #endif

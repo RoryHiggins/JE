@@ -3,6 +3,7 @@
 /*Unity build*/
 #include "debug.c"
 #include "image.c"
+#include "renderable.c"
 #include "window.c"
 #include "lua_client.c"
 #include "client.c"
