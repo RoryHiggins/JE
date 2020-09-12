@@ -6,12 +6,10 @@
 
 
 typedef struct jeClient jeClient;
-
 struct jeClient {
 	jeWindow* window;
 	lua_State* lua;
 };
-
 jeBool jeClient_run();
 
 #endif

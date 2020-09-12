@@ -3,6 +3,8 @@
 #include "debug.h"
 #include "image.h"
 
+#define JE_VERTEX_BUFFER_CAPACITY 16 * 1024
+
 #define JE_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
 
 #define JE_WINDOW_FRAME_RATE 60
@@ -11,12 +13,14 @@
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_CAPTION ""
 #define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
-#define JE_WINDOW_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
 #define JE_WINDOW_VERT_SHADER \
 	"#version 120\n" \
+	\
+	"uniform vec3 scaleXyz;" /*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 to 1.0)*/ \
+	"uniform vec2 scaleUv;" /*Converts image coords to normalized texture coords (0.0 to 1.0)*/ \
 	\
 	"attribute vec3 srcPos;" \
 	"attribute vec4 srcCol;" \
@@ -26,9 +30,9 @@
 	"varying vec2 uv;" \
 	\
 	"void main() {" \
-		"col = srcCol /*- vec4(srcPos, 0)*/;" \
-		"uv = srcUv;" \
-		"gl_Position = vec4(srcPos, 1);" \
+		"gl_Position = vec4(srcPos * scaleXyz, 1);" \
+		"col = srcCol;" \
+		"uv = srcUv * scaleUv;" \
 	"}"
 #define JE_WINDOW_FRAG_SHADER \
 	"#version 120\n" \
@@ -43,72 +47,194 @@
 	"}"
 
 
-/*Z-sorted queue of sprites*/
-typedef struct jeRenderQueue jeRenderQueue;
-struct jeRenderQueue {
-	jeRenderable* renderables;
-	int capacity;
-	int count;
+jeBool jeGl_getOk(const char* file, int line, const char* function) {
+	jeBool ok = JE_TRUE;
+	GLenum glError = GL_NO_ERROR;
+
+	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
+		jeLogger_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
+#endif
+		ok = JE_FALSE;
+	}
+
+	return ok;
+}
+jeBool jeGl_getShaderOk(GLuint shader, const char* file, int line, const char* function) {
+	jeBool ok = JE_TRUE;
+	GLint compileStatus = GL_FALSE;
+	GLsizei msgMaxSize = 0;
+	void* buffer = NULL;
+
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+
+	if (compileStatus == GL_FALSE) {
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgMaxSize);
+		buffer = malloc(msgMaxSize);
+
+		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
+
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
+		jeLogger_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
+#endif
+
+		ok = JE_FALSE;
+	}
+
+	/*finalize:*/ {
+		if (buffer != NULL) {
+			free(buffer);
+		}
+	}
+
+	return ok;
+}
+jeBool jeGl_getProgramOk(GLuint program, const char* file, int line, const char* function) {
+	jeBool ok = JE_TRUE;
+	GLint linkStatus = GL_FALSE;
+	GLsizei msgMaxSize = 0;
+	void* buffer = NULL;
+
+	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+
+	if (linkStatus == GL_FALSE) {
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgMaxSize);
+		buffer = malloc(msgMaxSize);
+
+		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
+
+#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
+		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
+		jeLogger_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
+#endif
+
+		ok = JE_FALSE;
+	}
+
+	/*finalize:*/ {
+		if (buffer != NULL) {
+			free(buffer);
+		}
+	}
+
+	return ok;
+}
+
+/* TODO move vertex buffer creation logic to a _create() function */
+typedef struct jeVertexBuffer jeVertexBuffer;
+struct jeVertexBuffer {
+	jeVertex vertex[JE_VERTEX_BUFFER_CAPACITY];
+	GLuint count;
+	jePrimitiveType primitiveType;
+
+	GLuint vao;  /* non-owning */
+	GLuint program;  /* non-owning */
 };
-void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
-	renderQueue->count = 0;
-	renderQueue->capacity = 0;
-
-	if (renderQueue->renderables != NULL) {
-		free(renderQueue->renderables);
-		renderQueue->renderables = NULL;
-	}
+void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
+	vertexBuffer->count = 0;
+	memset((void*)vertexBuffer->vertex, 0, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
-void jeRenderQueue_create(jeRenderQueue* renderQueue) {
-	renderQueue->renderables = NULL;
-	renderQueue->capacity = 0;
-	renderQueue->count = 0;
+void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
+	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
 }
-void jeRenderQueue_setCapacity(jeRenderQueue* renderQueue, int capacity) {
-	JE_DEBUG("jeRenderQueue_setCapacity(): newCapacity=%d, currentCapacity=%d", capacity, renderQueue->capacity);
+void jeVertexBuffer_create(jeVertexBuffer* vertexBuffer, GLuint program, GLuint vao) {
+	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
 
-	if (capacity == renderQueue->capacity) {
+	vertexBuffer->program = program;
+	vertexBuffer->vao = vao;
+}
+void jeVertexBuffer_flush(jeVertexBuffer* vertexBuffer) {
+	GLenum primitiveType = GL_TRIANGLES;
+
+	if (vertexBuffer->count == 0) {
 		goto finalize;
 	}
 
-	if (capacity == 0) {
-		jeRenderQueue_destroy(renderQueue);
-		goto finalize;
+	switch (vertexBuffer->primitiveType) {
+		case JE_PRIMITIVE_TYPE_POINTS: {
+			primitiveType = GL_POINTS;
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_LINES: {
+			primitiveType = GL_LINES;
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_TRIANGLES: {
+			primitiveType = GL_TRIANGLES;
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_SPRITES: {
+			primitiveType = GL_TRIANGLES;
+			break;
+		}
+		default: {
+			JE_ERROR("jeVertexBuffer_flush(): unknown primitive type, type=%d", vertexBuffer->primitiveType);
+			goto finalize;
+		}
 	}
 
-	if (renderQueue->renderables == NULL) {
-		renderQueue->renderables = (jeRenderable*)malloc(sizeof(jeRenderable) * capacity);
-	} else {
-		renderQueue->renderables = (jeRenderable*)realloc(renderQueue->renderables, sizeof(jeRenderable) * capacity);
-	}
+	glUseProgram(vertexBuffer->program);
+	glBindVertexArray(vertexBuffer->vao);
 
-	renderQueue->capacity = capacity;
+	glBufferData(GL_ARRAY_BUFFER, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)vertexBuffer->vertex, GL_DYNAMIC_DRAW);
+	glDrawArrays(primitiveType, 0, vertexBuffer->count);
 
-	if (renderQueue->count > capacity) {
-		renderQueue->count = capacity;
-	}
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	jeGl_getOk(JE_LOG_CONTEXT, "jeVertexBuffer_flush");
 
 	finalize: {
+		jeVertexBuffer_reset(vertexBuffer);
 	}
 }
-void jeRenderQueue_insert(jeRenderQueue* renderQueue, jeRenderable* renderable) {
-	static const int startCapacity = 32;
+void jeVertexBuffer_append(jeVertexBuffer* vertexBuffer, const jeVertex* vertex, int vertexCount, jePrimitiveType primitiveType) {
+	int i = 0;
 
-	int newCapacity = 0;
+	jeBool bufferCanFitRenderable = ((vertexBuffer->count + vertexCount) <= JE_VERTEX_BUFFER_CAPACITY);
+	jeBool bufferPrimitiveIsCorrect = (vertexBuffer->primitiveType == primitiveType);
 
-	if (renderQueue->count >= renderQueue->capacity) {
-		newCapacity = startCapacity;
-		if (renderQueue->capacity >= startCapacity) {
-			newCapacity = renderQueue->capacity * 4;
+	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
+		jeVertexBuffer_flush(vertexBuffer);
+
+		if (!bufferPrimitiveIsCorrect) {
+			vertexBuffer->primitiveType = primitiveType;
 		}
-		jeRenderQueue_setCapacity(renderQueue, newCapacity);
 	}
 
-	renderQueue->renderables[renderQueue->count] = *renderable;
-	renderQueue->count++;
+	for (i = 0; i < vertexCount; i++) {
+		vertexBuffer->vertex[vertexBuffer->count] = vertex[i];
+		vertexBuffer->count++;
+	}
 }
-void jeRenderQueue_sort(jeRenderQueue* renderQueue) {
-	qsort(renderQueue->renderables, renderQueue->count, sizeof(jeRenderable), jeRenderable_less);
+void jeVertexBuffer_appendSprite(jeVertexBuffer* vertexBuffer, jeRenderable* renderable) {
+	int i = 0;
+	jeVertex vertex[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT];
+
+	/* Render sprite as two triangles represented by 6 clockwise vertices*/
+	for (i = 0; i < JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT; i++) {
+		vertex[i] = renderable->vertex[0];
+	}
+	vertex[1].x = renderable->vertex[1].x;
+	vertex[1].u = renderable->vertex[1].u;
+
+	vertex[2].y = renderable->vertex[1].y;
+	vertex[2].v = renderable->vertex[1].v;
+
+	vertex[3].y = renderable->vertex[1].y;
+	vertex[3].v = renderable->vertex[1].v;
+
+	vertex[4].x = renderable->vertex[1].x;
+	vertex[4].u = renderable->vertex[1].u;
+
+	vertex[5].x = renderable->vertex[1].x;
+	vertex[5].y = renderable->vertex[1].y;
+	vertex[5].u = renderable->vertex[1].u;
+	vertex[5].v = renderable->vertex[1].v;
+
+	jeVertexBuffer_append(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
 }
 
 typedef struct jeController jeController;
@@ -207,101 +333,18 @@ struct jeWindow {
 	const Uint8* keyState;
 
 	SDL_GLContext context;
+	GLuint texture;
 	GLuint vertShader;
 	GLuint fragShader;
 	GLuint program;
-	GLuint texture;
 	GLuint vbo;
 	GLuint vao;
-
-	jeVertex vboData[JE_WINDOW_VERTEX_BUFFER_CAPACITY];
-	GLuint vboVertexCount;
-	int vboPrimitiveType;
+	jeVertexBuffer vertexBuffer;
 };
 static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
 static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
-jeBool jeWindow_getGlOk(jeWindow* window, const char* file, int line, const char* function) {
-	jeBool ok = JE_TRUE;
-	GLenum glError = GL_NO_ERROR;
-
-	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
-		jeLogger_logImpl("%s(): OpenGL error, glError=%d, message=%s", function, glError, gluErrorString(glError));
-#endif
-		ok = JE_FALSE;
-	}
-
-	JE_MAYBE_UNUSED(window);
-
-	return ok;
-}
-jeBool jeWindow_getShaderOk(jeWindow* window, GLuint shader, const char* file, int line, const char* function) {
-	jeBool ok = JE_TRUE;
-	GLint compileStatus = GL_FALSE;
-	GLsizei msgMaxSize = 0;
-	void* buffer = NULL;
-
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-
-	if (compileStatus == GL_FALSE) {
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgMaxSize);
-		buffer = malloc(msgMaxSize);
-
-		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
-
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
-		jeLogger_logImpl("%s(): OpenGL shader compilation failed, error=\n%s", function, (const char*)buffer);
-#endif
-
-		ok = JE_FALSE;
-	}
-
-	/*finalize:*/ {
-		if (buffer != NULL) {
-			free(buffer);
-		}
-	}
-
-	JE_MAYBE_UNUSED(window);
-
-	return ok;
-}
-jeBool jeWindow_getProgramOk(jeWindow* window, GLuint program, const char* file, int line, const char* function) {
-	jeBool ok = JE_TRUE;
-	GLint linkStatus = GL_FALSE;
-	GLsizei msgMaxSize = 0;
-	void* buffer = NULL;
-
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
-
-	if (linkStatus == GL_FALSE) {
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgMaxSize);
-		buffer = malloc(msgMaxSize);
-
-		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
-
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_logPrefixImpl(JE_LOG_LABEL_ERR, file, line);
-		jeLogger_logImpl("%s(): OpenGL program linking failed, error=\n%s", function, (const char*)buffer);
-#endif
-
-		ok = JE_FALSE;
-	}
-
-	/*finalize:*/ {
-		if (buffer != NULL) {
-			free(buffer);
-		}
-	}
-
-	JE_MAYBE_UNUSED(window);
-
-	return ok;
-}
 jeBool jeWindow_getIsOpen(jeWindow* window) {
 	return window->open;
 }
@@ -321,322 +364,19 @@ int jeWindow_getHeight(jeWindow* window) {
 
 	return height;
 }
-void jeWindow_flushVertexBuffer(jeWindow* window) {
-	GLenum primitiveType;
-	switch (window->vboPrimitiveType) {
-		case JE_PRIMITIVE_TYPE_POINTS: {
-			primitiveType = GL_POINTS;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_LINES: {
-			primitiveType = GL_LINES;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_TRIANGLES: {
-			primitiveType = GL_TRIANGLES;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_SPRITES: {
-			primitiveType = GL_TRIANGLES;
-			break;
-		}
-		default: {
-			JE_ERROR("jeWindow_flushVertexBuffer(): unknown primitive type, type=%d", window->vboPrimitiveType);
-			goto finalize;
-		}
-	}
+void jeWindow_clear(jeWindow* window) {
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	glUseProgram(window->program);
-	glBindVertexArray(window->vao);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT);
 
-	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
-	glDrawArrays(primitiveType, 0, window->vboVertexCount);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-	jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_flushVertexBuffer()");
-
-	finalize: {
-		window->vboVertexCount = 0;
-		memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
-	}
-}
-void jeWindow_drawPoint(jeWindow* window, jeRenderable point) {
-	static const GLuint vertexCount = 1;
-
-	float worldScaleX = 0.0f;
-	float worldScaleY = 0.0f;
-
-	jeBool bufferCanFitRenderable = ((window->vboVertexCount + vertexCount) <= JE_WINDOW_VERTEX_BUFFER_CAPACITY);
-	jeBool bufferPrimitiveIsCorrect = (window->vboPrimitiveType == JE_PRIMITIVE_TYPE_POINTS);
-
-	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
-		jeWindow_flushVertexBuffer(window);
-
-		if (!bufferPrimitiveIsCorrect) {
-			window->vboPrimitiveType = JE_PRIMITIVE_TYPE_POINTS;
-		}
-	}
-
-	/*Transform pos from world coords (+/- windowSize) to screen coords (-1.0 to 1.0)*/
-	worldScaleX = 2.0f / JE_WINDOW_MIN_WIDTH;
-	worldScaleY = 2.0f / JE_WINDOW_MIN_HEIGHT;
-	point.x1 = (point.x1 * worldScaleX);
-	point.y1 = (-point.y1 * worldScaleY);
-	point.z = point.z / (float)(1 << 20);  /*Support depths +/- 2^20.  Close to limit of integer representation for float32*/
-
-	/*Normalize pixel uvs to between 0.0 and 1.0*/
-	point.u1 = point.u1 / (float)window->image.width;
-	point.v1 = point.v1 / (float)window->image.height;
-
-	window->vboData[window->vboVertexCount].x = point.x1;
-	window->vboData[window->vboVertexCount].y = point.y1;
-	window->vboData[window->vboVertexCount].z = point.z;
-	window->vboData[window->vboVertexCount].r = point.r;
-	window->vboData[window->vboVertexCount].g = point.g;
-	window->vboData[window->vboVertexCount].b = point.b;
-	window->vboData[window->vboVertexCount].a = point.a;
-	window->vboData[window->vboVertexCount].u = point.u1;
-	window->vboData[window->vboVertexCount].v = point.v1;
-	window->vboVertexCount++;
-}
-void jeWindow_drawLine(jeWindow* window, jeRenderable line) {
-	static const GLuint vertexCount = 6;
-
-	float worldScaleX = 0.0f;
-	float worldScaleY = 0.0f;
-
-	jeBool bufferCanFitRenderable = ((window->vboVertexCount + vertexCount) <= JE_WINDOW_VERTEX_BUFFER_CAPACITY);
-	jeBool bufferPrimitiveIsCorrect = (window->vboPrimitiveType == JE_PRIMITIVE_TYPE_LINES);
-
-	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
-		jeWindow_flushVertexBuffer(window);
-
-		if (!bufferPrimitiveIsCorrect) {
-			window->vboPrimitiveType = JE_PRIMITIVE_TYPE_LINES;
-		}
-	}
-
-	/*Transform pos from world coords (+/- windowSize) to screen coords (-1.0 to 1.0)*/
-	worldScaleX = 2.0f / JE_WINDOW_MIN_WIDTH;
-	worldScaleY = 2.0f / JE_WINDOW_MIN_HEIGHT;
-	line.x1 = (line.x1 * worldScaleX);
-	line.x2 = (line.x2 * worldScaleX);
-	line.y1 = (-line.y1 * worldScaleY);
-	line.y2 = (-line.y2 * worldScaleY);
-	line.z = line.z / (float)(1 << 20);  /*Support depths +/- 2^20.  Close to limit of integer representation for float32*/
-
-	/*Normalize pixel uvs to between 0.0 and 1.0*/
-	line.u1 = line.u1 / (float)window->image.width;
-	line.u2 = line.u2 / (float)window->image.width;
-	line.v1 = line.v1 / (float)window->image.height;
-	line.v2 = line.v2 / (float)window->image.height;
-
-	window->vboData[window->vboVertexCount].x = line.x1;
-	window->vboData[window->vboVertexCount].y = line.y1;
-	window->vboData[window->vboVertexCount].z = line.z;
-	window->vboData[window->vboVertexCount].r = line.r;
-	window->vboData[window->vboVertexCount].g = line.g;
-	window->vboData[window->vboVertexCount].b = line.b;
-	window->vboData[window->vboVertexCount].a = line.a;
-	window->vboData[window->vboVertexCount].u = line.u1;
-	window->vboData[window->vboVertexCount].v = line.v1;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = line.x2;
-	window->vboData[window->vboVertexCount].y = line.y2;
-	window->vboData[window->vboVertexCount].z = line.z;
-	window->vboData[window->vboVertexCount].r = line.r;
-	window->vboData[window->vboVertexCount].g = line.g;
-	window->vboData[window->vboVertexCount].b = line.b;
-	window->vboData[window->vboVertexCount].a = line.a;
-	window->vboData[window->vboVertexCount].u = line.u2;
-	window->vboData[window->vboVertexCount].v = line.v2;
-	window->vboVertexCount++;
-}
-void jeWindow_drawTriangle(jeWindow* window, jeRenderable triangle) {
-	static const GLuint vertexCount = 3;
-
-	float worldScaleX = 0.0f;
-	float worldScaleY = 0.0f;
-
-	jeBool bufferCanFitRenderable = ((window->vboVertexCount + vertexCount) <= JE_WINDOW_VERTEX_BUFFER_CAPACITY);
-	jeBool bufferPrimitiveIsCorrect = (window->vboPrimitiveType == JE_PRIMITIVE_TYPE_TRIANGLES);
-
-	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
-		jeWindow_flushVertexBuffer(window);
-
-		if (!bufferPrimitiveIsCorrect) {
-			window->vboPrimitiveType = JE_PRIMITIVE_TYPE_TRIANGLES;
-		}
-	}
-
-	/*Transform pos from world coords (+/- windowSize) to screen coords (-1.0 to 1.0)*/
-	worldScaleX = 2.0f / JE_WINDOW_MIN_WIDTH;
-	worldScaleY = 2.0f / JE_WINDOW_MIN_HEIGHT;
-	triangle.x1 = (triangle.x1 * worldScaleX);
-	triangle.x2 = (triangle.x2 * worldScaleX);
-	triangle.x3 = (triangle.x2 * worldScaleX);
-	triangle.y1 = (-triangle.y1 * worldScaleY);
-	triangle.y2 = (-triangle.y2 * worldScaleY);
-	triangle.y3 = (-triangle.y2 * worldScaleY);
-	triangle.z = triangle.z / (float)(1 << 20);  /*Support depths +/- 2^20.  Close to limit of integer representation for float32*/
-
-	/*Normalize pixel uvs to between 0.0 and 1.0*/
-	triangle.u1 = triangle.u1 / (float)window->image.width;
-	triangle.u2 = triangle.u2 / (float)window->image.width;
-	triangle.u3 = triangle.u3 / (float)window->image.width;
-	triangle.v1 = triangle.v1 / (float)window->image.height;
-	triangle.v2 = triangle.v2 / (float)window->image.height;
-	triangle.v3 = triangle.v3 / (float)window->image.height;
-
-	window->vboData[window->vboVertexCount].x = triangle.x1;
-	window->vboData[window->vboVertexCount].y = triangle.y1;
-	window->vboData[window->vboVertexCount].z = triangle.z;
-	window->vboData[window->vboVertexCount].r = triangle.r;
-	window->vboData[window->vboVertexCount].g = triangle.g;
-	window->vboData[window->vboVertexCount].b = triangle.b;
-	window->vboData[window->vboVertexCount].a = triangle.a;
-	window->vboData[window->vboVertexCount].u = triangle.u1;
-	window->vboData[window->vboVertexCount].v = triangle.v1;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = triangle.x2;
-	window->vboData[window->vboVertexCount].y = triangle.y2;
-	window->vboData[window->vboVertexCount].z = triangle.z;
-	window->vboData[window->vboVertexCount].r = triangle.r;
-	window->vboData[window->vboVertexCount].g = triangle.g;
-	window->vboData[window->vboVertexCount].b = triangle.b;
-	window->vboData[window->vboVertexCount].a = triangle.a;
-	window->vboData[window->vboVertexCount].u = triangle.u2;
-	window->vboData[window->vboVertexCount].v = triangle.v2;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = triangle.x3;
-	window->vboData[window->vboVertexCount].y = triangle.y3;
-	window->vboData[window->vboVertexCount].z = triangle.z;
-	window->vboData[window->vboVertexCount].r = triangle.r;
-	window->vboData[window->vboVertexCount].g = triangle.g;
-	window->vboData[window->vboVertexCount].b = triangle.b;
-	window->vboData[window->vboVertexCount].a = triangle.a;
-	window->vboData[window->vboVertexCount].u = triangle.u3;
-	window->vboData[window->vboVertexCount].v = triangle.v3;
-	window->vboVertexCount++;
-}
-void jeWindow_drawSprite(jeWindow* window, jeRenderable sprite) {
-	static const GLuint vertexCount = 6;
-
-	float worldScaleX = 0.0f;
-	float worldScaleY = 0.0f;
-
-	jeBool bufferCanFitRenderable = ((window->vboVertexCount + vertexCount) <= JE_WINDOW_VERTEX_BUFFER_CAPACITY);
-	jeBool bufferPrimitiveIsCorrect = (window->vboPrimitiveType == JE_PRIMITIVE_TYPE_SPRITES);
-
-	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
-		jeWindow_flushVertexBuffer(window);
-
-		if (!bufferPrimitiveIsCorrect) {
-			window->vboPrimitiveType = JE_PRIMITIVE_TYPE_SPRITES;
-		}
-	}
-
-	/*Transform pos from world coords (+/- windowSize) to screen coords (-1.0 to 1.0)*/
-	worldScaleX = 2.0f / JE_WINDOW_MIN_WIDTH;
-	worldScaleY = 2.0f / JE_WINDOW_MIN_HEIGHT;
-	sprite.x1 = (sprite.x1 * worldScaleX);
-	sprite.x2 = (sprite.x2 * worldScaleX);
-	sprite.y1 = (-sprite.y1 * worldScaleY);
-	sprite.y2 = (-sprite.y2 * worldScaleY);
-	sprite.z = sprite.z / (float)(1 << 20);  /*Support depths +/- 2^20.  Close to limit of integer representation for float32*/
-
-	/*Normalize pixel uvs to between 0.0 and 1.0*/
-	sprite.u1 = sprite.u1 / (float)window->image.width;
-	sprite.u2 = sprite.u2 / (float)window->image.width;
-	sprite.v1 = sprite.v1 / (float)window->image.height;
-	sprite.v2 = sprite.v2 / (float)window->image.height;
-
-	/* Render sprites as two triangles represented by 6 clockwise vertices.
-	 *
-	 * Triangle 1 indices:
-	 * 0 1
-	 * 2
-	 *
-	 * Triangle 2 indices:
-	 *   4
-	 * 3 5
-	*/
-
-	window->vboData[window->vboVertexCount].x = sprite.x1;
-	window->vboData[window->vboVertexCount].y = sprite.y1;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u1;
-	window->vboData[window->vboVertexCount].v = sprite.v1;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = sprite.x2;
-	window->vboData[window->vboVertexCount].y = sprite.y1;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u2;
-	window->vboData[window->vboVertexCount].v = sprite.v1;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = sprite.x1;
-	window->vboData[window->vboVertexCount].y = sprite.y2;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u1;
-	window->vboData[window->vboVertexCount].v = sprite.v2;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = sprite.x1;
-	window->vboData[window->vboVertexCount].y = sprite.y2;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u1;
-	window->vboData[window->vboVertexCount].v = sprite.v2;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = sprite.x2;
-	window->vboData[window->vboVertexCount].y = sprite.y1;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u2;
-	window->vboData[window->vboVertexCount].v = sprite.v1;
-	window->vboVertexCount++;
-
-	window->vboData[window->vboVertexCount].x = sprite.x2;
-	window->vboData[window->vboVertexCount].y = sprite.y2;
-	window->vboData[window->vboVertexCount].z = sprite.z;
-	window->vboData[window->vboVertexCount].r = sprite.r;
-	window->vboData[window->vboVertexCount].g = sprite.g;
-	window->vboData[window->vboVertexCount].b = sprite.b;
-	window->vboData[window->vboVertexCount].a = sprite.a;
-	window->vboData[window->vboVertexCount].u = sprite.u2;
-	window->vboData[window->vboVertexCount].v = sprite.v2;
-	window->vboVertexCount++;
+	JE_MAYBE_UNUSED(window);
 }
 void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable) {
 	jeRenderQueue_insert(&window->renderQueue, renderable);
 }
-void jeWindow_flushDepthQueue(jeWindow* window) {
+void jeWindow_flushRenderQueue(jeWindow* window) {
 	int i = 0;
 
 	jeRenderable renderable;
@@ -649,23 +389,23 @@ void jeWindow_flushDepthQueue(jeWindow* window) {
 		renderable = window->renderQueue.renderables[i];
 		switch (renderable.primitiveType) {
 			case JE_PRIMITIVE_TYPE_POINTS: {
-				jeWindow_drawPoint(window, renderable);
+				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT, JE_PRIMITIVE_TYPE_POINTS);
 				break;
 			}
 			case JE_PRIMITIVE_TYPE_LINES: {
-				jeWindow_drawLine(window, renderable);
+				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_LINES);
 				break;
 			}
 			case JE_PRIMITIVE_TYPE_TRIANGLES: {
-				jeWindow_drawTriangle(window, renderable);
+				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
 				break;
 			}
 			case JE_PRIMITIVE_TYPE_SPRITES: {
-				jeWindow_drawSprite(window, renderable);
+				jeVertexBuffer_appendSprite(&window->vertexBuffer, &renderable);
 				break;
 			}
 			default: {
-				JE_WARN("jeWindow_flushDepthQueue(): unrecognized type, primitive=%d, index=%d, count=%d",
+				JE_WARN("jeWindow_flushRenderQueue(): unrecognized type, primitive=%d, index=%d, count=%d",
 						renderable.primitiveType, i, window->renderQueue.count);
 				break;
 			}
@@ -673,21 +413,11 @@ void jeWindow_flushDepthQueue(jeWindow* window) {
 	}
 	window->renderQueue.count = 0;
 }
-void jeWindow_clear(jeWindow* window) {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	JE_MAYBE_UNUSED(window);
-}
 void jeWindow_destroyGL(jeWindow* window) {
+	jeVertexBuffer_destroy(&window->vertexBuffer);
+
 	if (window->vao != 0) {
 		glBindVertexArray(window->vao);
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glDeleteVertexArrays(1, &window->vao);
 		window->vao = 0;
@@ -730,7 +460,15 @@ void jeWindow_destroyGL(jeWindow* window) {
 jeBool jeWindow_initGL(jeWindow* window) {
 	jeBool success = JE_FALSE;
 
-	GLint lineWidthRange[2];
+	GLfloat scaleXyz[3];
+	GLfloat scaleUv[2];
+	GLint scaleXyzLocation = 0;
+	GLint scaleUvLocation = 0;
+	GLint srcPosLocation = 0;
+	GLint srcColLocation = 0;
+	GLint srcUvLocation = 0;
+
+	GLint lineWidthRange[2] = {0, 0};
 	GLfloat scale = (float)(jeWindow_getWidth(window) / JE_WINDOW_MIN_WIDTH);;
 
 	window->context = SDL_GL_CreateContext(window->window);
@@ -764,32 +502,32 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glDisable(GL_CULL_FACE);
 
 	glViewport(0, 0, jeWindow_getWidth(window), jeWindow_getHeight(window));
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
 	window->vertShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(window->vertShader, 1, &jeWindow_vertShaderPtr, &jeWindow_vertShaderSize);
 	glCompileShader(window->vertShader);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getShaderOk(window, window->vertShader, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getShaderOk() failed");
+	if (jeGl_getShaderOk(window->vertShader, JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getShaderOk() failed");
 		goto finalize;
 	}
 
 	window->fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(window->fragShader, 1, &jeWindow_fragShaderPtr, &jeWindow_fragShaderSize);
 	glCompileShader(window->fragShader);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getShaderOk(window, window->fragShader, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getShaderOk() failed");
+	if (jeGl_getShaderOk(window->fragShader, JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getShaderOk() failed");
 		goto finalize;
 	}
 
@@ -800,12 +538,18 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glBindAttribLocation(window->program, 1, "srcCol");
 	glBindAttribLocation(window->program, 2, "srcUv");
 	glLinkProgram(window->program);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
-	if (!jeWindow_getProgramOk(window, window->program, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getProgramOk() failed");
+	if (jeGl_getProgramOk(window->program, JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getProgramOk() failed");
+		goto finalize;
+	}
+
+	glUseProgram(window->program);
+	if (jeGl_getProgramOk(window->program, JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): glUseProgram() failed");
 		goto finalize;
 	}
 
@@ -814,8 +558,8 @@ jeBool jeWindow_initGL(jeWindow* window) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window->image.width, window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
@@ -823,32 +567,67 @@ jeBool jeWindow_initGL(jeWindow* window) {
 
 	glGenVertexArrays(1, &window->vao);
 
+	jeVertexBuffer_create(&window->vertexBuffer, window->program, window->vao);
+
 	glBindVertexArray(window->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, window->vbo);
-	glBufferData(GL_ARRAY_BUFFER, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vboData, GL_DYNAMIC_DRAW);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	glBufferData(GL_ARRAY_BUFFER, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vertexBuffer.vertex, GL_DYNAMIC_DRAW);
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)0);
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	/*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 to 1.0)*/
+	scaleXyz[0] = 2.0f / JE_WINDOW_MIN_WIDTH;
+	scaleXyz[1] = -2.0f / JE_WINDOW_MIN_HEIGHT;
+
+	/*Normalize z to between -1.0 and 1.0.  Supports depths +/- 2^20.  Near the precise int limit for float32*/
+	scaleXyz[2] = 1.0f / (float)(1 << 20);
+
+	/*Converts image coords to normalized texture coords (0.0 to 1.0)*/
+	scaleUv[0] = 1.0f / (float)window->image.width;
+	scaleUv[1] = 1.0f / (float)window->image.height;
+
+	scaleXyzLocation = glGetUniformLocation(window->program, "scaleXyz");
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(3 * sizeof(GLfloat)));
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	glUniform3f(scaleXyzLocation, scaleXyz[0], scaleXyz[1], scaleXyz[2]);
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(7 * sizeof(GLfloat)));
-	if (!jeWindow_getGlOk(window, JE_LOG_CONTEXT, "jeWindow_initGL()")) {
-		JE_ERROR("jeWindow_initGL(): jeWindow_getGlOk() failed");
+	scaleUvLocation = glGetUniformLocation(window->program, "scaleUv");
+	glUniform2f(scaleUvLocation, scaleUv[0], scaleUv[1]);
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
+		goto finalize;
+	}
+
+	srcPosLocation = glGetAttribLocation(window->program, "srcPos");
+	glEnableVertexAttribArray(srcPosLocation);
+	glVertexAttribPointer(srcPosLocation, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)0);
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
+		goto finalize;
+	}
+
+	srcColLocation = glGetAttribLocation(window->program, "srcCol");
+	glEnableVertexAttribArray(srcColLocation);
+	glVertexAttribPointer(srcColLocation, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(4 * sizeof(GLfloat)));
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
+		goto finalize;
+	}
+
+	srcUvLocation = glGetAttribLocation(window->program, "srcUv");
+	glEnableVertexAttribArray(srcUvLocation);
+	glVertexAttribPointer(srcUvLocation, 2, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(8 * sizeof(GLfloat)));
+	if (jeGl_getOk(JE_LOG_CONTEXT, "jeWindow_initGL") == JE_FALSE) {
+		JE_ERROR("jeWindow_initGL(): jeGl_getOk() failed");
 		goto finalize;
 	}
 
@@ -857,13 +636,10 @@ jeBool jeWindow_initGL(jeWindow* window) {
 		JE_WARN("jeWindow_initGL(): scale not in supported lineWidthRange, scale=%d, min=%d, max=%d",
 				scale, lineWidthRange[0], lineWidthRange[1]);
 	}
-	glLineWidth(scale);
+
+	glUseProgram(0);
 
 	glBindVertexArray(0);
-
-	window->vboPrimitiveType = JE_PRIMITIVE_TYPE_TRIANGLES;
-	window->vboVertexCount = 0;
-	memset((void*)window->vboData, 0, JE_WINDOW_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 
 	success = JE_TRUE;
 	finalize: {
@@ -878,11 +654,11 @@ void jeWindow_step(jeWindow* window) {
 	SDL_Event event;
 	Uint32 timeMs = SDL_GetTicks();
 
-	jeWindow_flushVertexBuffer(window);
+	jeVertexBuffer_flush(&window->vertexBuffer);
 
 	glDepthMask(GL_FALSE);
-	jeWindow_flushDepthQueue(window);
-	jeWindow_flushVertexBuffer(window);
+	jeWindow_flushRenderQueue(window);
+	jeVertexBuffer_flush(&window->vertexBuffer);
 	glDepthMask(GL_TRUE);
 
 	SDL_GL_SwapWindow(window->window);
@@ -995,6 +771,10 @@ void jeWindow_step(jeWindow* window) {
 void jeWindow_destroy(jeWindow* window) {
 	JE_INFO("jeWindow_destroy()");
 
+	if (window == NULL) {
+		goto finalize;
+	}
+
 	window->open = JE_FALSE;
 
 	jeWindow_destroyGL(window);
@@ -1010,9 +790,11 @@ void jeWindow_destroy(jeWindow* window) {
 		window->window = NULL;
 	}
 
-	SDL_Quit();
-
 	free(window);
+
+	finalize: {
+		SDL_Quit();
+	}
 }
 jeWindow* jeWindow_create() {
 	jeBool success = JE_FALSE;

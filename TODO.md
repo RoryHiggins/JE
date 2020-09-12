@@ -1,4 +1,9 @@
 
+Rendering cleanup:
+- Remove use of x/y/w/h/r/g/b/a in favor of x1/x2/x2/y2/r1/g1/b1/a1 throughout the engine+game
+- Normalize vertex data in the shader
+- Simplify OR reuse lua client wrapper logic
+
 Correct scaling:
 - TODO rethink- how would split screen be done?
 	- client stores multiple viewports keyed by id.  fields: isActivated, depth, size, and window pos+size.  max 16
