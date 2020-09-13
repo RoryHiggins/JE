@@ -21,7 +21,10 @@ LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
 client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
 	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) src/client/main.c $(LFLAGS_$(TARGET)) -o client
-release/client:
+stdafx.h.gch: Makefile src/client/stdafx.h
+	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) src/client/stdafx.h -o stdafx.h.gch
+
+release:
 	rm -rf release
 	mkdir release
 	mkdir release/src
@@ -29,17 +32,12 @@ release/client:
 	cp -r lib/ data/ -- release/
 	cp -r src/engine src/game -- release/src
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
-stdafx.h.gch: Makefile src/client/stdafx.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) src/client/stdafx.h -o stdafx.h.gch
-
 run: client
 	./client
-run_release: release/client
-	release/client
 profile: gmon.out
 	gprof -b client* gmon.out > profile.txt
 clean:
 	rm -f client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
 	rm -rf release
 
-.PHONY: release/client run run_release clean
+.PHONY: release run profile clean

@@ -1,6 +1,7 @@
 local util = require("src/engine/util")
 local Input = require("src/engine/input")
 local Text = require("src/engine/text")
+local Shape = require("src/engine/shape")
 
 local Game = {}
 Game.SYSTEM_NAME = "game"
@@ -64,7 +65,7 @@ function Game:createTestWorld()
 			["physicsObject"] = true,
 		},
 	})
-	for _ = 1, 10 do
+	for _ = 1, 0 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
 		entitySys:setBounds(
 			physicsObject,
@@ -82,6 +83,7 @@ function Game:onSimulationCreate(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
 	self.textSys = self.simulation:addSystem(Text)
+	self.shapeSys = self.simulation:addSystem(Shape)
 
 	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 
@@ -99,10 +101,35 @@ function Game:onSimulationDraw(screen)
 	local fps = {
 		["x"] = 0,
 		["y"] = 0,
-		["z"] = -10,
+		["z"] = -1,
 		["text"] = "fps="..tostring(self.simulation.fps)
 	}
 	self.textSys:draw(fps, self.font, screen)
+
+	-- local testLine = {
+	-- 	["x"] = 8,
+	-- 	["y"] = 8,
+	-- 	["z"] = -2,
+
+	-- 	["w"] = -8,
+	-- 	["h"] = 8,
+
+	-- 	["r"] = 1,
+	-- 	["g"] = 0,
+	-- 	["b"] = 0,
+	-- }
+	-- self.shapeSys:drawLine(testLine, screen)
+
+	-- local testPoint = {
+	-- 	["x"] = 8,
+	-- 	["y"] = 16,
+	-- 	["z"] = -3,
+
+	-- 	["r"] = 0,
+	-- 	["g"] = 0,
+	-- 	["b"] = 1,
+	-- }
+	-- self.shapeSys:drawPoint(testPoint, screen)
 end
 
 return Game
