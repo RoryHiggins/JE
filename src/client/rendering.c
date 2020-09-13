@@ -55,73 +55,31 @@ const char* jeRenderable_toDebugString(const jeRenderable* renderable) {
 
 	return buffer;
 }
-int jeRenderable_less(const void* aRaw, const void* bRaw) {
-	const jeRenderable* a = (const jeRenderable*)aRaw;
-	const jeRenderable* b = (const jeRenderable*)bRaw;
+int jeRenderable_less(const void* renderableARaw, const void* renderableBRaw) {
+	const jeRenderable* renderableA = (const jeRenderable*)renderableARaw;
+	const jeRenderable* renderableB = (const jeRenderable*)renderableBRaw;
 
-	if (a->z == b->z) {
-		return a->primitiveType < b->primitiveType;
+	if (renderableA->z == renderableB->z) {
+		return renderableA->primitiveType < renderableB->primitiveType;
 	}
-	return (a->z < b->z);
+	return (renderableA->z < renderableB->z);
 }
 
 void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
-	renderQueue->count = 0;
-	renderQueue->capacity = 0;
-
-	if (renderQueue->renderables != NULL) {
-		free(renderQueue->renderables);
-		renderQueue->renderables = NULL;
-	}
+	jeBuffer_destroy(&renderQueue->renderables);
 }
 void jeRenderQueue_create(jeRenderQueue* renderQueue) {
-	renderQueue->renderables = NULL;
-	renderQueue->capacity = 0;
-	renderQueue->count = 0;
+	jeBuffer_create(&renderQueue->renderables, sizeof(jeRenderable));
 }
-void jeRenderQueue_setCapacity(jeRenderQueue* renderQueue, int capacity) {
-	JE_DEBUG("jeRenderQueue_setCapacity(): newCapacity=%d, currentCapacity=%d", capacity, renderQueue->capacity);
-
-	if (capacity == renderQueue->capacity) {
-		goto finalize;
-	}
-
-	if (capacity == 0) {
-		jeRenderQueue_destroy(renderQueue);
-		goto finalize;
-	}
-
-	if (renderQueue->renderables == NULL) {
-		renderQueue->renderables = (jeRenderable*)malloc(sizeof(jeRenderable) * capacity);
-	} else {
-		renderQueue->renderables = (jeRenderable*)realloc(renderQueue->renderables, sizeof(jeRenderable) * capacity);
-	}
-
-	renderQueue->capacity = capacity;
-
-	if (renderQueue->count > capacity) {
-		renderQueue->count = capacity;
-	}
-
-	finalize: {
-	}
+void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count) {
+	jeBuffer_setCount(&renderQueue->renderables, count);
 }
-void jeRenderQueue_insert(jeRenderQueue* renderQueue, jeRenderable* renderable) {
-	static const int startCapacity = 32;
-
-	int newCapacity = 0;
-
-	if (renderQueue->count >= renderQueue->capacity) {
-		newCapacity = startCapacity;
-		if (renderQueue->capacity >= startCapacity) {
-			newCapacity = renderQueue->capacity * 4;
-		}
-		jeRenderQueue_setCapacity(renderQueue, newCapacity);
-	}
-
-	renderQueue->renderables[renderQueue->count] = *renderable;
-	renderQueue->count++;
+jeRenderable* jeRenderQueue_get(jeRenderQueue* renderQueue, int i) {
+	return (jeRenderable*)jeBuffer_get(&renderQueue->renderables, i);
+}
+void jeRenderQueue_push(jeRenderQueue* renderQueue, const jeRenderable* renderable) {
+	jeBuffer_push(&renderQueue->renderables, (const void*)renderable);
 }
 void jeRenderQueue_sort(jeRenderQueue* renderQueue) {
-	qsort(renderQueue->renderables, renderQueue->count, sizeof(jeRenderable), jeRenderable_less);
+	qsort(renderQueue->renderables.data, renderQueue->renderables.count, sizeof(jeRenderable), jeRenderable_less);
 }

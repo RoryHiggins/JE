@@ -2,6 +2,7 @@
 
 /*Unity build*/
 #include "debug.c"
+#include "container.c"
 #include "image.c"
 #include "rendering.c"
 #include "window.c"

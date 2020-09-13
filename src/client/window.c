@@ -122,7 +122,6 @@ jeBool jeGl_getProgramOk(GLuint program, const char* file, int line, const char*
 	return ok;
 }
 
-/* TODO move vertex buffer creation logic to a _create() function */
 typedef struct jeVertexBuffer jeVertexBuffer;
 struct jeVertexBuffer {
 	jeVertex vertex[JE_VERTEX_BUFFER_CAPACITY];
@@ -132,18 +131,18 @@ struct jeVertexBuffer {
 	GLuint vao;  /* non-owning */
 	GLuint program;  /* non-owning */
 };
-void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
-	vertexBuffer->count = 0;
-	memset((void*)vertexBuffer->vertex, 0, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
-}
-void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
-	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
-}
 void jeVertexBuffer_create(jeVertexBuffer* vertexBuffer, GLuint program, GLuint vao) {
 	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
 
 	vertexBuffer->program = program;
 	vertexBuffer->vao = vao;
+}
+void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
+	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
+}
+void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
+	vertexBuffer->count = 0;
+	memset((void*)vertexBuffer->vertex, 0, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
 }
 void jeVertexBuffer_flush(jeVertexBuffer* vertexBuffer) {
 	GLenum primitiveType = GL_TRIANGLES;
@@ -190,7 +189,7 @@ void jeVertexBuffer_flush(jeVertexBuffer* vertexBuffer) {
 		jeVertexBuffer_reset(vertexBuffer);
 	}
 }
-void jeVertexBuffer_append(jeVertexBuffer* vertexBuffer, const jeVertex* vertex, int vertexCount, jePrimitiveType primitiveType) {
+void jeVertexBuffer_pushVertexBatch(jeVertexBuffer* vertexBuffer, const jeVertex* vertex, int vertexCount, jePrimitiveType primitiveType) {
 	int i = 0;
 
 	jeBool bufferCanFitRenderable = ((vertexBuffer->count + vertexCount) <= JE_VERTEX_BUFFER_CAPACITY);
@@ -209,7 +208,7 @@ void jeVertexBuffer_append(jeVertexBuffer* vertexBuffer, const jeVertex* vertex,
 		vertexBuffer->count++;
 	}
 }
-void jeVertexBuffer_appendSprite(jeVertexBuffer* vertexBuffer, jeRenderable* renderable) {
+void jeVertexBuffer_pushSprite(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
 	int i = 0;
 	jeVertex vertex[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT];
 
@@ -234,7 +233,31 @@ void jeVertexBuffer_appendSprite(jeVertexBuffer* vertexBuffer, jeRenderable* ren
 	vertex[5].u = renderable->vertex[1].u;
 	vertex[5].v = renderable->vertex[1].v;
 
-	jeVertexBuffer_append(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
+	jeVertexBuffer_pushVertexBatch(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
+}
+void jeVertexBuffer_pushRenderable(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
+	switch (renderable->primitiveType) {
+		case JE_PRIMITIVE_TYPE_POINTS: {
+			jeVertexBuffer_pushVertexBatch(vertexBuffer, renderable->vertex, JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT, JE_PRIMITIVE_TYPE_POINTS);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_LINES: {
+			jeVertexBuffer_pushVertexBatch(vertexBuffer, renderable->vertex, JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_LINES);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_TRIANGLES: {
+			jeVertexBuffer_pushVertexBatch(vertexBuffer, renderable->vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_SPRITES: {
+			jeVertexBuffer_pushSprite(vertexBuffer, renderable);
+			break;
+		}
+		default: {
+			JE_WARN("jeVertexBuffer_pushRenderable(): unrecognized type, primitive=%d", renderable->primitiveType);
+			break;
+		}
+	}
 }
 
 typedef struct jeController jeController;
@@ -374,44 +397,19 @@ void jeWindow_clear(jeWindow* window) {
 	JE_MAYBE_UNUSED(window);
 }
 void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable) {
-	jeRenderQueue_insert(&window->renderQueue, renderable);
+	jeRenderQueue_push(&window->renderQueue, renderable);
 }
-void jeWindow_flushRenderQueue(jeWindow* window) {
+void jeWindow_flushRenderables(jeWindow* window) {
 	int i = 0;
-
-	jeRenderable renderable;
-
-	memset((void*)&renderable, 0, sizeof(renderable));
 
 	jeRenderQueue_sort(&window->renderQueue);
 
-	for (i = 0; i < window->renderQueue.count; i++) {
-		renderable = window->renderQueue.renderables[i];
-		switch (renderable.primitiveType) {
-			case JE_PRIMITIVE_TYPE_POINTS: {
-				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT, JE_PRIMITIVE_TYPE_POINTS);
-				break;
-			}
-			case JE_PRIMITIVE_TYPE_LINES: {
-				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_LINES);
-				break;
-			}
-			case JE_PRIMITIVE_TYPE_TRIANGLES: {
-				jeVertexBuffer_append(&window->vertexBuffer, renderable.vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
-				break;
-			}
-			case JE_PRIMITIVE_TYPE_SPRITES: {
-				jeVertexBuffer_appendSprite(&window->vertexBuffer, &renderable);
-				break;
-			}
-			default: {
-				JE_WARN("jeWindow_flushRenderQueue(): unrecognized type, primitive=%d, index=%d, count=%d",
-						renderable.primitiveType, i, window->renderQueue.count);
-				break;
-			}
-		}
+	for (i = 0; i < window->renderQueue.renderables.count; i++) {
+		jeVertexBuffer_pushRenderable(&window->vertexBuffer, jeRenderQueue_get(&window->renderQueue, i));
 	}
-	window->renderQueue.count = 0;
+	jeVertexBuffer_flush(&window->vertexBuffer);
+
+	jeRenderQueue_setCount(&window->renderQueue, 0);
 }
 void jeWindow_destroyGL(jeWindow* window) {
 	jeVertexBuffer_destroy(&window->vertexBuffer);
@@ -654,12 +652,7 @@ void jeWindow_step(jeWindow* window) {
 	SDL_Event event;
 	Uint32 timeMs = SDL_GetTicks();
 
-	jeVertexBuffer_flush(&window->vertexBuffer);
-
-	glDepthMask(GL_FALSE);
-	jeWindow_flushRenderQueue(window);
-	jeVertexBuffer_flush(&window->vertexBuffer);
-	glDepthMask(GL_TRUE);
+	jeWindow_flushRenderables(window);
 
 	SDL_GL_SwapWindow(window->window);
 

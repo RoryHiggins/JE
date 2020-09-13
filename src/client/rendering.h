@@ -2,6 +2,7 @@
 #define JE_RENDERABLE_H
 
 #include "stdafx.h"
+#include "container.h"
 #include "image.h"
 
 #define JE_PRIMITIVE_TYPE_UNKNOWN 0
@@ -46,19 +47,18 @@ struct jeRenderable {
 	jePrimitiveType primitiveType;  /*secondary sort key, to minimize number of opengl draw calls*/
 };
 const char* jeRenderable_toDebugString(const jeRenderable* renderable);
-int jeRenderable_less(const void* aRaw, const void* bRaw);
+int jeRenderable_less(const void* renderableARaw, const void* renderableBRaw);
 
 /*Z-sorted queue of renderable objects*/
 typedef struct jeRenderQueue jeRenderQueue;
 struct jeRenderQueue {
-	jeRenderable* renderables;
-	int capacity;
-	int count;
+	jeBuffer renderables;
 };
 void jeRenderQueue_destroy(jeRenderQueue* renderQueue);
 void jeRenderQueue_create(jeRenderQueue* renderQueue);
-void jeRenderQueue_setCapacity(jeRenderQueue* renderQueue, int capacity);
-void jeRenderQueue_insert(jeRenderQueue* renderQueue, jeRenderable* renderable);
+void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count);
+jeRenderable* jeRenderQueue_get(jeRenderQueue* renderQueue, int i);
+void jeRenderQueue_push(jeRenderQueue* renderQueue, const jeRenderable* renderable);
 void jeRenderQueue_sort(jeRenderQueue* renderQueue);
 
 #endif
