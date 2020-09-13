@@ -6,9 +6,7 @@
 void jeImage_destroy(jeImage* image) {
 	JE_TRACE("");
 
-	if (image->buffer != NULL) {
-		free(image->buffer);
-	}
+	free(image->buffer);
 
 	image->height = 0;
 	image->width = 0;
@@ -16,8 +14,6 @@ void jeImage_destroy(jeImage* image) {
 }
 bool jeImage_create(jeImage* image, const char* filename) {
 	bool ok = true;
-	int imageSize = 0;
-	png_image pngImage;
 
 	JE_DEBUG("filename=%s", filename);
 	
@@ -25,6 +21,7 @@ bool jeImage_create(jeImage* image, const char* filename) {
 	image->width = 0;
 	image->height = 0;
 
+	png_image pngImage;
 	memset((void*)&pngImage, 0, sizeof(pngImage));
 	pngImage.version = PNG_IMAGE_VERSION;
 
@@ -38,7 +35,7 @@ bool jeImage_create(jeImage* image, const char* filename) {
 	if (ok) {
 		pngImage.format = PNG_FORMAT_RGBA;
 
-		imageSize = PNG_IMAGE_SIZE(pngImage);
+		int imageSize = PNG_IMAGE_SIZE(pngImage);
 		image->buffer = malloc(imageSize);
 
 		if (image->buffer == NULL) {

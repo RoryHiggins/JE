@@ -5,9 +5,7 @@
 void jeBuffer_destroy(jeBuffer* buffer) {
 	JE_DEBUG("");
 
-	if (buffer->data != NULL) {
-		free(buffer->data);
-	}
+	free(buffer->data);
 
 	buffer->capacity = 0;		
 	buffer->count = 0;
@@ -37,7 +35,6 @@ bool jeBuffer_create(jeBuffer* buffer, int stride) {
 }
 void* jeBuffer_get(jeBuffer* buffer, int index) {
 	bool ok = true;
-	void* result = NULL;
 
 	if (buffer->data == NULL) {
 		JE_ERROR("unallocated buffer");
@@ -54,6 +51,7 @@ void* jeBuffer_get(jeBuffer* buffer, int index) {
 		ok = false;
 	}
 
+	void* result = NULL;
 	if (ok) {
 		result = (void*)((char*)buffer->data + (buffer->stride * index));
 	}

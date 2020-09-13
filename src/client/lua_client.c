@@ -15,15 +15,13 @@
 #if LUA_VERSION_NUM < 520
 /*Shim adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
 void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount) {
-	int i = 0;
-
 	luaL_checkstack(lua, functionsCount+1, "too many upvalues");
 
 	for (; functionsIter->name != NULL; functionsIter++) {  /* fill the table with given functions */
 		lua_pushstring(lua, functionsIter->name);
 
 		/* copy upvalues to the top */
-		for (i = 0; i < functionsCount; i++) {
+		for (int i = 0; i < functionsCount; i++) {
 			lua_pushvalue(lua, -(functionsCount + 1));
 		}
 
@@ -40,9 +38,7 @@ size_t lua_objlen(lua_State *lua, int i) {
 #endif
 
 const char* jeLuaClient_getError(lua_State* lua) {
-	const char* error = "";
-
-	error = lua_tostring(lua, JE_LUA_STACK_TOP);
+	const char* error = lua_tostring(lua, JE_LUA_STACK_TOP);
 
 	if (error == NULL) {
 		error = "";
@@ -139,6 +135,136 @@ void jeLuaClient_updateStates(lua_State* lua) {
 
 	lua_settop(lua, stackPos);
 }
+jeRenderable jeLuaClient_getRenderableData(lua_State* lua, jePrimitiveType primitiveType, int renderableIndex, int defaultsIndex, int cameraIndex) {
+	jeRenderable renderable;
+
+	memset(&renderable, 0, sizeof(renderable));
+
+	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
+	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
+	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
+
+	renderable.primitiveType = primitiveType;
+
+	/*camera*/
+	lua_getfield(lua, cameraIndex, "x");
+	float cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+	lua_getfield(lua, cameraIndex, "y");
+	float cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+	lua_getfield(lua, cameraIndex, "w");
+	float cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+	lua_getfield(lua, cameraIndex, "h");
+	float cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+	float cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
+	float cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
+
+	/*defaults*/
+	lua_getfield(lua, defaultsIndex, "r");
+	renderable.vertex[0].r = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsIndex, "g");
+	renderable.vertex[0].g = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsIndex, "b");
+	renderable.vertex[0].b = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, defaultsIndex, "a");
+	renderable.vertex[0].a = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+
+	lua_getfield(lua, defaultsIndex, "u1");
+	renderable.vertex[0].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsIndex, "v1");
+	renderable.vertex[0].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsIndex, "u2");
+	renderable.vertex[1].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsIndex, "v2");
+	renderable.vertex[1].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsIndex, "u3");
+	renderable.vertex[2].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	lua_getfield(lua, defaultsIndex, "v3");
+	renderable.vertex[2].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+
+	/*render object*/
+	lua_getfield(lua, renderableIndex, "x1");
+	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
+
+		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableIndex, "y1");
+		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableIndex, "x2");
+		renderable.vertex[1].x = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].x);
+
+		lua_getfield(lua, renderableIndex, "y2");
+		renderable.vertex[1].y = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].y);
+
+		lua_getfield(lua, renderableIndex, "x3");
+		renderable.vertex[2].x = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].x);
+
+		lua_getfield(lua, renderableIndex, "y3");
+		renderable.vertex[2].y = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].y);
+	} else {
+		lua_getfield(lua, renderableIndex, "x");
+		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableIndex, "y");
+		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
+
+		lua_getfield(lua, renderableIndex, "w");
+		renderable.vertex[1].x = renderable.vertex[0].x + luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].x);
+
+		lua_getfield(lua, renderableIndex, "h");
+		renderable.vertex[1].y = renderable.vertex[0].y + luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].y);
+	}
+
+	lua_getfield(lua, renderableIndex, "z");
+	renderable.z = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
+	for (int i = 0; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
+		renderable.vertex[i].z = renderable.z;
+	}
+
+	lua_getfield(lua, renderableIndex, "r");
+	renderable.vertex[0].r = renderable.vertex[0].r * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].r);
+	lua_getfield(lua, renderableIndex, "g");
+	renderable.vertex[0].g = renderable.vertex[0].g * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].g);
+	lua_getfield(lua, renderableIndex, "b");
+	renderable.vertex[0].b = renderable.vertex[0].b * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].b);
+	lua_getfield(lua, renderableIndex, "a");
+	renderable.vertex[0].a = renderable.vertex[0].a * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].a);
+
+	lua_getfield(lua, renderableIndex, "renderScaleX");
+	float renderScaleX = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	lua_getfield(lua, renderableIndex, "renderScaleY");
+	float renderScaleY = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+
+	for (int i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
+		renderable.vertex[i].x = renderable.vertex[0].x + ((renderable.vertex[i].x - renderable.vertex[0].x) * renderScaleX);
+		renderable.vertex[i].y = renderable.vertex[0].y + ((renderable.vertex[i].y - renderable.vertex[0].y) * renderScaleY);
+
+		renderable.vertex[i].r = renderable.vertex[0].r;
+		renderable.vertex[i].g = renderable.vertex[0].g;
+		renderable.vertex[i].b = renderable.vertex[0].b;
+		renderable.vertex[i].a = renderable.vertex[0].a;
+	}
+
+	lua_getfield(lua, defaultsIndex, "u1");
+	renderable.vertex[0].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].u);
+	lua_getfield(lua, defaultsIndex, "v1");
+	renderable.vertex[0].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].v);
+	lua_getfield(lua, defaultsIndex, "u2");
+	renderable.vertex[1].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[1].u);
+	lua_getfield(lua, defaultsIndex, "v2");
+	renderable.vertex[1].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[1].v);
+	lua_getfield(lua, defaultsIndex, "u3");
+	renderable.vertex[2].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[2].u);
+	lua_getfield(lua, defaultsIndex, "v3");
+	renderable.vertex[2].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[2].v);
+
+	JE_TRACE("extracted renderable, renderable={%s}", jeRenderable_toDebugString(&renderable));
+	return renderable;
+}
 
 /*Lua-client bindings.  Note: return value = num responses pushed to lua stack*/
 int jeLuaClient_readData(lua_State* lua) {
@@ -230,164 +356,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 	return numResponses;
 }
 int jeLuaClient_drawRenderableImpl(lua_State* lua, jePrimitiveType primitiveType) {
-	static const int cameraIndex = 3;
-	static const int defaultsIndex = 2;
-	static const int renderableIndex = 1;
-
-	jeRenderable renderable;
-
-	/*camera*/
-	float cameraX = 0.0f;
-	float cameraY = 0.0f;
-	float cameraW = 0.0f;
-	float cameraH = 0.0f;
-
-	float cameraOffsetX = 0.0f;
-	float cameraOffsetY = 0.0f;
-
-	/*primitive*/
-	float renderScaleX = 1.0f;
-	float renderScaleY = 1.0f;
-
-	int i = 0;
-
-	memset(&renderable, 0, sizeof(renderable));
-
-	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
-	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
-	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
-
-	renderable.primitiveType = primitiveType;
-
-	/*camera*/
-	lua_getfield(lua, cameraIndex, "x1");
-	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
-		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "y1");
-		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "x2");
-		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraX;
-
-		lua_getfield(lua, cameraIndex, "y2");
-		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraY;
-	} else {
-		lua_getfield(lua, cameraIndex, "x");
-		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "y");
-		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "w");
-		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "h");
-		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-	}
-
-	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
-	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
-
-	/*defaults*/
-	lua_getfield(lua, defaultsIndex, "r");
-	renderable.vertex[0].r = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-	lua_getfield(lua, defaultsIndex, "g");
-	renderable.vertex[0].g = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-	lua_getfield(lua, defaultsIndex, "b");
-	renderable.vertex[0].b = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-	lua_getfield(lua, defaultsIndex, "a");
-	renderable.vertex[0].a = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-
-	lua_getfield(lua, defaultsIndex, "u1");
-	renderable.vertex[0].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "v1");
-	renderable.vertex[0].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "u2");
-	renderable.vertex[1].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "v2");
-	renderable.vertex[1].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "u3");
-	renderable.vertex[2].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "v3");
-	renderable.vertex[2].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-
-	/*render object*/
-	lua_getfield(lua, renderableIndex, "x1");
-	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
-		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "y1");
-		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "x2");
-		renderable.vertex[1].x = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "y2");
-		renderable.vertex[1].y = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "x3");
-		renderable.vertex[2].x = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-
-		lua_getfield(lua, renderableIndex, "y3");
-		renderable.vertex[2].y = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	} else {
-		lua_getfield(lua, renderableIndex, "x");
-		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "y");
-		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "w");
-		renderable.vertex[1].x = renderable.vertex[0].x + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "h");
-		renderable.vertex[1].y = renderable.vertex[0].y + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-	}
-
-	lua_getfield(lua, renderableIndex, "z");
-	renderable.z = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].z = renderable.vertex[0].z;
-	}
-
-	lua_getfield(lua, renderableIndex, "renderScaleX");
-	renderScaleX = renderScaleX * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-	lua_getfield(lua, renderableIndex, "renderScaleY");
-	renderScaleY = renderScaleY * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].x = renderable.vertex[0].x + ((renderable.vertex[i].x - renderable.vertex[0].x) * renderScaleX);
-		renderable.vertex[i].y = renderable.vertex[0].y + ((renderable.vertex[i].y - renderable.vertex[0].y) * renderScaleY);
-	}
-
-	lua_getfield(lua, renderableIndex, "r");
-	renderable.vertex[0].r = renderable.vertex[0].r * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].r);
-	lua_getfield(lua, renderableIndex, "g");
-	renderable.vertex[0].g = renderable.vertex[0].g * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].g);
-	lua_getfield(lua, renderableIndex, "b");
-	renderable.vertex[0].b = renderable.vertex[0].b * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].b);
-	lua_getfield(lua, renderableIndex, "a");
-	renderable.vertex[0].a = renderable.vertex[0].a * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].a);
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].r = renderable.vertex[0].r;
-		renderable.vertex[i].g = renderable.vertex[0].g;
-		renderable.vertex[i].b = renderable.vertex[0].b;
-		renderable.vertex[i].a = renderable.vertex[0].a;
-	}
-
-	lua_getfield(lua, defaultsIndex, "u1");
-	renderable.vertex[0].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].u);
-	lua_getfield(lua, defaultsIndex, "v1");
-	renderable.vertex[0].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].v);
-	lua_getfield(lua, defaultsIndex, "u2");
-	renderable.vertex[1].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[1].u);
-	lua_getfield(lua, defaultsIndex, "v2");
-	renderable.vertex[1].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[1].v);
-	lua_getfield(lua, defaultsIndex, "u3");
-	renderable.vertex[2].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[2].u);
-	lua_getfield(lua, defaultsIndex, "v3");
-	renderable.vertex[2].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[2].v);
+	jeRenderable renderable = jeLuaClient_getRenderableData(lua, primitiveType, /*renderableIndex*/ 1, /*defaultsIndex*/ 2, /*cameraIndex*/ 3);
 
 	JE_TRACE("drawing renderable, renderable={%s}", jeRenderable_toDebugString(&renderable));
 	jeWindow_drawRenderable(jeLuaClient_getWindow(lua), &renderable);
@@ -395,182 +364,61 @@ int jeLuaClient_drawRenderableImpl(lua_State* lua, jePrimitiveType primitiveType
 	return 0;
 }
 int jeLuaClient_drawTextImpl(lua_State* lua) {
-	static const int cameraIndex = 3;
 	static const int defaultsIndex = 2;
 	static const int renderableIndex = 1;
 
-	static const char charDefault = ' ';
-
-	jeRenderable renderable;
-	jeRenderable charRenderable;
-
-	/*camera*/
-	float cameraX = 0.0f;
-	float cameraY = 0.0f;
-	float cameraW = 0.0f;
-	float cameraH = 0.0f;
-
-	float cameraOffsetX = 0.0f;
-	float cameraOffsetY = 0.0f;
+	jeRenderable renderable = jeLuaClient_getRenderableData(lua, JE_PRIMITIVE_TYPE_SPRITES, /*renderableIndex*/ 1, /*defaultsIndex*/ 2, /*cameraIndex*/ 3);
 
 	/*font*/
-	int charW = 0;
-	int charH = 0;
-	int charColumns = 0;
-	const char* charFirst = "\0";
-	const char* charLast = "\0";
-
-	/*char*/
-	int i = 0;
-	char charVal = charDefault;
-	int charIndex = 0;
-
-	float charScaleX = 1.0f;
-	float charScaleY = 1.0f;
-
-	const char* text = "";
-	int textLength = 0;
-
-	memset(&renderable, 0, sizeof(renderable));
-	memset(&charRenderable, 0, sizeof(charRenderable));
-
-	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
-	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
-	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
-
-	renderable.primitiveType = JE_PRIMITIVE_TYPE_SPRITES;
-
-	/*camera*/
-	lua_getfield(lua, cameraIndex, "x1");
-	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
-		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "y1");
-		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "x2");
-		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraX;
-
-		lua_getfield(lua, cameraIndex, "y2");
-		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP) - cameraY;
-	} else {
-		lua_getfield(lua, cameraIndex, "x");
-		cameraX = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "y");
-		cameraY = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "w");
-		cameraW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, cameraIndex, "h");
-		cameraH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
-	}
-
-	cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
-	cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
-
-	/*font*/
-	lua_getfield(lua, defaultsIndex, "r");
-	renderable.vertex[0].r = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "g");
-	renderable.vertex[0].g = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "b");
-	renderable.vertex[0].b = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "a");
-	renderable.vertex[0].a = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-
-	lua_getfield(lua, defaultsIndex, "u1");
-	renderable.vertex[0].u = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	lua_getfield(lua, defaultsIndex, "v1");
-	renderable.vertex[0].v = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
+	for (int i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
 		renderable.vertex[i].u = renderable.vertex[0].u;
 		renderable.vertex[i].v = renderable.vertex[0].v;
 	}
 
 	lua_getfield(lua, defaultsIndex, "charW");
-	charW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	int charW = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 	lua_getfield(lua, defaultsIndex, "charH");
-	charH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	int charH = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
 	lua_getfield(lua, defaultsIndex, "charFirst");
-	charFirst = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	const char* charFirst = luaL_checkstring(lua, JE_LUA_STACK_TOP);
 	lua_getfield(lua, defaultsIndex, "charLast");
-	charLast = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	const char* charLast = luaL_checkstring(lua, JE_LUA_STACK_TOP);
 	lua_getfield(lua, defaultsIndex, "charColumns");
-	charColumns = luaL_checknumber(lua, JE_LUA_STACK_TOP);
+	int charColumns = luaL_checknumber(lua, JE_LUA_STACK_TOP);
 
-	/*render object*/
 	lua_getfield(lua, renderableIndex, "renderScaleX");
-	charScaleX = charScaleX * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
+	float renderScaleX = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
 	lua_getfield(lua, renderableIndex, "renderScaleY");
-	charScaleY = charScaleY * luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
-
-	lua_getfield(lua, renderableIndex, "x1");
-	if (lua_isnumber(lua, JE_LUA_STACK_TOP)) {
-		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "y1");
-		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-	} else {
-		lua_getfield(lua, renderableIndex, "x");
-		renderable.vertex[0].x = cameraOffsetX + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-
-		lua_getfield(lua, renderableIndex, "y");
-		renderable.vertex[0].y = cameraOffsetY + luaL_checknumber(lua, JE_LUA_STACK_TOP);
-	}
-
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].x = renderable.vertex[0].x;
-		renderable.vertex[i].y = renderable.vertex[0].y;
-	}
-
-	lua_getfield(lua, renderableIndex, "z");
-	renderable.z = luaL_optnumber(lua, JE_LUA_STACK_TOP, 0.0f);
-	for (i = 0; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].z = renderable.z;
-	}
+	float renderScaleY = luaL_optnumber(lua, JE_LUA_STACK_TOP, 1.0f);
 
 	lua_getfield(lua, renderableIndex, "text");
-	text = luaL_checkstring(lua, JE_LUA_STACK_TOP);
-	textLength = lua_objlen(lua, JE_LUA_STACK_TOP);
-
-	lua_getfield(lua, renderableIndex, "r");
-	renderable.vertex[0].r = renderable.vertex[0].r * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].r);
-	lua_getfield(lua, renderableIndex, "g");
-	renderable.vertex[0].g = renderable.vertex[0].g * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].g);
-	lua_getfield(lua, renderableIndex, "b");
-	renderable.vertex[0].b = renderable.vertex[0].b * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].b);
-	lua_getfield(lua, renderableIndex, "a");
-	renderable.vertex[0].a = renderable.vertex[0].a * luaL_optnumber(lua, JE_LUA_STACK_TOP, renderable.vertex[0].a);
-	for (i = 1; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		renderable.vertex[i].r = renderable.vertex[0].r;
-		renderable.vertex[i].g = renderable.vertex[0].g;
-		renderable.vertex[i].b = renderable.vertex[0].b;
-		renderable.vertex[i].a = renderable.vertex[0].a;
-	}
+	const char* text = luaL_checkstring(lua, JE_LUA_STACK_TOP);
+	int textLength = lua_objlen(lua, JE_LUA_STACK_TOP);
 
 	JE_TRACE("drawing text, text=%s, %s", text, jeRenderable_toDebugString(&renderable));
-	for (i = 0; i < textLength; i++) {
-		charVal = (char)toupper((int)text[i]);
+	for (int i = 0; i < textLength; i++) {
+		static const char charDefault = ' ';
+
+		char charVal = (char)toupper((int)text[i]);
 		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
 			JE_WARN("character outside range, char=%d, min=%d, max=%d",
 					(int)charVal, (int)charFirst[0], (int)charLast[0]);
 			charVal = charDefault;
 		}
 
-		charIndex = (int)(charVal - charFirst[0]);
+		int charIndex = (int)(charVal - charFirst[0]);
 
-		charRenderable = renderable;
-		charRenderable.vertex[0].x += (charW * charScaleX * i);
-		charRenderable.vertex[1].x = charRenderable.vertex[0].x + (charW * charScaleX);
-		charRenderable.vertex[1].y = charRenderable.vertex[0].y + (charH * charScaleY);
-
+		jeRenderable charRenderable = renderable;
+		charRenderable.vertex[0].x += (charW * renderScaleX * i);
 		charRenderable.vertex[0].u += (charW * (charIndex % charColumns));
 		charRenderable.vertex[0].v += (charH * (charIndex / charColumns));
-		charRenderable.vertex[1].u = charRenderable.vertex[0].u + charW;
-		charRenderable.vertex[1].v = charRenderable.vertex[0].v + charH;
+
+		charRenderable.vertex[1] = charRenderable.vertex[0];
+		charRenderable.vertex[1].x += charW * renderScaleX;
+		charRenderable.vertex[1].y += charH * renderScaleY;
+		charRenderable.vertex[1].u += charW;
+		charRenderable.vertex[1].v += charH;
 
 		JE_TRACE("drawing char, charRenderable={%s}", jeRenderable_toDebugString(&charRenderable));
 		jeWindow_drawRenderable(jeLuaClient_getWindow(lua), &charRenderable);

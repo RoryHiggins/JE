@@ -11,13 +11,14 @@
 
 
 int main(int argc, char** argv) {
-	bool success = true;
+	bool ok = true;
+
 	jeClient client;
 
-	success = jeClient_run(&client);
+	ok = ok && jeClient_run(&client);
 
 	JE_MAYBE_UNUSED(argc);
 	JE_MAYBE_UNUSED(argv);
 
-	return success ? EXIT_SUCCESS : EXIT_FAILURE;
+	return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -83,8 +83,11 @@ function Game:onSimulationCreate(simulation)
 	self.inputSys = self.simulation:addSystem(Input)
 	self.textSys = self.simulation:addSystem(Text)
 
-	self.font = self.textSys:addFont("test", 0, 192, 8, 8, " ", "_", 8)
-	self:createTestWorld()
+	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
+
+	if not self.simulation.runningTests then
+		self:createTestWorld()
+	end
 end
 function Game:onSimulationStep()
 	if self.inputSys:getReleased("x") then
@@ -97,7 +100,7 @@ function Game:onSimulationDraw(screen)
 		["x"] = 0,
 		["y"] = 0,
 		["z"] = -10,
-		["text"] = "fps: "..tostring(self.simulation.fps)
+		["text"] = "fps="..tostring(self.simulation.fps)
 	}
 	self.textSys:draw(fps, self.font, screen)
 end

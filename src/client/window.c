@@ -83,11 +83,7 @@ bool jeGl_getShaderOk(GLuint shader, jeLoggerContext loggerContext) {
 		ok = false;
 	}
 
-	/*finalize:*/ {
-		if (buffer != NULL) {
-			free(buffer);
-		}
-	}
+	free(buffer);
 
 	JE_MAYBE_UNUSED(loggerContext);
 
@@ -114,11 +110,7 @@ bool jeGl_getProgramOk(GLuint program, jeLoggerContext loggerContext) {
 		ok = false;
 	}
 
-	/*finalize:*/ {
-		if (buffer != NULL) {
-			free(buffer);
-		}
-	}
+	free(buffer);
 
 	JE_MAYBE_UNUSED(loggerContext);
 
@@ -667,25 +659,6 @@ void jeWindow_step(jeWindow* window) {
 	static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
 
 	SDL_Event event;
-	Uint32 timeMs = SDL_GetTicks();
-
-	jeWindow_flushRenderables(window);
-
-	SDL_GL_SwapWindow(window->window);
-
-	if ((timeMs + 1) < window->nextFrameTimeMs) {
-		/*If we end up with a nextFrameTime > wait time (e.g. via integer overflow), clamp*/
-		if ((window->nextFrameTimeMs - timeMs) > frameTimeMs) {
-			window->nextFrameTimeMs = timeMs + frameTimeMs;
-		}
-
-		SDL_Delay(frameTimeMs - 1);
-		timeMs = SDL_GetTicks();
-	}
-	
-	timeMs = SDL_GetTicks();
-	window->nextFrameTimeMs = timeMs + frameTimeMs;
-
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT: {
@@ -781,14 +754,31 @@ void jeWindow_step(jeWindow* window) {
 	window->keyState = SDL_GetKeyboardState(NULL);
 
 	window->frame++;
+
+	/*Sample the framerate every JE_WINDOW_FRAME_RATE frames, i.e. every second*/
 	if ((window->frame % JE_WINDOW_FRAME_RATE) == 0) {
-		timeMs = SDL_GetTicks();
+		Uint32 timeMs = SDL_GetTicks();
 
-		/*We sample every JE_WINDOW_FRAME_RATE frames, so max framerate = 1 second*/
-		window->fpsEstimate = (int)((float)JE_WINDOW_FRAME_RATE * ((float)(timeMs - window->fpsLastSampleTimeMs) / 1000.0f));
-
+		float sampleDuration = ((float)timeMs - (float)window->fpsLastSampleTimeMs) / 1000.0f;
+		float sampleFrameDuration = sampleDuration / (float)JE_WINDOW_FRAME_RATE;
+		window->fpsEstimate = (int)(1.0f / sampleFrameDuration);
 		window->fpsLastSampleTimeMs = timeMs;
 	}
+
+	Uint32 timeToWaitMs = window->nextFrameTimeMs - SDL_GetTicks();
+	if (timeToWaitMs > frameTimeMs) {
+		timeToWaitMs = frameTimeMs;
+		window->nextFrameTimeMs = SDL_GetTicks() + frameTimeMs;
+	}
+
+	if (timeToWaitMs > 0) {
+		SDL_Delay(timeToWaitMs);
+	}
+	window->nextFrameTimeMs += frameTimeMs;
+
+	jeWindow_flushRenderables(window);
+
+	SDL_GL_SwapWindow(window->window);
 }
 void jeWindow_destroy(jeWindow* window) {
 	JE_INFO("");
@@ -888,6 +878,9 @@ jeWindow* jeWindow_create() {
 		jeWindow_clear(window);
 
 		window->open = true;
+
+		window->fpsLastSampleTimeMs = SDL_GetTicks();
+		window->nextFrameTimeMs = SDL_GetTicks();
 	}
 
 	if (!ok) {

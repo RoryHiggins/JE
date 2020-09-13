@@ -65,6 +65,11 @@ function Simulation:stepClient()
 	self.fps = client.state.fps
 end
 function Simulation:step()
+	-- avoid pumping client during simulation unit tests, in case it's a real client
+	if not self.runningTests then
+		self:stepClient()
+	end
+
 	self:broadcast("onSimulationStep")
 	self:broadcast("onSimulationDraw", self.screen)
 end
@@ -177,7 +182,11 @@ function Simulation:onSimulationRunTests()
 	self:destroy()
 end
 function Simulation:runTests()
+	local logLevelBackup = util.logLevel
+	util.logLevel = client.state.testsLogLevel
+
 	util.info("starting")
+	self.runningTests = true
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
@@ -193,30 +202,30 @@ function Simulation:runTests()
 	self:destroy()
 
 	util.info("complete")
+	self.runningTests = false
+
+	util.logLevel = logLevelBackup
 end
 function Simulation:run()
 	self:stepClient()
 	util.logLevel = client.state.logLevel
 
-	util.info("running tests")
 	if client.state.testsEnabled then
-		util.logLevel = client.state.testsLogLevel
+		util.info("running tests")
 		self:runTests()
-		util.logLevel = client.state.logLevel
 	end
 
 	util.info("starting")
-
 	self:create()
 
 	while self:isRunning() do
-		self:stepClient()
 		self:step()
 	end
 
 	util.info("ending")
-	self:save(self.SAVE_FILE)
-	self:dump(self.DUMP_FILE)
+
+	-- self:save(self.SAVE_FILE)
+	-- self:dump(self.DUMP_FILE)
 	self:destroy()
 end
 
@@ -227,6 +236,7 @@ function Simulation.new()
 		["state"] = {},
 		["static"] = {},
 		["created"] = false,
+		["runningTests"] = false,  -- use extremely sparingly
 		["screen"] = {
 			["x"] = 0,
 			["y"] = 0,

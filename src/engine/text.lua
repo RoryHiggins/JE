@@ -12,6 +12,13 @@ function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColum
 			["fontId"] = fontId,
 			["u1"] = u,
 			["v1"] = v,
+
+			-- default to black text
+			["r"] = 0,
+			["g"] = 0,
+			["b"] = 0,
+			["a"] = 1,
+
 			["charW"] = charW,
 			["charH"] = charH,
 			["charFirst"] = charFirst,
@@ -55,7 +62,7 @@ function Text:onCameraDraw(camera)
 end
 function Text:onSimulationRunTests()
 	local entity = self.entitySys:create()
-	local testFont = self:addFont("test", 0, 192, 8, 8, " ", "_", 8)
+	local testFont = self:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 
 	assert(self:getFont("test") == testFont)
 

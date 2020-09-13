@@ -26,6 +26,7 @@ function World:create()
 end
 function World:onSimulationCreate(simulation)
 	self.simulation = simulation
+	self:create()
 end
 function World:onSimulationDestroy()
 	self:destroy()
