@@ -23,8 +23,8 @@ jeWindow* jeWindow_create();
 void jeWindow_destroy(jeWindow* window);
 void jeWindow_step(jeWindow* window);
 void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable);
-jeBool jeWindow_getIsOpen(jeWindow* window);
-int jeWindow_getFPS(jeWindow* window);
-jeBool jeWindow_getInput(jeWindow* window, int inputId);
+bool jeWindow_getIsOpen(jeWindow* window);
+int jeWindow_getFps(jeWindow* window);
+bool jeWindow_getInput(jeWindow* window, int inputId);
 
 #endif

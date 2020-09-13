@@ -55,7 +55,7 @@ struct jeRenderQueue {
 	jeBuffer renderables;
 };
 void jeRenderQueue_destroy(jeRenderQueue* renderQueue);
-void jeRenderQueue_create(jeRenderQueue* renderQueue);
+bool jeRenderQueue_create(jeRenderQueue* renderQueue);
 void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count);
 jeRenderable* jeRenderQueue_get(jeRenderQueue* renderQueue, int i);
 void jeRenderQueue_push(jeRenderQueue* renderQueue, const jeRenderable* renderable);

@@ -2,7 +2,7 @@
 TARGET := DEVELOPMENT
 
 CC := gcc
-CFLAGS := -std=c89 -Wall -Wextra -pedantic -Werror=vla
+CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla
 
 CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows -D NDEBUG
 LFLAGS_RELEASE := -static `sdl2-config --static-libs` -lm -lpng -ljpeg -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1 -static-libstdc++ -static-libgcc

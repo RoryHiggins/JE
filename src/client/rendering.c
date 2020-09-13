@@ -62,14 +62,15 @@ int jeRenderable_less(const void* renderableARaw, const void* renderableBRaw) {
 	if (renderableA->z == renderableB->z) {
 		return renderableA->primitiveType < renderableB->primitiveType;
 	}
+
 	return (renderableA->z < renderableB->z);
 }
 
 void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
 	jeBuffer_destroy(&renderQueue->renderables);
 }
-void jeRenderQueue_create(jeRenderQueue* renderQueue) {
-	jeBuffer_create(&renderQueue->renderables, sizeof(jeRenderable));
+bool jeRenderQueue_create(jeRenderQueue* renderQueue) {
+	return jeBuffer_create(&renderQueue->renderables, sizeof(jeRenderable));
 }
 void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count) {
 	jeBuffer_setCount(&renderQueue->renderables, count);

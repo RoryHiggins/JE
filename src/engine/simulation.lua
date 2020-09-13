@@ -16,20 +16,20 @@ function Simulation:broadcast(event, ...)
 end
 function Simulation:addSystem(class)
 	if type(class) ~= "table" then
-		util.error("Simulation:addSystem(): class is not a table, class=%s", util.toComparable(class))
+		util.error("class is not a table, class=%s", util.toComparable(class))
 		return {}
 	end
 
 	local systemName = class.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.error("Simulation:addSystem(): class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
+		util.error("class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
 		return {}
 	end
 
 	local system = self.systems[systemName]
 	if system == nil then
-		util.debug("Simulation:addSystem(): instantiating system, systemName=%s", systemName)
+		util.debug("instantiating system, systemName=%s", systemName)
 
 		class.__index = class
 		system = setmetatable({}, class)
@@ -38,7 +38,7 @@ function Simulation:addSystem(class)
 	end
 
 	if self.created and not self.systemsCreated[systemName] then
-		util.debug("Simulation:addSystem(): creating system, systemName=%s", systemName)
+		util.debug("creating system, systemName=%s", systemName)
 
 		-- marking as created first, to prevent recursion with circular dependencies
 		self.systemsCreated[systemName] = true
@@ -73,7 +73,7 @@ function Simulation:destroy()
 		return
 	end
 
-	util.info("Simulation:destroy()")
+	util.info("")
 
 	self:broadcast("onSimulationDestroy")
 	self.state = {}
@@ -87,7 +87,7 @@ end
 function Simulation:create()
 	self:destroy()
 
-	util.info("Simulation:create()")
+	util.info("")
 
 	math.randomseed(0)
 
@@ -95,9 +95,9 @@ function Simulation:create()
 	self.state.saveVersion = 1
 
 	for systemName, system in pairs(self.systems) do
-		util.trace("Simulation:create(): systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
+		util.trace("systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
 		if not self.systemsCreated[systemName] then
-			util.debug("Simulation:create(): creating system, name=%s", systemName)
+			util.debug("creating system, name=%s", systemName)
 
 			-- marking as created first, to prevent recursion with circular dependencies
 			self.systemsCreated[systemName] = true
@@ -109,17 +109,17 @@ function Simulation:create()
 	end
 end
 function Simulation:save(filename)
-	util.debug("Simulation:save(): filename=%s", filename)
+	util.debug("filename=%s", filename)
 
 	if not client.writeData(filename, json.encode(self.state)) then
-		util.error("Simulation:save(): client.writeData() failed")
+		util.error("client.writeData() failed")
 		return false
 	end
 
 	return true
 end
 function Simulation:load(filename)
-	util.info("Simulation:load(): filename=%s", filename)
+	util.info("filename=%s", filename)
 
 	local loadedStateStr = client.readData(filename)
 	if not loadedStateStr then
@@ -129,12 +129,12 @@ function Simulation:load(filename)
 	local loadedState = json.decode(loadedStateStr)
 
 	if loadedState.saveVersion and (loadedState.saveVersion > self.state.saveVersion) then
-		util.error("Simulation:load(): save version is too new, saveVersion=%d, save.saveVersion=%d",
+		util.error("save version is too new, saveVersion=%d, save.saveVersion=%d",
 				   self.state.saveVersion, loadedState.saveVersion)
 		return false
 	end
 	if loadedState.saveVersion and (loadedState.saveVersion < self.state.saveVersion) then
-		util.info("Simulation:load(): save version is older, saveVersion=%d, save.saveVersion=%d",
+		util.info("save version is older, saveVersion=%d, save.saveVersion=%d",
 				   self.state.saveVersion, loadedState.saveVersion)
 	end
 
@@ -143,7 +143,7 @@ function Simulation:load(filename)
 	return true
 end
 function Simulation:dump(filename)
-	util.debug("Simulation:dump(): filename=%s", filename)
+	util.debug("filename=%s", filename)
 
 	local dump = {
 		["state"] = self.state,
@@ -151,7 +151,7 @@ function Simulation:dump(filename)
 		["systems"] = util.getKeys(self.systems),
 	}
 	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
-		util.error("Simulation:dump(): client.writeData() failed")
+		util.error("client.writeData() failed")
 		return false
 	end
 
@@ -170,18 +170,18 @@ function Simulation:onSimulationRunTests()
 
 	local gameAfterLoad = util.toComparable(self.state)
 	if gameBeforeSave ~= gameAfterLoad then
-		util.error("Simulation:onSimulationRunTests(): Mismatched state before save and after load: before=%s, after=%s",
+		util.error("Mismatched state before save and after load: before=%s, after=%s",
 				   gameBeforeSave, gameAfterLoad)
 	end
 
 	self:destroy()
 end
 function Simulation:runTests()
-	util.info("Simulation:runTests(): starting")
+	util.info("starting")
 
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
-			util.info("Simulation:runTests(): running tests for %s", system.SYSTEM_NAME)
+			util.info("running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
 			self:create()
@@ -192,20 +192,20 @@ function Simulation:runTests()
 
 	self:destroy()
 
-	util.info("Simulation:runTests(): complete")
+	util.info("complete")
 end
 function Simulation:run()
 	self:stepClient()
 	util.logLevel = client.state.logLevel
 
-	util.info("Simulation:run(): running tests")
+	util.info("running tests")
 	if client.state.testsEnabled then
 		util.logLevel = client.state.testsLogLevel
 		self:runTests()
 		util.logLevel = client.state.logLevel
 	end
 
-	util.info("Simulation:run(): starting")
+	util.info("starting")
 
 	self:create()
 
@@ -214,7 +214,7 @@ function Simulation:run()
 		self:step()
 	end
 
-	util.info("Simulation:run(): ending")
+	util.info("ending")
 	self:save(self.SAVE_FILE)
 	self:dump(self.DUMP_FILE)
 	self:destroy()

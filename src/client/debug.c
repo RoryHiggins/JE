@@ -2,10 +2,19 @@
 #include "debug.h"
 
 
-void jeLogger_logPrefixImpl(const char* label, const char* file, int line) {
-	fprintf(stdout, "[%s %s:%d] ", label, file, line);
+jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line) {
+	jeLoggerContext loggerContext;
+
+	loggerContext.file = file;
+	loggerContext.function = function;
+	loggerContext.line = line;
+
+	return loggerContext;
 }
-void jeLogger_logImpl(const char* formatStr, ...) {
+
+void jeLogger_log(jeLoggerContext loggerContext, const char* label, const char* formatStr, ...) {
+	fprintf(stdout, "[%s %s:%d] %s() ", label, loggerContext.file, loggerContext.line, loggerContext.function);
+
 	va_list args;
 
 	va_start(args, formatStr);
@@ -14,7 +23,4 @@ void jeLogger_logImpl(const char* formatStr, ...) {
 
 	fputc('\n', stdout);
 	fflush(stdout);
-}
-void jeLogger_discardLogImpl(const char* formatStr, ...) {
-	JE_MAYBE_UNUSED(formatStr);
 }

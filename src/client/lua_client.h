@@ -5,6 +5,6 @@
 #include "window.h"
 
 
-jeBool jeLuaClient_run(jeWindow* window, const char* filename);
+bool jeLuaClient_run(jeWindow* window, const char* filename);
 
 #endif

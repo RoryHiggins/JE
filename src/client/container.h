@@ -13,10 +13,10 @@ struct jeBuffer {
 	int capacity;
 };
 void jeBuffer_destroy(jeBuffer* buffer);
-void jeBuffer_create(jeBuffer* buffer, int stride);
+bool jeBuffer_create(jeBuffer* buffer, int stride);
 void* jeBuffer_get(jeBuffer* buffer, int index);
-void jeBuffer_setCount(jeBuffer* buffer, int count);
-void jeBuffer_setCapacity(jeBuffer* buffer, int capacity);
-void jeBuffer_push(jeBuffer* buffer, const void* data);
+bool jeBuffer_setCount(jeBuffer* buffer, int count);
+bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity);
+bool jeBuffer_push(jeBuffer* buffer, const void* data);
 
 #endif

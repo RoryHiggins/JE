@@ -3,83 +3,157 @@
 #include "debug.h"
 
 void jeBuffer_destroy(jeBuffer* buffer) {
+	JE_DEBUG("");
+
 	if (buffer->data != NULL) {
 		free(buffer->data);
 	}
-	memset((void*)buffer, 0, sizeof(*buffer));
-}
-void jeBuffer_create(jeBuffer* buffer, int stride) {
-	memset((void*)buffer, 0, sizeof(*buffer));
-	buffer->stride = stride;
 
-	if (buffer->stride <= 0) {
-		JE_ERROR("jeBuffer_setCapacity(): invalid stride=%d", buffer->stride);
+	buffer->capacity = 0;		
+	buffer->count = 0;
+	buffer->stride = 0;
+	buffer->data = NULL;
+}
+bool jeBuffer_create(jeBuffer* buffer, int stride) {
+	bool ok = true;
+
+	JE_DEBUG("stride=%d", stride);
+
+	if (stride <= 0) {
+		JE_ERROR("invalid stride=%d", buffer->stride);
+		ok = false;
 	}
+
+	buffer->data = NULL;
+	buffer->stride = stride;
+	buffer->count = 0;
+	buffer->capacity = 0;
+
+	if (!ok) {
+		jeBuffer_destroy(buffer);
+	}
+
+	return ok;
 }
 void* jeBuffer_get(jeBuffer* buffer, int index) {
-	return (void*)((char*)buffer->data + (buffer->stride * index));
-}
-void jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
-	JE_DEBUG("jeBuffer_setCapacity(): newCapacity=%d, currentCapacity=%d", capacity, buffer->capacity);
-
-	if (buffer->stride <= 0) {
-		JE_ERROR("jeBuffer_setCapacity(): invalid stride=%d", buffer->stride);
-		goto finalize;
-	}
-
-	if (capacity == buffer->capacity) {
-		goto finalize;
-	}
-
-	if (capacity == 0) {
-		jeBuffer_destroy(buffer);
-		goto finalize;
-	}
-
-	buffer->data = realloc(buffer->data, capacity * buffer->stride);
+	bool ok = true;
+	void* result = NULL;
 
 	if (buffer->data == NULL) {
-		JE_ERROR("jeBuffer_setCapacity(): allocation failed for capacity=%d stride=%d", capacity, buffer->stride);
-		jeBuffer_destroy(buffer);
-
-		goto finalize;
+		JE_ERROR("unallocated buffer");
+		ok = false;
 	}
 
-	buffer->capacity = capacity;
-
-	if (buffer->count > buffer->capacity) {
-		buffer->count = buffer->capacity;
+	if (index >= buffer->count) {
+		JE_WARN("index bigger than count, index=%d, count=%d", index, buffer->count);
+		ok = false;
 	}
 
-	finalize: {
+	if (index >= buffer->capacity) {
+		JE_ERROR("index out of bounds, index=%d, capacity=%d", index, buffer->capacity);
+		ok = false;
 	}
+
+	if (ok) {
+		result = (void*)((char*)buffer->data + (buffer->stride * index));
+	}
+
+	return result;
 }
-void jeBuffer_setCount(jeBuffer* buffer, int count) {
+bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
+	bool ok = true;
+
+	JE_DEBUG("newCapacity=%d, currentCapacity=%d", capacity, buffer->capacity);
+
+	if (buffer->stride <= 0) {
+		JE_ERROR("invalid stride=%d", buffer->stride);
+		ok = false;
+	}
+
+	if (capacity < 0) {
+		JE_ERROR("invalid capacity=%d", capacity);
+		ok = false;
+	}
+
+	if (ok) {
+		buffer->data = realloc(buffer->data, capacity * buffer->stride);
+
+		if (buffer->data == NULL) {
+			JE_ERROR("allocation failed for capacity=%d stride=%d", capacity, buffer->stride);
+			jeBuffer_destroy(buffer);
+			ok = false;
+		}
+	}
+
+	if (ok) {
+		buffer->capacity = capacity;
+
+		if (buffer->count > buffer->capacity) {
+			buffer->count = buffer->capacity;
+		}
+	}
+
+	if (!ok) {
+		jeBuffer_destroy(buffer);
+	}
+
+	return ok;
+}
+bool jeBuffer_ensureCapacity(jeBuffer* buffer, int requiredCapacity) {
 	static const int startCapacity = JE_BUFFER_START_CAPACITY;
 
-	int newSize = buffer->count + count;
+	bool ok = true;
+
 	int newCapacity = buffer->capacity;
 
-	if ((newSize > newCapacity) && (newCapacity < startCapacity)) {
+	if (newCapacity < startCapacity) {
 		newCapacity = startCapacity;
 	}
 
-	if (newSize > newCapacity) {
+	if (requiredCapacity > newCapacity) {
 		newCapacity = newCapacity * 2;
 	}
 
-	if (newSize > newCapacity) {
-		newCapacity = newSize;
+	if (requiredCapacity > newCapacity) {
+		newCapacity = requiredCapacity;
 	}
 
 	if (newCapacity > buffer->capacity) {
-		jeBuffer_setCapacity(buffer, newCapacity);
+		ok = ok && jeBuffer_setCapacity(buffer, newCapacity);
 	}
 
-	buffer->count = count;
+	return ok;
 }
-void jeBuffer_push(jeBuffer* buffer, const void* data) {
-	jeBuffer_setCount(buffer, buffer->count + 1);
+bool jeBuffer_setCount(jeBuffer* buffer, int count) {
+	bool ok = true;
 
-	memcpy(jeBuffer_get(buffer, buffer->count - 1), data, buffer->stride);
+	JE_TRACE("newCount=%d, currentCount=%d", count, buffer->count);
+
+	ok = ok && jeBuffer_ensureCapacity(buffer, buffer->count + count);
+
+	if (ok) {
+		buffer->count = count;
+	}
+
+	return ok;
+}
+bool jeBuffer_push(jeBuffer* buffer, const void* data) {
+	bool ok = true;
+	void* dest = NULL;
+
+	JE_TRACE("");
+
+	ok = ok && jeBuffer_setCount(buffer, buffer->count + 1);
+
+	if (ok) {
+		dest = jeBuffer_get(buffer, buffer->count - 1);
+	}
+
+	ok = ok && (dest != NULL);
+
+	if (ok) {
+		memcpy(dest, data, buffer->stride);
+	}
+
+	return ok;
 }

@@ -24,7 +24,7 @@ function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 		sprites[spriteId] = sprite
 	end
 
-	util.debug("Sprite:addSprite(): sprite=%s", util.toComparable(sprite))
+	util.debug("sprite=%s", util.toComparable(sprite))
 
 	return sprite
 end

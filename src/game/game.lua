@@ -5,7 +5,7 @@ local Text = require("src/engine/text")
 local Game = {}
 Game.SYSTEM_NAME = "game"
 function Game:createTestWorld()
-	util.info("Game:createTestWorld()")
+	util.info("")
 
 	local wallSys = self.simulation:addSystem(require("src/game/entities/wall"))
 	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
@@ -76,7 +76,7 @@ function Game:createTestWorld()
 			entitySys:destroy(physicsObject)
 		end
 	end
-	util.debug("Game:createTestWorld(): physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+	util.debug("physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
 function Game:onSimulationCreate(simulation)
 	self.simulation = simulation
@@ -97,7 +97,7 @@ function Game:onSimulationDraw(screen)
 		["x"] = 0,
 		["y"] = 0,
 		["z"] = -10,
-		["text"] = tostring(self.simulation.fps)
+		["text"] = "fps: "..tostring(self.simulation.fps)
 	}
 	self.textSys:draw(fps, self.font, screen)
 end

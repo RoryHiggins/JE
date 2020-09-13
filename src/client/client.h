@@ -10,6 +10,6 @@ struct jeClient {
 	jeWindow* window;
 	lua_State* lua;
 };
-jeBool jeClient_run();
+bool jeClient_run();
 
 #endif

@@ -11,6 +11,6 @@ struct jeImage {
 	int height;
 };
 void jeImage_destroy(jeImage* image);
-jeBool jeImage_create(jeImage* image, const char* filename);
+bool jeImage_create(jeImage* image, const char* filename);
 
 #endif

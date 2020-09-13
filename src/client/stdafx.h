@@ -3,6 +3,7 @@
 #define JE_STDAFX_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <errno.h>
 #include <time.h>
@@ -34,9 +35,5 @@ extern "C" {
 #include <SDL2/SDL_opengl.h>
 
 #define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
-
-#define JE_TRUE 1
-#define JE_FALSE 0
-typedef unsigned char jeBool;
 
 #endif

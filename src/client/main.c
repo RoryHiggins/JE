@@ -11,7 +11,7 @@
 
 
 int main(int argc, char** argv) {
-	jeBool success = JE_TRUE;
+	bool success = true;
 	jeClient client;
 
 	success = jeClient_run(&client);

@@ -14,24 +14,24 @@ local function logImpl(level, format, ...)
 		return
 	end
 
-	local callee_info = debug.getinfo(2, "Sl")
-	print(string.format(format, callee_info.short_src, callee_info.currentline, ...))
+	local callee_info = debug.getinfo(3, "Sln")
+	print(string.format(format, callee_info.short_src, callee_info.currentline, callee_info.name, ...))
 	io.flush()
 end
 function util.trace(format, ...)
-	logImpl(util.LOG_LEVEL_TRACE, "[trace %s:%d] "..format, ...)
+	logImpl(util.LOG_LEVEL_TRACE, "[trace %s:%d] %s() "..format, ...)
 end
 function util.debug(format, ...)
-	logImpl(util.LOG_LEVEL_DEBUG, "[debug %s:%d] "..format, ...)
+	logImpl(util.LOG_LEVEL_DEBUG, "[debug %s:%d] %s() "..format, ...)
 end
 function util.info(format, ...)
-	logImpl(util.LOG_LEVEL_LOG, "[info  %s:%d] "..format, ...)
+	logImpl(util.LOG_LEVEL_LOG, "[info  %s:%d] %s() "..format, ...)
 end
 function util.warn(format, ...)
-	logImpl(util.LOG_LEVEL_WARN, "[WARN  %s:%d] "..format, ...)
+	logImpl(util.LOG_LEVEL_WARN, "[WARN  %s:%d] %s() "..format, ...)
 end
 function util.error(format, ...)
-	logImpl(util.LOG_LEVEL_ERR, "[ERROR %s:%d] "..format, ...)
+	logImpl(util.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format, ...)
 end
 function util.noop()
 end
@@ -171,7 +171,7 @@ end
 function util.writeDataUncompressed(filename, dataStr)
 	local file, errMsg = io.open(filename, "w")
 	if file == nil then
-		util.error("util.writeDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return false
 	end
 
@@ -183,7 +183,7 @@ end
 function util.readDataUncompressed(filename)
 	local file, errMsg = io.open(filename, "r")
 	if file == nil then
-		util.error("util.readDataUncompressed(): io.open() failed, filename=%s, error=%s", filename, errMsg)
+		util.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return
 	end
 

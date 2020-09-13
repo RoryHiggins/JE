@@ -6,28 +6,22 @@
 
 #define JE_CLIENT_LUA_MAIN_FILENAME "src/game/main.lua"
 
-jeBool jeClient_run(jeClient* client) {
-	jeBool success = JE_FALSE;
+bool jeClient_run(jeClient* client) {
+	bool ok = true;
 
-	memset((void*)client, 0, sizeof(*client));
+	client->window = NULL;
+	client->lua = NULL;
 
-	JE_INFO("jeClient_run()");
+	JE_INFO("");
 
-	client->window = jeWindow_create();
-	if (client->window == NULL) {
-		JE_ERROR("jeClient_run(): jeWindow_create() failed");
-		goto finalize;
+	if (ok) {
+		client->window = jeWindow_create();
 	}
 
-	if (jeLuaClient_run(client->window, JE_CLIENT_LUA_MAIN_FILENAME) == JE_FALSE) {
-		JE_ERROR("jeClient_run(): jeLuaClient_run() ended abnormally");
-		goto finalize;
-	}
+	ok = ok && (client->window != NULL);
+	ok = ok && jeLuaClient_run(client->window, JE_CLIENT_LUA_MAIN_FILENAME);
 
-	success = JE_TRUE;
-	finalize: {
-		jeWindow_destroy(client->window);
-	}
+	jeWindow_destroy(client->window);
 
-	return success;
+	return ok;
 }

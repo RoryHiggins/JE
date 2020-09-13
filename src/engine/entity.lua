@@ -331,13 +331,13 @@ function Entity:onSimulationRunTests()
 
 	local world = self.simulation.state.world
 	if world.entities == nil then
-		util.error("Entity:onSimulationRunTests(): entities object was not created during World.create()")
+		util.error("entities object was not created during World.create()")
 	end
 	if world.tagEntities == nil then
-		util.error("Entity:onSimulationRunTests(): tagEntities object was not created during World.create()")
+		util.error("tagEntities object was not created during World.create()")
 	end
 	if world.chunkEntities == nil then
-		util.error("Entity:onSimulationRunTests(): chunkEntities object was not created during World.create()")
+		util.error("chunkEntities object was not created during World.create()")
 	end
 
 	local entity = self:create()

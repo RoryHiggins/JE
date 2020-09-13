@@ -7,7 +7,7 @@ function World:destroy()
 		return
 	end
 
-	util.info("World:destroy()")
+	util.info("")
 
 	self.simulation:broadcast("onWorldDestroy")
 	self.created = false
@@ -16,7 +16,7 @@ end
 function World:create()
 	self:destroy()
 
-	util.info("World:create()")
+	util.info("")
 
 	local world = {}
 	self.simulation.state.world = world
