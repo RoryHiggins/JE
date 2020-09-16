@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "container.h"
-#include "image.h"
 
 #define JE_PRIMITIVE_TYPE_UNKNOWN 0
 #define JE_PRIMITIVE_TYPE_POINTS 1
@@ -16,7 +15,7 @@
 #define JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT 3
 #define JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT (JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2)
 
-#define JE_RENDERABLE_VERTEX_COUNT JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT
+#define JE_RENDERABLE_VERTEX_COUNT 2
 
 
 typedef int jePrimitiveType;
@@ -37,28 +36,31 @@ struct jeVertex {
 	float u;
 	float v;
 };
-const char* jeVertex_toDebugString(const jeVertex* vertex);
+const char* jeVertex_toDebugString(const jeVertex* vertices);
+
+typedef struct jeTriangle jeTriangle;
+struct jeTriangle {
+	jeVertex vertices[3];
+};
+const char* jeTriangle_toDebugString(const jeTriangle* vertices);
+int jeTriangle_less(const void* triangleARaw, const void* triangleBRaw);
+
 
 typedef struct jeRenderable jeRenderable;
 struct jeRenderable {
 	jeVertex vertex[JE_RENDERABLE_VERTEX_COUNT];  /*number actually used depends on primitiveType*/
-
-	float z;  /*primary sort key, to ensure translucent objects blend correctly*/
-	jePrimitiveType primitiveType;  /*secondary sort key, to minimize number of opengl draw calls*/
 };
 const char* jeRenderable_toDebugString(const jeRenderable* renderable);
-int jeRenderable_less(const void* renderableARaw, const void* renderableBRaw);
 
-/*Z-sorted queue of renderable objects*/
-typedef struct jeRenderQueue jeRenderQueue;
-struct jeRenderQueue {
-	jeBuffer renderables;
+
+typedef struct jeVertexBuffer jeVertexBuffer;
+struct jeVertexBuffer {
+	jeBuffer vertices;
 };
-void jeRenderQueue_destroy(jeRenderQueue* renderQueue);
-bool jeRenderQueue_create(jeRenderQueue* renderQueue);
-void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count);
-jeRenderable* jeRenderQueue_get(jeRenderQueue* renderQueue, int i);
-void jeRenderQueue_push(jeRenderQueue* renderQueue, const jeRenderable* renderable);
-void jeRenderQueue_sort(jeRenderQueue* renderQueue);
+void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer);
+bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer);
+void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer);
+bool jeVertexBuffer_push(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, int count);
+void jeVertexBuffer_pushRenderable(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable, jePrimitiveType primitiveType);
 
 #endif

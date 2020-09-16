@@ -1,9 +1,8 @@
 #include "stdafx.h"
 #include "window.h"
 #include "debug.h"
+#include "container.h"
 #include "image.h"
-
-#define JE_VERTEX_BUFFER_CAPACITY 16 * 1024
 
 #define JE_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
 
@@ -117,227 +116,6 @@ bool jeGl_getProgramOk(GLuint program, jeLoggerContext loggerContext) {
 	return ok;
 }
 
-typedef struct jeVertexBuffer jeVertexBuffer;
-struct jeVertexBuffer {
-	jeVertex vertex[JE_VERTEX_BUFFER_CAPACITY];
-	GLuint count;
-	jePrimitiveType primitiveType;
-
-	GLuint vao;  /* non-owning */
-	GLuint program;  /* non-owning */
-};
-void jeVertexBuffer_create(jeVertexBuffer* vertexBuffer, GLuint program, GLuint vao) {
-	memset((void*)vertexBuffer->vertex, 0, sizeof(jeVertex) * JE_VERTEX_BUFFER_CAPACITY);
-
-	vertexBuffer->count = 0;
-	vertexBuffer->primitiveType = JE_PRIMITIVE_TYPE_TRIANGLES;
-
-	vertexBuffer->program = program;
-	vertexBuffer->vao = vao;
-}
-void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
-	memset((void*)vertexBuffer, 0, sizeof(*vertexBuffer));
-}
-void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
-	vertexBuffer->count = 0;
-	memset((void*)vertexBuffer->vertex, 0, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex));
-}
-void jeVertexBuffer_flush(jeVertexBuffer* vertexBuffer) {
-	GLenum primitiveType = GL_TRIANGLES;
-
-	switch (vertexBuffer->primitiveType) {
-		case JE_PRIMITIVE_TYPE_POINTS: {
-			primitiveType = GL_POINTS;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_LINES: {
-			primitiveType = GL_LINES;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_TRIANGLES: {
-			primitiveType = GL_TRIANGLES;
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_SPRITES: {
-			primitiveType = GL_TRIANGLES;
-			break;
-		}
-		default: {
-			primitiveType = GL_TRIANGLES;
-
-			JE_ERROR("unknown primitive type, type=%d", vertexBuffer->primitiveType);
-			break;
-		}
-	}
-
-	if (vertexBuffer->count > 0) {
-		glUseProgram(vertexBuffer->program);
-		glBindVertexArray(vertexBuffer->vao);
-
-		glBufferData(GL_ARRAY_BUFFER, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)vertexBuffer->vertex, GL_DYNAMIC_DRAW);
-		glDrawArrays(primitiveType, 0, vertexBuffer->count);
-
-		glBindVertexArray(0);
-		glUseProgram(0);
-
-		jeGl_getOk(JE_LOG_CONTEXT);
-	}
-
-	jeVertexBuffer_reset(vertexBuffer);
-}
-void jeVertexBuffer_pushVertexBatch(jeVertexBuffer* vertexBuffer, const jeVertex* vertex, int vertexCount, jePrimitiveType primitiveType) {
-	int i = 0;
-
-	bool bufferCanFitRenderable = ((vertexBuffer->count + vertexCount) <= JE_VERTEX_BUFFER_CAPACITY);
-	bool bufferPrimitiveIsCorrect = (vertexBuffer->primitiveType == primitiveType);
-
-	if (!bufferCanFitRenderable || !bufferPrimitiveIsCorrect) {
-		jeVertexBuffer_flush(vertexBuffer);
-
-		if (!bufferPrimitiveIsCorrect) {
-			vertexBuffer->primitiveType = primitiveType;
-		}
-	}
-
-	for (i = 0; i < vertexCount; i++) {
-		vertexBuffer->vertex[vertexBuffer->count] = vertex[i];
-		vertexBuffer->count++;
-	}
-}
-void jeVertexBuffer_pushPoint(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
-	int i = 0;
-	jeVertex vertex[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2];
-
-	/* Render point as two triangles represented by 6 vertices.
-	 *
-	 * For visualization below, source indices = A..B, dest indices = 0..5,
-	 * offset source indices = A+..B+ (x+=1 or y+=1 depending on line slope, see below)
-	 *
-	 *  0    2,3
-	 *  x-----x+
-	 *  | \   |
-	 *  |   \ |
-	 *  y+---xy+
-	 * 1,4    5
-	 *
-	 * NOTE: vertices are not necessarily clockwise, thus not compatible with back-face culling.
-	 */
-
-	for (i = 0; i < JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2; i++) {
-		vertex[i] = renderable->vertex[0];
-	}
-
-	/*Give the triangles actual width, as OpenGL won't render degenerate triangles*/
-	static const float pointWidth = 1.0f;
-	vertex[2].x += pointWidth;
-	vertex[3].x += pointWidth;
-	vertex[5].x += pointWidth;
-
-	vertex[1].y += pointWidth;
-	vertex[4].y += pointWidth;
-	vertex[5].y += pointWidth;
-
-	jeVertexBuffer_pushVertexBatch(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2, JE_PRIMITIVE_TYPE_TRIANGLES);
-}
-void jeVertexBuffer_pushLine(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
-	int i = 0;
-	jeVertex vertex[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2];
-
-	/* Render line as two triangles represented by 6 vertices.
-	 *
-	 * For visualization below, source indices = A..B, dest indices = 0..5,
-	 * offset source indices = A+..B+ (x+=1 or y+=1 depending on line slope, see below)
-	 *
-	 * Vertical/mostly vertical line A to B:
-	 * 0 A---A+ 1,4
-	 *    \ / \
-	 * 2,3 B---B+ 5
-	 *
-	 * Horizontal/mostly horizontal line A to B:
-	 *  0    2,3
-	 *  A-----B
-	 *  | \   |
-	 *  |   \ |
-	 *  A+----B+
-	 * 1,4    5
-	 *
-	 * NOTE: vertices are not necessarily clockwise, thus not compatible with back-face culling.
-	 */
-	for (i = 0; i < JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2; i++) {
-		vertex[i] = renderable->vertex[0];
-	}
-
-	vertex[2] = renderable->vertex[1];
-	vertex[3] = renderable->vertex[1];
-	vertex[5] = renderable->vertex[1];
-
-	/*Give the triangles actual width, as OpenGL won't render degenerate triangles*/
-	static const float lineWidth = 1.0f;
-	float lengthX = fabs(renderable->vertex[1].x - renderable->vertex[0].x);
-	float lengthY = fabs(renderable->vertex[1].y - renderable->vertex[0].y);
-	float isHorizontalLine = lineWidth * (float)(lengthX > lengthY);
-	float isVerticalLine = lineWidth * (float)(lengthX <= lengthY);
-	vertex[1].x += isVerticalLine;
-	vertex[1].y += isHorizontalLine;
-	vertex[4].x += isVerticalLine;
-	vertex[4].y += isHorizontalLine;
-	vertex[5].x += isVerticalLine;
-	vertex[5].y += isHorizontalLine;
-
-	jeVertexBuffer_pushVertexBatch(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2, JE_PRIMITIVE_TYPE_TRIANGLES);
-}
-void jeVertexBuffer_pushSprite(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
-	int i = 0;
-	jeVertex vertex[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT];
-
-	/* Render sprite as two triangles represented by 6 clockwise vertices */
-	for (i = 0; i < JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT; i++) {
-		vertex[i] = renderable->vertex[0];
-	}
-	vertex[1].x = renderable->vertex[1].x;
-	vertex[1].u = renderable->vertex[1].u;
-
-	vertex[2].y = renderable->vertex[1].y;
-	vertex[2].v = renderable->vertex[1].v;
-
-	vertex[3].y = renderable->vertex[1].y;
-	vertex[3].v = renderable->vertex[1].v;
-
-	vertex[4].x = renderable->vertex[1].x;
-	vertex[4].u = renderable->vertex[1].u;
-
-	vertex[5].x = renderable->vertex[1].x;
-	vertex[5].y = renderable->vertex[1].y;
-	vertex[5].u = renderable->vertex[1].u;
-	vertex[5].v = renderable->vertex[1].v;
-
-	jeVertexBuffer_pushVertexBatch(vertexBuffer, vertex, JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
-}
-void jeVertexBuffer_pushRenderable(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
-	switch (renderable->primitiveType) {
-		case JE_PRIMITIVE_TYPE_POINTS: {
-			jeVertexBuffer_pushPoint(vertexBuffer, renderable);
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_LINES: {
-			jeVertexBuffer_pushLine(vertexBuffer, renderable);
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_TRIANGLES: {
-			jeVertexBuffer_pushVertexBatch(vertexBuffer, renderable->vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT, JE_PRIMITIVE_TYPE_TRIANGLES);
-			break;
-		}
-		case JE_PRIMITIVE_TYPE_SPRITES: {
-			jeVertexBuffer_pushSprite(vertexBuffer, renderable);
-			break;
-		}
-		default: {
-			JE_WARN("unrecognized type, primitive=%d", renderable->primitiveType);
-			break;
-		}
-	}
-}
-
 typedef struct jeController jeController;
 struct jeController {
 	SDL_GameController* controller;
@@ -432,8 +210,8 @@ struct jeWindow {
 	Uint32 fpsLastSampleTimeMs;
 	Uint32 nextFrameTimeMs;
 
+	jeVertexBuffer vertexBuffer;
 	jeImage image;
-	jeRenderQueue renderQueue;
 	SDL_Window* window;
 
 	jeController controller;
@@ -446,7 +224,6 @@ struct jeWindow {
 	GLuint program;
 	GLuint vbo;
 	GLuint vao;
-	jeVertexBuffer vertexBuffer;
 };
 static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
@@ -480,37 +257,33 @@ void jeWindow_clear(jeWindow* window) {
 
 	JE_MAYBE_UNUSED(window);
 }
-void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable) {
-	jeRenderQueue_push(&window->renderQueue, renderable);
+void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable, jePrimitiveType primitiveType) {
+	jeVertexBuffer_pushRenderable(&window->vertexBuffer, renderable, primitiveType);
 }
-void jeWindow_flushRenderables(jeWindow* window) {
-	int i = 0;
-	const jeRenderable* renderable = NULL;
+void jeWindow_flushVertexBuffer(jeWindow* window) {
+	qsort(
+		window->vertexBuffer.vertices.data,
+		window->vertexBuffer.vertices.count / 3,
+		window->vertexBuffer.vertices.stride * 3,  /*sort as triangles*/
+		jeTriangle_less
+	);
 
-	JE_TRACE("sorting");
-	jeRenderQueue_sort(&window->renderQueue);
+	glUseProgram(window->program);
+	glBindVertexArray(window->vao);
 
-	JE_TRACE("start renderables loop");
-	for (i = 0; i < window->renderQueue.renderables.count; i++) {
-		renderable = jeRenderQueue_get(&window->renderQueue, i);
-		if (renderable == NULL) {
-			JE_ERROR("jeRenderQueue_get() failed");
-			break;
-		}
+	const GLvoid* vertexData = (const GLvoid*)window->vertexBuffer.vertices.data;
+	int vertexCount = window->vertexBuffer.vertices.count;
+	glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(jeVertex), vertexData, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 
-		jeVertexBuffer_pushRenderable(&window->vertexBuffer, renderable);
-	}
-	JE_TRACE("end renderables loop");
+	glBindVertexArray(0);
+	glUseProgram(0);
 
-	jeVertexBuffer_flush(&window->vertexBuffer);
-	JE_TRACE("flush vertex buffer");
+	jeGl_getOk(JE_LOG_CONTEXT);
 
-	jeRenderQueue_setCount(&window->renderQueue, 0);
-	JE_TRACE("clear renderables");
+	jeVertexBuffer_reset(&window->vertexBuffer);
 }
 void jeWindow_destroyGL(jeWindow* window) {
-	jeVertexBuffer_destroy(&window->vertexBuffer);
-
 	if (window->vao != 0) {
 		glBindVertexArray(window->vao);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -674,11 +447,8 @@ bool jeWindow_initGL(jeWindow* window) {
 
 		glGenVertexArrays(1, &window->vao);
 
-		jeVertexBuffer_create(&window->vertexBuffer, window->program, window->vao);
-
 		glBindVertexArray(window->vao);
 		glBindBuffer(GL_ARRAY_BUFFER, window->vbo);
-		glBufferData(GL_ARRAY_BUFFER, JE_VERTEX_BUFFER_CAPACITY * sizeof(jeVertex), (const GLvoid*)window->vertexBuffer.vertex, GL_DYNAMIC_DRAW);
 
 		if (jeGl_getOk(JE_LOG_CONTEXT) == false) {
 			JE_ERROR("jeGl_getOk() failed");
@@ -858,7 +628,7 @@ void jeWindow_step(jeWindow* window) {
 	}
 	window->nextFrameTimeMs += frameTimeMs;
 
-	jeWindow_flushRenderables(window);
+	jeWindow_flushVertexBuffer(window);
 
 	SDL_GL_SwapWindow(window->window);
 }
@@ -870,11 +640,11 @@ void jeWindow_destroy(jeWindow* window) {
 
 		jeWindow_destroyGL(window);
 
-		jeRenderQueue_destroy(&window->renderQueue);
-
 		jeController_destroy(&window->controller);
 
 		jeImage_destroy(&window->image);
+
+		jeVertexBuffer_destroy(&window->vertexBuffer);
 
 		if (window->window != NULL) {
 			SDL_DestroyWindow(window->window);
@@ -933,16 +703,11 @@ jeWindow* jeWindow_create() {
 		}
 	}
 
+	ok = ok && jeVertexBuffer_create(&window->vertexBuffer);
+
 	ok = ok && jeImage_create(&window->image, JE_WINDOW_SPRITE_FILENAME);
 
-	ok = ok && jeRenderQueue_create(&window->renderQueue);
-
-	if (ok) {
-		if (jeWindow_initGL(window) == false) {
-			JE_ERROR("jeWindow_initGL() failed");
-			ok = false;
-		}
-	}
+	ok = ok && jeWindow_initGL(window);
 
 	if (ok) {
 		controllerMappingsLoaded = SDL_GameControllerAddMappingsFromFile(JE_CONTROLLER_DB_FILENAME);

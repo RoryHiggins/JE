@@ -291,6 +291,7 @@ function Entity:create(template)
 	entity.id = entityId
 	entity.x = 0
 	entity.y = 0
+	entity.z = 0
 	entity.w = 0
 	entity.h = 0
 	entity.chunks = {}
@@ -300,6 +301,8 @@ function Entity:create(template)
 		if templateProps ~= nil then
 			self:setBounds(entity, templateProps.x or 0, templateProps.y or 0, templateProps.w or 0, templateProps.h or 0)
 		end
+
+		entity.z = templateProps.z or 0
 
 		local templateTags = template.tags
 		if templateTags ~= nil then

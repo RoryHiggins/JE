@@ -36,6 +36,7 @@ function Sprite:get(spriteId)
 end
 function Sprite:attach(entity, sprite)
 	entity.spriteId = sprite.spriteId
+
 	self.entitySys:tag(entity, "sprite")
 end
 function Sprite:detach(entity)

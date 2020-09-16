@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "rendering.h"
 #include "debug.h"
+#include "container.h"
+
 
 int jePrimitiveType_getVertexCount(jePrimitiveType primitiveType) {
 	int vertexCount = 0;
@@ -42,45 +44,186 @@ const char* jeVertex_toDebugString(const jeVertex* vertex) {
 const char* jeRenderable_toDebugString(const jeRenderable* renderable) {
 	static char buffer[2048];
 
-	int i = 0;
-	int bufferSize = 0;
-
 	memset((void*)buffer, 0, sizeof(buffer));
 
-	bufferSize += sprintf(buffer + bufferSize, "z=%.2f, primitiveType=%d", renderable->z, renderable->primitiveType);
+	int bufferSize = 0;
+	for (int i = 0; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
+		if (i > 0) {
+			bufferSize += sprintf(buffer + bufferSize, ", ");
+		}
 
-	for (i = 0; i < JE_RENDERABLE_VERTEX_COUNT; i++) {
-		bufferSize += sprintf(buffer + bufferSize, ", vertex[%d]={%s}", i, jeVertex_toDebugString(&renderable->vertex[i]));
+		bufferSize += sprintf(buffer + bufferSize, "vertex[%d]={%s}", i, jeVertex_toDebugString(&renderable->vertex[i]));
 	}
 
 	return buffer;
 }
-int jeRenderable_less(const void* renderableARaw, const void* renderableBRaw) {
-	const jeRenderable* renderableA = (const jeRenderable*)renderableARaw;
-	const jeRenderable* renderableB = (const jeRenderable*)renderableBRaw;
 
-	if (renderableA->z == renderableB->z) {
-		return renderableA->primitiveType < renderableB->primitiveType;
+const char* jeTriangle_toDebugString(const jeTriangle* triangle) {
+	static char buffer[2048];
+
+	memset((void*)buffer, 0, sizeof(buffer));
+
+	int bufferSize = 0;
+	for (int i = 0; i < 3; i++) {
+		if (i > 0) {
+			bufferSize += sprintf(buffer + bufferSize, ", ");
+		}
+		bufferSize += sprintf(buffer + bufferSize, "vertex[%d]={%s}", i, jeVertex_toDebugString(&triangle->vertices[i]));
 	}
 
-	return (renderableA->z < renderableB->z);
+	return buffer;
+}
+int jeTriangle_less(const void* triangleARaw, const void* triangleBRaw) {
+	const jeTriangle* triangleA = (const jeTriangle*)triangleARaw;
+	const jeTriangle* triangleB = (const jeTriangle*)triangleBRaw;
+
+	int result = 0;
+	if (triangleA->vertices[0].z < triangleB->vertices[0].z) {
+		result = 1;
+	} else if (triangleA->vertices[0].z > triangleB->vertices[0].z) {
+		result = -1;
+	}
+
+	return result;
 }
 
-void jeRenderQueue_destroy(jeRenderQueue* renderQueue) {
-	jeBuffer_destroy(&renderQueue->renderables);
+void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
+	jeBuffer_destroy(&vertexBuffer->vertices);
 }
-bool jeRenderQueue_create(jeRenderQueue* renderQueue) {
-	return jeBuffer_create(&renderQueue->renderables, sizeof(jeRenderable));
+bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer) {
+	return jeBuffer_create(&vertexBuffer->vertices, sizeof(jeVertex));
 }
-void jeRenderQueue_setCount(jeRenderQueue* renderQueue, int count) {
-	jeBuffer_setCount(&renderQueue->renderables, count);
+void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
+	jeBuffer_setCount(&vertexBuffer->vertices, 0);
 }
-jeRenderable* jeRenderQueue_get(jeRenderQueue* renderQueue, int i) {
-	return (jeRenderable*)jeBuffer_get(&renderQueue->renderables, i);
+bool jeVertexBuffer_push(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, int count) {
+	return jeBuffer_push(&vertexBuffer->vertices, (const void*)vertices, count);
 }
-void jeRenderQueue_push(jeRenderQueue* renderQueue, const jeRenderable* renderable) {
-	jeBuffer_push(&renderQueue->renderables, (const void*)renderable);
+void jeVertexBuffer_pushPoint(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
+	/* Render point as two triangles represented by 6 vertices.
+	 *
+	 * For visualization below, source indices = A..B, dest indices = 0..5,
+	 * offset source indices = A+..B+ (x+=1 or y+=1 depending on line slope, see below)
+	 *
+	 *  0    2,3
+	 *  x-----x+
+	 *  | \   |
+	 *  |   \ |
+	 *  y+---xy+
+	 * 1,4    5
+	 *
+	 * NOTE: vertices are not necessarily clockwise, thus not compatible with back-face culling.
+	 */
+
+	jeVertex vertices[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2];
+	for (int i = 0; i < JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2; i++) {
+		vertices[i] = renderable->vertex[0];
+	}
+
+	/*Give the triangles actual width, as OpenGL won't render degenerate triangles*/
+	static const float pointWidth = 1.0f;
+	vertices[2].x += pointWidth;
+	vertices[3].x += pointWidth;
+	vertices[5].x += pointWidth;
+
+	vertices[1].y += pointWidth;
+	vertices[4].y += pointWidth;
+	vertices[5].y += pointWidth;
+
+	jeVertexBuffer_push(vertexBuffer, vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2);
 }
-void jeRenderQueue_sort(jeRenderQueue* renderQueue) {
-	qsort(renderQueue->renderables.data, renderQueue->renderables.count, sizeof(jeRenderable), jeRenderable_less);
+void jeVertexBuffer_pushLine(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
+	/* Render line as two triangles represented by 6 vertices.
+	 *
+	 * For visualization below, source indices = A..B, dest indices = 0..5,
+	 * offset source indices = A+..B+ (x+=1 or y+=1 depending on line slope, see below)
+	 *
+	 * Vertical/mostly vertical line A to B:
+	 * 0 A---A+ 1,4
+	 *    \ / \
+	 * 2,3 B---B+ 5
+	 *
+	 * Horizontal/mostly horizontal line A to B:
+	 *  0    2,3
+	 *  A-----B
+	 *  | \   |
+	 *  |   \ |
+	 *  A+----B+
+	 * 1,4    5
+	 *
+	 * NOTE: vertices are not necessarily clockwise, thus not compatible with back-face culling.
+	 */
+
+	jeVertex vertices[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2];
+	for (int i = 0; i < JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2; i++) {
+		vertices[i] = renderable->vertex[0];
+	}
+
+	vertices[2] = renderable->vertex[1];
+	vertices[3] = renderable->vertex[1];
+	vertices[5] = renderable->vertex[1];
+
+	/*Give the triangles actual width, as OpenGL won't render degenerate triangles*/
+	static const float lineWidth = 1.0f;
+	float lengthX = fabs(renderable->vertex[1].x - renderable->vertex[0].x);
+	float lengthY = fabs(renderable->vertex[1].y - renderable->vertex[0].y);
+	float isHorizontalLine = lineWidth * (float)(lengthX > lengthY);
+	float isVerticalLine = lineWidth * (float)(lengthX <= lengthY);
+	vertices[1].x += isVerticalLine;
+	vertices[1].y += isHorizontalLine;
+	vertices[4].x += isVerticalLine;
+	vertices[4].y += isHorizontalLine;
+	vertices[5].x += isVerticalLine;
+	vertices[5].y += isHorizontalLine;
+
+	jeVertexBuffer_push(vertexBuffer, vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2);
+}
+void jeVertexBuffer_pushSprite(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable) {
+	/* Render sprite as two triangles represented by 6 clockwise vertices */
+	jeVertex vertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT];
+	for (int i = 0; i < JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT; i++) {
+		vertices[i] = renderable->vertex[0];
+	}
+	vertices[1].x = renderable->vertex[1].x;
+	vertices[1].u = renderable->vertex[1].u;
+
+	vertices[2].y = renderable->vertex[1].y;
+	vertices[2].v = renderable->vertex[1].v;
+
+	vertices[3].y = renderable->vertex[1].y;
+	vertices[3].v = renderable->vertex[1].v;
+
+	vertices[4].x = renderable->vertex[1].x;
+	vertices[4].u = renderable->vertex[1].u;
+
+	vertices[5].x = renderable->vertex[1].x;
+	vertices[5].y = renderable->vertex[1].y;
+	vertices[5].u = renderable->vertex[1].u;
+	vertices[5].v = renderable->vertex[1].v;
+
+	jeVertexBuffer_push(vertexBuffer, vertices, JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT);
+}
+void jeVertexBuffer_pushRenderable(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable, jePrimitiveType primitiveType) {
+	switch (primitiveType) {
+		case JE_PRIMITIVE_TYPE_POINTS: {
+			jeVertexBuffer_pushPoint(vertexBuffer, renderable);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_LINES: {
+			jeVertexBuffer_pushLine(vertexBuffer, renderable);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_TRIANGLES: {
+			jeVertexBuffer_push(vertexBuffer, renderable->vertex, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT);
+			break;
+		}
+		case JE_PRIMITIVE_TYPE_SPRITES: {
+			jeVertexBuffer_pushSprite(vertexBuffer, renderable);
+			break;
+		}
+		default: {
+			JE_WARN("unrecognized type, primitive=%d", primitiveType);
+			break;
+		}
+	}
 }

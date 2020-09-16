@@ -22,7 +22,7 @@ typedef struct jeWindow jeWindow;
 jeWindow* jeWindow_create();
 void jeWindow_destroy(jeWindow* window);
 void jeWindow_step(jeWindow* window);
-void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable);
+void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable, jePrimitiveType primitiveType);
 bool jeWindow_getIsOpen(jeWindow* window);
 int jeWindow_getFps(jeWindow* window);
 bool jeWindow_getInput(jeWindow* window, int inputId);

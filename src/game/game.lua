@@ -41,7 +41,7 @@ function Game:createTestWorld()
 	templateSys:instantiate(wallSys.template, 0, 0, 8, levelH)
 	templateSys:instantiate(wallSys.template, levelW - 8, 0, 8, levelH)
 
-	-- top and bottom walls
+	-- -- top and bottom walls
 	templateSys:instantiate(wallSys.template, 0, 0, levelW, 8)
 	templateSys:instantiate(wallSys.template, 0, levelH - 8, levelW, 8)
 
@@ -52,20 +52,20 @@ function Game:createTestWorld()
 			["spriteId"] = "physicsObject",
 			["w"] = 6,
 			["h"] = 6,
-			["physicsCanPush"] = true,
-			["physicsCanCarry"] = true,
+			-- ["physicsCanPush"] = true,
+			-- ["physicsCanCarry"] = true,
 		},
 		["tags"] = {
 			["sprite"] = true,
-			["material"] = true,
-			["solid"] = true,
-			["physics"] = true,
-			["physicsPushable"] = true,
-			["physicsCarryable"] = true,
-			["physicsObject"] = true,
+			-- ["material"] = true,
+			-- ["solid"] = true,
+			-- ["physics"] = true,
+			-- ["physicsPushable"] = true,
+			-- ["physicsCarryable"] = true,
+			-- ["physicsObject"] = true,
 		},
 	})
-	for _ = 1, 0 do
+	for _ = 1, 25000 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
 		entitySys:setBounds(
 			physicsObject,
@@ -73,9 +73,9 @@ function Game:createTestWorld()
 			16 + math.floor(math.random(levelH - 16)),
 			6,
 			6)
-		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
-			entitySys:destroy(physicsObject)
-		end
+		-- if entitySys:findRelative(physicsObject, 0, 0, "solid") then
+		-- 	entitySys:destroy(physicsObject)
+		-- end
 	end
 	util.debug("physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end

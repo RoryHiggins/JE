@@ -135,23 +135,26 @@ bool jeBuffer_setCount(jeBuffer* buffer, int count) {
 
 	return ok;
 }
-bool jeBuffer_push(jeBuffer* buffer, const void* data) {
+bool jeBuffer_push(jeBuffer* buffer, const void* data, int count) {
 	bool ok = true;
 	void* dest = NULL;
 
 	JE_TRACE("");
 
-	ok = ok && jeBuffer_setCount(buffer, buffer->count + 1);
+	ok = ok && jeBuffer_setCount(buffer, buffer->count + count);
 
 	if (ok) {
-		dest = jeBuffer_get(buffer, buffer->count - 1);
+		dest = jeBuffer_get(buffer, buffer->count - count);
 	}
 
 	ok = ok && (dest != NULL);
 
 	if (ok) {
-		memcpy(dest, data, buffer->stride);
+		memcpy(dest, data, buffer->stride * count);
 	}
 
 	return ok;
+}
+bool jeBuffer_pushOne(jeBuffer* buffer, const void* data) {
+	return jeBuffer_push(buffer, data, 1);
 }

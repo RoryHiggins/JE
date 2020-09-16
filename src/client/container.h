@@ -17,6 +17,8 @@ bool jeBuffer_create(jeBuffer* buffer, int stride);
 void* jeBuffer_get(jeBuffer* buffer, int index);
 bool jeBuffer_setCount(jeBuffer* buffer, int count);
 bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity);
-bool jeBuffer_push(jeBuffer* buffer, const void* data);
+bool jeBuffer_push(jeBuffer* buffer, const void* data, int count);
+bool jeBuffer_pushOne(jeBuffer* buffer, const void* data);
+
 
 #endif
