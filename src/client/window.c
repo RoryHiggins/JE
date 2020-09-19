@@ -257,8 +257,12 @@ void jeWindow_clear(jeWindow* window) {
 
 	JE_MAYBE_UNUSED(window);
 }
-void jeWindow_drawRenderable(jeWindow* window, jeRenderable* renderable, jePrimitiveType primitiveType) {
-	jeVertexBuffer_pushRenderable(&window->vertexBuffer, renderable, primitiveType);
+/*TODO remove in favor of jeWindow_pushVertices*/
+void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimitiveType primitiveType) {
+	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
+}
+void jeWindow_pushTriangles(jeWindow* window, const jeVertex* vertices, int vertexCount) {
+	jeVertexBuffer_pushTriangles(&window->vertexBuffer, vertices, vertexCount);
 }
 void jeWindow_flushVertexBuffer(jeWindow* window) {
 	qsort(

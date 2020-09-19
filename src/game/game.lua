@@ -52,20 +52,20 @@ function Game:createTestWorld()
 			["spriteId"] = "physicsObject",
 			["w"] = 6,
 			["h"] = 6,
-			-- ["physicsCanPush"] = true,
-			-- ["physicsCanCarry"] = true,
+			["physicsCanPush"] = true,
+			["physicsCanCarry"] = true,
 		},
 		["tags"] = {
 			["sprite"] = true,
-			-- ["material"] = true,
-			-- ["solid"] = true,
-			-- ["physics"] = true,
-			-- ["physicsPushable"] = true,
-			-- ["physicsCarryable"] = true,
-			-- ["physicsObject"] = true,
+			["material"] = true,
+			["solid"] = true,
+			["physics"] = true,
+			["physicsPushable"] = true,
+			["physicsCarryable"] = true,
+			["physicsObject"] = true,
 		},
 	})
-	for _ = 1, 25000 do
+	for _ = 1, 10 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
 		entitySys:setBounds(
 			physicsObject,
@@ -73,9 +73,9 @@ function Game:createTestWorld()
 			16 + math.floor(math.random(levelH - 16)),
 			6,
 			6)
-		-- if entitySys:findRelative(physicsObject, 0, 0, "solid") then
-		-- 	entitySys:destroy(physicsObject)
-		-- end
+		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
+			entitySys:destroy(physicsObject)
+		end
 	end
 	util.debug("physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
 end
@@ -106,30 +106,45 @@ function Game:onSimulationDraw(screen)
 	}
 	self.textSys:draw(fps, self.font, screen)
 
-	-- local testLine = {
-	-- 	["x"] = 8,
-	-- 	["y"] = 8,
-	-- 	["z"] = -2,
+	local testTriangle = {
+		["x1"] = 16,
+		["y1"] = 16,
+		["x2"] = 24,
+		["y2"] = 16,
+		["x3"] = 16,
+		["y3"] = 32,
+		["z"] = -2,
 
-	-- 	["w"] = -8,
-	-- 	["h"] = 8,
+		["r"] = 0,
+		["g"] = 1,
+		["b"] = 0,
+	}
+	self.shapeSys:drawTriangle(testTriangle, screen)
 
-	-- 	["r"] = 1,
-	-- 	["g"] = 0,
-	-- 	["b"] = 0,
-	-- }
-	-- self.shapeSys:drawLine(testLine, screen)
+	local testLine = {
+		["x"] = 8,
+		["y"] = 8,
+		["z"] = -3,
 
-	-- local testPoint = {
-	-- 	["x"] = 8,
-	-- 	["y"] = 16,
-	-- 	["z"] = -3,
+		["w"] = -8,
+		["h"] = 8,
 
-	-- 	["r"] = 0,
-	-- 	["g"] = 0,
-	-- 	["b"] = 1,
-	-- }
-	-- self.shapeSys:drawPoint(testPoint, screen)
+		["r"] = 1,
+		["g"] = 0,
+		["b"] = 0,
+	}
+	self.shapeSys:drawLine(testLine, screen)
+
+	local testPoint = {
+		["x"] = 8,
+		["y"] = 16,
+		["z"] = -4,
+
+		["r"] = 0,
+		["g"] = 0,
+		["b"] = 1,
+	}
+	self.shapeSys:drawPoint(testPoint, screen)
 end
 
 return Game

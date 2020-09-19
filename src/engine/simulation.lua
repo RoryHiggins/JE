@@ -52,6 +52,9 @@ end
 function Simulation.isRunning()
 	return client.state.running
 end
+function Simulation:draw()
+	self:broadcast("onSimulationDraw", self.screen)
+end
 function Simulation:stepClient()
 	client.step()
 
@@ -71,7 +74,6 @@ function Simulation:step()
 	end
 
 	self:broadcast("onSimulationStep")
-	self:broadcast("onSimulationDraw", self.screen)
 end
 function Simulation:destroy()
 	if not self.created then
@@ -165,6 +167,7 @@ end
 function Simulation:onSimulationRunTests()
 	self:create()
 	self:step()
+	self:draw()
 
 	local gameBeforeSave = util.toComparable(self.state)
 	assert(self:dump("test_dump.sav"))
@@ -188,6 +191,8 @@ function Simulation:runTests()
 	util.info("starting")
 	self.runningTests = true
 
+	local testSuitesCount = 0
+
 	for _, system in pairs(self.systems) do
 		if system.onSimulationRunTests then
 			util.info("running tests for %s", system.SYSTEM_NAME)
@@ -196,6 +201,8 @@ function Simulation:runTests()
 			self:create()
 
 			system:onSimulationRunTests()
+
+			testSuitesCount = testSuitesCount + 1
 		end
 	end
 
@@ -205,6 +212,8 @@ function Simulation:runTests()
 	self.runningTests = false
 
 	util.logLevel = logLevelBackup
+
+	return testSuitesCount
 end
 function Simulation:run()
 	self:stepClient()
@@ -212,7 +221,8 @@ function Simulation:run()
 
 	if client.state.testsEnabled then
 		util.info("running tests")
-		self:runTests()
+		local testSuitesCount = self:runTests()
+		util.info("running tests complete for %d test suites", testSuitesCount)
 	end
 
 	util.info("starting")
@@ -220,6 +230,7 @@ function Simulation:run()
 
 	while self:isRunning() do
 		self:step()
+		self:draw()
 	end
 
 	util.info("ending")

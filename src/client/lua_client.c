@@ -48,7 +48,13 @@ const char* jeLuaClient_getError(lua_State* lua) {
 }
 float jeLuaClient_getNumberField(lua_State* lua, int tableIndex, const char* field) {
 	lua_getfield(lua, tableIndex, field);
+
 	return luaL_checknumber(lua, JE_LUA_STACK_TOP);
+}
+float jeLuaClient_getOptionalNumberField(lua_State* lua, int tableIndex, const char* field, float defaultValue) {
+	lua_getfield(lua, tableIndex, field);
+
+	return luaL_optnumber(lua, JE_LUA_STACK_TOP, defaultValue);
 }
 const char* jeLuaClient_getStringField(lua_State* lua, int tableIndex, const char* field, int *optOutSize) {
 	lua_getfield(lua, tableIndex, field);
@@ -240,7 +246,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 
 	return numResponses;
 }
-int jeLuaClient_drawRenderableImpl(lua_State* lua, jePrimitiveType primitiveType) {
+void jeLuaClient_getPrimitiveImpl(lua_State* lua, jeVertex *vertices, int vertexCount) {
 	static const int renderableIndex = 1;
 	static const int defaultsIndex = 2;
 	static const int cameraIndex = 3;
@@ -249,47 +255,90 @@ int jeLuaClient_drawRenderableImpl(lua_State* lua, jePrimitiveType primitiveType
 	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
 	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
 
+	
+	vertices[0].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x", 0.0f);
+	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y", 0.0f);
+	vertices[0].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
+	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
+	vertices[0].z = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "z", 0.0f);
+	vertices[0].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0f);
+	vertices[0].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0f);
+
+	vertices[0].r = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "r", 1.0f);
+	vertices[0].g = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "g", 1.0f);
+	vertices[0].b = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "b", 1.0f);
+	vertices[0].a = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "a", 1.0f);
+	vertices[0].r = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
+	vertices[0].g = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
+	vertices[0].b = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
+	vertices[0].a = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
+
+	if (vertexCount >= 2) {
+		vertices[1].x = vertices[0].x + jeLuaClient_getOptionalNumberField(lua, renderableIndex, "w", 0.0f);
+		vertices[1].y = vertices[0].y + jeLuaClient_getOptionalNumberField(lua, renderableIndex, "h", 0.0f);
+		vertices[1].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
+		vertices[1].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
+		vertices[1].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0f);
+		vertices[1].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0f);
+	}
+
+	if (vertexCount >= 3) {
+		vertices[2].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x3", 0.0f);
+		vertices[2].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y3", 0.0f);
+		vertices[2].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0f);
+		vertices[2].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0f);
+	}
+
+	for (int i = 0; i < vertexCount; i++) {
+		vertices[i].z = vertices[0].z;
+		vertices[i].r = vertices[0].r;
+		vertices[i].g = vertices[0].g;
+		vertices[i].b = vertices[0].b;
+		vertices[i].a = vertices[0].a;
+	}
+
 	float cameraX = jeLuaClient_getNumberField(lua, cameraIndex, "x");
 	float cameraY = jeLuaClient_getNumberField(lua, cameraIndex, "y");
 	float cameraW = jeLuaClient_getNumberField(lua, cameraIndex, "w");
 	float cameraH = jeLuaClient_getNumberField(lua, cameraIndex, "h");
 	float cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
 	float cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
+	for (int i = 0; i < vertexCount; i++) {
+		vertices[i].x += cameraOffsetX;
+		vertices[i].y += cameraOffsetY;
+	}
+}
+void jeLuaClient_drawPrimitiveImpl(lua_State* lua, jePrimitiveType primitiveType) {
+	jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
+	memset(&vertices, 0, sizeof(vertices));
 
-	jeRenderable renderable;
-	memset(&renderable, 0, sizeof(renderable));
+	int vertexCount = jePrimitiveType_getVertexCount(primitiveType);
+	jeLuaClient_getPrimitiveImpl(lua, vertices, vertexCount);
 
-	renderable.vertex[0].x = cameraOffsetX + jeLuaClient_getNumberField(lua, renderableIndex, "x");
-	renderable.vertex[0].y = cameraOffsetY + jeLuaClient_getNumberField(lua, renderableIndex, "y");
-	renderable.vertex[0].z = jeLuaClient_getNumberField(lua, renderableIndex, "z");
-	renderable.vertex[0].r = jeLuaClient_getNumberField(lua, defaultsIndex, "r");
-	renderable.vertex[0].g = jeLuaClient_getNumberField(lua, defaultsIndex, "g");
-	renderable.vertex[0].b = jeLuaClient_getNumberField(lua, defaultsIndex, "b");
-	renderable.vertex[0].a = jeLuaClient_getNumberField(lua, defaultsIndex, "a");
-	renderable.vertex[0].u = jeLuaClient_getNumberField(lua, defaultsIndex, "u1");
-	renderable.vertex[0].v = jeLuaClient_getNumberField(lua, defaultsIndex, "v1");
-
-	renderable.vertex[1].x = renderable.vertex[0].x + jeLuaClient_getNumberField(lua, renderableIndex, "w");
-	renderable.vertex[1].y = renderable.vertex[0].y + jeLuaClient_getNumberField(lua, renderableIndex, "h");
-	renderable.vertex[1].z = renderable.vertex[0].z;
-	renderable.vertex[1].r = renderable.vertex[0].r;
-	renderable.vertex[1].g = renderable.vertex[0].g;
-	renderable.vertex[1].b = renderable.vertex[0].b;
-	renderable.vertex[1].a = renderable.vertex[0].a;
-	renderable.vertex[1].u = jeLuaClient_getNumberField(lua, defaultsIndex, "u2");
-	renderable.vertex[1].v = jeLuaClient_getNumberField(lua, defaultsIndex, "v2");
-
-	JE_TRACE("drawing renderable, renderable={%s}", jeRenderable_toDebugString(&renderable));
-	jeWindow_drawRenderable(jeLuaClient_getWindow(lua), &renderable, primitiveType);
-
+	JE_TRACE("drawing vertices, primitiveType=%d, vertexCount=%d, vertices={%s}",
+			 primitiveType, vertexCount, jeVertex_arrayToDebugString(vertices, vertexCount));
+	jeWindow_pushPrimitive(jeLuaClient_getWindow(lua), vertices, primitiveType);
+}
+int jeLuaClient_drawPoint(lua_State* lua) {
+	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_POINTS);
 	return 0;
 }
-int jeLuaClient_drawTextImpl(lua_State* lua) {
+int jeLuaClient_drawLine(lua_State* lua) {
+	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_LINES);
+	return 0;
+}
+int jeLuaClient_drawTriangle(lua_State* lua) {
+	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
+	return 0;
+}
+int jeLuaClient_drawSprite(lua_State* lua) {
+	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_SPRITES);
+	return 0;
+}
+int jeLuaClient_drawText(lua_State* lua) {
 	static const int renderableIndex = 1;
 	static const int defaultsIndex = 2;
-	static const int cameraIndex = 3;
 
-	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
 	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
 	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
 
@@ -303,30 +352,13 @@ int jeLuaClient_drawTextImpl(lua_State* lua) {
 	int textLength = 0;
 	const char* text = jeLuaClient_getStringField(lua, renderableIndex, "text", &textLength);
 
-	float cameraX = jeLuaClient_getNumberField(lua, cameraIndex, "x");
-	float cameraY = jeLuaClient_getNumberField(lua, cameraIndex, "y");
-	float cameraW = jeLuaClient_getNumberField(lua, cameraIndex, "w");
-	float cameraH = jeLuaClient_getNumberField(lua, cameraIndex, "h");
-	float cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
-	float cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
+	jeVertex textBoundsVertices[2];
+	memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
-	jeRenderable renderable;
-	memset(&renderable, 0, sizeof(renderable));
-	renderable.vertex[0].x = cameraOffsetX + jeLuaClient_getNumberField(lua, renderableIndex, "x");
-	renderable.vertex[0].y = cameraOffsetY + jeLuaClient_getNumberField(lua, renderableIndex, "y");
-	renderable.vertex[0].z = jeLuaClient_getNumberField(lua, renderableIndex, "z");
+	jeLuaClient_getPrimitiveImpl(lua, textBoundsVertices, 1);
+	textBoundsVertices[1] = textBoundsVertices[0];
 
-	renderable.vertex[0].r = jeLuaClient_getNumberField(lua, defaultsIndex, "r");
-	renderable.vertex[0].g = jeLuaClient_getNumberField(lua, defaultsIndex, "g");
-	renderable.vertex[0].b = jeLuaClient_getNumberField(lua, defaultsIndex, "b");
-	renderable.vertex[0].a = jeLuaClient_getNumberField(lua, defaultsIndex, "a");
-
-	renderable.vertex[0].u = jeLuaClient_getNumberField(lua, defaultsIndex, "u1");
-	renderable.vertex[0].v = jeLuaClient_getNumberField(lua, defaultsIndex, "v1");
-
-	renderable.vertex[1] = renderable.vertex[0];
-
-	JE_TRACE("drawing text, text=%s, %s", text, jeRenderable_toDebugString(&renderable));
+	JE_TRACE("drawing text, text=%s, textBoundsVertices=%s", text, jeVertex_arrayToDebugString(textBoundsVertices, 2));
 	for (int i = 0; i < textLength; i++) {
 		static const char charDefault = ' ';
 
@@ -342,37 +374,23 @@ int jeLuaClient_drawTextImpl(lua_State* lua) {
 		static const float renderScaleX = 1.0f;
 		static const float renderScaleY = 1.0f;
 
-		jeRenderable charRenderable = renderable;
-		charRenderable.vertex[0].x += (charW * renderScaleX * i);
-		charRenderable.vertex[0].u += (charW * (charIndex % charColumns));
-		charRenderable.vertex[0].v += (charH * (charIndex / charColumns));
+		jeVertex charVertices[2];
+		memcpy(charVertices, textBoundsVertices, sizeof(charVertices));
+		charVertices[0].x += (charW * renderScaleX * i);
+		charVertices[0].u += (charW * (charIndex % charColumns));
+		charVertices[0].v += (charH * (charIndex / charColumns));
 
-		charRenderable.vertex[1] = charRenderable.vertex[0];
-		charRenderable.vertex[1].x += charW * renderScaleX;
-		charRenderable.vertex[1].y += charH * renderScaleY;
-		charRenderable.vertex[1].u += charW;
-		charRenderable.vertex[1].v += charH;
+		charVertices[1] = charVertices[0];
+		charVertices[1].x += charW * renderScaleX;
+		charVertices[1].y += charH * renderScaleY;
+		charVertices[1].u += charW;
+		charVertices[1].v += charH;
 
-		JE_TRACE("drawing char, charRenderable={%s}", jeRenderable_toDebugString(&charRenderable));
-		jeWindow_drawRenderable(jeLuaClient_getWindow(lua), &charRenderable, JE_PRIMITIVE_TYPE_SPRITES);
+		JE_TRACE("drawing text char, charVertices={%s}", jeVertex_arrayToDebugString(charVertices, 2));
+		jeWindow_pushPrimitive(jeLuaClient_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
 	}
 
 	return 0;
-}
-int jeLuaClient_drawPoint(lua_State* lua) {
-	return jeLuaClient_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_POINTS);
-}
-int jeLuaClient_drawLine(lua_State* lua) {
-	return jeLuaClient_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_LINES);
-}
-int jeLuaClient_drawTriangle(lua_State* lua) {
-	return jeLuaClient_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
-}
-int jeLuaClient_drawSprite(lua_State* lua) {
-	return jeLuaClient_drawRenderableImpl(lua, JE_PRIMITIVE_TYPE_SPRITES);
-}
-int jeLuaClient_drawText(lua_State* lua) {
-	return jeLuaClient_drawTextImpl(lua);
 }
 int jeLuaClient_step(lua_State* lua) {
 	jeWindow* window = jeLuaClient_getWindow(lua);

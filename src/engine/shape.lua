@@ -20,7 +20,7 @@ function Shape:onSimulationCreate(simulation)
 	self.simulation = simulation
 	self.spriteSys = self.simulation:addSystem(Sprite)
 
-	self.flatColorSprite = self.spriteSys:addSprite("flatColor", 0, 0, 1, 1)
+	self.flatColorSprite = self.spriteSys:addSprite("flatColor", 0, 0, 0, 0)
 end
 
 return Shape

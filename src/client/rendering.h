@@ -13,9 +13,11 @@
 #define JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT 1
 #define JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT 2
 #define JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT 3
-#define JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT (JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2)
+#define JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT (JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT * 2)
+#define JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT
+#define JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT 2
 
-#define JE_RENDERABLE_VERTEX_COUNT 2
+#define JE_RENDERABLE_VERTEX_COUNT 3
 
 
 typedef int jePrimitiveType;
@@ -37,6 +39,7 @@ struct jeVertex {
 	float v;
 };
 const char* jeVertex_toDebugString(const jeVertex* vertices);
+const char* jeVertex_arrayToDebugString(const jeVertex* vertices, int vertexCount);
 
 typedef struct jeTriangle jeTriangle;
 struct jeTriangle {
@@ -46,13 +49,6 @@ const char* jeTriangle_toDebugString(const jeTriangle* vertices);
 int jeTriangle_less(const void* triangleARaw, const void* triangleBRaw);
 
 
-typedef struct jeRenderable jeRenderable;
-struct jeRenderable {
-	jeVertex vertex[JE_RENDERABLE_VERTEX_COUNT];  /*number actually used depends on primitiveType*/
-};
-const char* jeRenderable_toDebugString(const jeRenderable* renderable);
-
-
 typedef struct jeVertexBuffer jeVertexBuffer;
 struct jeVertexBuffer {
 	jeBuffer vertices;
@@ -60,7 +56,7 @@ struct jeVertexBuffer {
 void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer);
 bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer);
 void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer);
-bool jeVertexBuffer_push(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, int count);
-void jeVertexBuffer_pushRenderable(jeVertexBuffer* vertexBuffer, const jeRenderable* renderable, jePrimitiveType primitiveType);
+bool jeVertexBuffer_pushTriangles(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, int vertexCount);
+void jeVertexBuffer_pushPrimitive(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, jePrimitiveType primitiveType);
 
 #endif

@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/*
+ * C and C++ have different default linkage.
+ * Lua(jit) headers don't explicitly state linkage of symbols,
+ * so we need to do their job for them.
+ */
 #ifdef __cplusplus
 extern "C" {
 #endif

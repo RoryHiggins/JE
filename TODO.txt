@@ -2,12 +2,6 @@
 Rendering pipeline refresh
 --------------------------
 
-Remove Renderable in favor of writing vertex data
-
-Cut down on lua data read for each draw call
-
-Cleanup: remove tracking of primitive type in vertex array code
-
 Add viewports support, particularly for the GUI.  Planned interface (by example):
 	camera = {["x1"] = ..., ["y1"] = ..., ["x2"] = ..., ["y2"] = ...,}
 	client.drawClear()
