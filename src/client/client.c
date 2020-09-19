@@ -6,6 +6,7 @@
 
 #define JE_CLIENT_LUA_MAIN_FILENAME "src/game/main.lua"
 
+
 bool jeClient_run(jeClient* client) {
 	bool ok = true;
 

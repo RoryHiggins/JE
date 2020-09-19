@@ -261,16 +261,8 @@ void jeWindow_clear(jeWindow* window) {
 void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimitiveType primitiveType) {
 	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
 }
-void jeWindow_pushTriangles(jeWindow* window, const jeVertex* vertices, int vertexCount) {
-	jeVertexBuffer_pushTriangles(&window->vertexBuffer, vertices, vertexCount);
-}
 void jeWindow_flushVertexBuffer(jeWindow* window) {
-	qsort(
-		window->vertexBuffer.vertices.data,
-		window->vertexBuffer.vertices.count / 3,
-		window->vertexBuffer.vertices.stride * 3,  /*sort as triangles*/
-		jeTriangle_less
-	);
+	jeVertexBuffer_sortTriangles(&window->vertexBuffer);
 
 	glUseProgram(window->program);
 	glBindVertexArray(window->vao);

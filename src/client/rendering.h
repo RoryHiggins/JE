@@ -28,7 +28,7 @@ struct jeVertex {
 	float x;
 	float y;
 	float z;
-	float w;
+	float w;  /*not used*/
 
 	float r;
 	float g;
@@ -40,6 +40,9 @@ struct jeVertex {
 };
 const char* jeVertex_toDebugString(const jeVertex* vertices);
 const char* jeVertex_arrayToDebugString(const jeVertex* vertices, int vertexCount);
+void jeVertex_createPointQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]);
+void jeVertex_createLineQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]);
+void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]);
 
 typedef struct jeTriangle jeTriangle;
 struct jeTriangle {
@@ -56,7 +59,7 @@ struct jeVertexBuffer {
 void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer);
 bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer);
 void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer);
-bool jeVertexBuffer_pushTriangles(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, int vertexCount);
+bool jeVertexBuffer_sortTriangles(jeVertexBuffer* vertexBuffer);
 void jeVertexBuffer_pushPrimitive(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, jePrimitiveType primitiveType);
 
 #endif

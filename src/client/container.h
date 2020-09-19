@@ -5,6 +5,7 @@
 
 #define JE_BUFFER_START_CAPACITY 32
 
+
 typedef struct jeBuffer jeBuffer;
 struct jeBuffer {
 	void* data;

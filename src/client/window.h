@@ -23,7 +23,6 @@ jeWindow* jeWindow_create();
 void jeWindow_destroy(jeWindow* window);
 void jeWindow_step(jeWindow* window);
 void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimitiveType primitiveType);
-void jeWindow_pushTriangles(jeWindow* window, const jeVertex* vertices, int vertexCount);
 bool jeWindow_getIsOpen(jeWindow* window);
 int jeWindow_getFps(jeWindow* window);
 bool jeWindow_getInput(jeWindow* window, int inputId);

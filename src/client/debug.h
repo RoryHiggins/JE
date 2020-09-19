@@ -56,6 +56,7 @@
 #define JE_TRACE(...)
 #endif
 
+
 typedef struct jeLoggerContext jeLoggerContext;
 struct jeLoggerContext {
 	const char* file;
