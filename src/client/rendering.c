@@ -162,32 +162,15 @@ void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VER
 	quadVertices[5].v = spriteVertices[1].v;
 }
 
-const char* jeTriangle_toDebugString(const jeTriangle* triangle) {
-	return jeVertex_arrayToDebugString(triangle->vertices, 3);
-}
-int jeTriangle_less(const void* triangleARaw, const void* triangleBRaw) {
-	const jeTriangle* triangleA = (const jeTriangle*)triangleARaw;
-	const jeTriangle* triangleB = (const jeTriangle*)triangleBRaw;
-
-	int result = 0;
-	if (triangleA->vertices[0].z < triangleB->vertices[0].z) {
-		result = 1;
-	} else if (triangleA->vertices[0].z > triangleB->vertices[0].z) {
-		result = -1;
-	}
-
-	return result;
-}
-
-/* Triangle sort key which preserves both depth and order*/
-typedef struct jeTriangleSortKey jeTriangleSortKey;
-struct jeTriangleSortKey {
+/* Sort key which preserves both depth and order*/
+typedef struct jePrimitiveSortKey jePrimitiveSortKey;
+struct jePrimitiveSortKey {
 	float z;
 	int index;
 };
-int jeTriangleSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
-	const jeTriangleSortKey* sortKeyA = (const jeTriangleSortKey*)rawSortKeyA;
-	const jeTriangleSortKey* sortKeyB = (const jeTriangleSortKey*)rawSortKeyB;
+int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
+	const jePrimitiveSortKey* sortKeyA = (const jePrimitiveSortKey*)rawSortKeyA;
+	const jePrimitiveSortKey* sortKeyB = (const jePrimitiveSortKey*)rawSortKeyB;
 
 	int result = 0;
 	if (sortKeyA->z < sortKeyB->z) {
@@ -216,50 +199,55 @@ bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer) {
 void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
 	jeBuffer_setCount(&vertexBuffer->vertices, 0);
 }
-bool jeVertexBuffer_sortTriangles(jeVertexBuffer* vertexBuffer) {
+bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitiveType) {
+	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	int vertexCount = vertexBuffer->vertices.count;
-	int triangleCount = vertexCount / 3;
-	jeTriangle *triangles = (jeTriangle*)vertexBuffer->vertices.data;
+	int primitiveCount = vertexCount / primitiveVertexCount;
+	jeVertex *vertices = (jeVertex*)vertexBuffer->vertices.data;
 
-	JE_TRACE("vertexBuffer=%p, vertexCount=%d, triangleCount=%d", vertexCount, triangleCount);
+	JE_TRACE("vertexBuffer=%p, vertexCount=%d, primitiveCount=%d", vertexCount, primitiveCount);
 
 	bool ok = true;
 
-	jeBuffer unsortedTrianglesBuffer;
-	ok = ok && jeBuffer_create(&unsortedTrianglesBuffer, sizeof(jeVertex));
-	ok = ok && jeBuffer_setCount(&unsortedTrianglesBuffer, vertexCount);
-	memcpy(unsortedTrianglesBuffer.data, vertexBuffer->vertices.data, sizeof(jeVertex) * vertexCount);
-	const jeTriangle *unsortedTriangles = (const jeTriangle*)unsortedTrianglesBuffer.data;
+	jeBuffer unsortedPrimitivesBuffer;
+	ok = ok && jeBuffer_create(&unsortedPrimitivesBuffer, sizeof(jeVertex));
+	ok = ok && jeBuffer_setCount(&unsortedPrimitivesBuffer, vertexCount);
+	const jeVertex *unsortedVertices = (const jeVertex*)unsortedPrimitivesBuffer.data;
+	memcpy((void*)unsortedVertices, (const void*)vertices, sizeof(jeVertex) * vertexCount);
 
 	jeBuffer sortKeysBuffer;
-	ok = ok && jeBuffer_create(&sortKeysBuffer, sizeof(jeTriangleSortKey));
-	ok = ok && jeBuffer_setCount(&sortKeysBuffer, triangleCount);
-	jeTriangleSortKey *sortKeys = (jeTriangleSortKey*)sortKeysBuffer.data;	
+	ok = ok && jeBuffer_create(&sortKeysBuffer, sizeof(jePrimitiveSortKey));
+	ok = ok && jeBuffer_setCount(&sortKeysBuffer, primitiveCount);
+	jePrimitiveSortKey *sortKeys = (jePrimitiveSortKey*)sortKeysBuffer.data;	
 
 	if (ok) {
-		/*Generate sort keys array from triangles array*/
-		for (int i = 0; i < triangleCount; i++) {
-			sortKeys[i].z = triangles[i].vertices[0].z;
-			sortKeys[i].index = i;
+		/*Generate sort keys array from vertices array*/
+		for (int i = 0; i < primitiveCount; i++) {
+			int vertexIndex = primitiveVertexCount * i;
+			sortKeys[i].z = vertices[vertexIndex].z;
+			sortKeys[i].index = vertexIndex;
 		}
 
 		/*Sort the sort keys array.  Uses both index and depth in order for sort to be stable*/
-		qsort(sortKeys, triangleCount, sizeof(jeTriangleSortKey), jeTriangleSortKey_less);
+		qsort(sortKeys, primitiveCount, sizeof(jePrimitiveSortKey), jePrimitiveSortKey_less);
 
-		/*Sort triangles using sort key order*/
-		for (int i = 0; i < triangleCount; i++) {
-			int triangleIndex = sortKeys[i].index;
-			if (triangleIndex > triangleCount) {
-				JE_ERROR("triangle index out of bounds, vertexBuffer=%p, index=%d, triangleCount=%d", vertexBuffer, triangleIndex, triangleCount);
+		/*Sort vertices using sort key order*/
+		for (int i = 0; i < primitiveCount; i++) {
+			int primitiveVertexIndex = sortKeys[i].index;
+			if ((primitiveVertexIndex + primitiveVertexCount - 1) > vertexCount) {
+				JE_ERROR("primitive starting index out of bounds, vertexBuffer=%p, index=%d, vertexCount=%d", vertexBuffer, primitiveVertexIndex, vertexCount);
 				continue;
 			}
 
-			triangles[i] = unsortedTriangles[triangleIndex];
+			for (int j = 0; j < primitiveVertexCount; j++) {
+				int vertexIndex = primitiveVertexIndex + j;
+				vertices[vertexIndex] = unsortedVertices[vertexIndex];
+			}
 		}
 	}
 
 	jeBuffer_destroy(&sortKeysBuffer);
-	jeBuffer_destroy(&unsortedTrianglesBuffer);
+	jeBuffer_destroy(&unsortedPrimitivesBuffer);
 
 	return ok;
 }

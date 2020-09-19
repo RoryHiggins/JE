@@ -262,7 +262,7 @@ void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimit
 	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
 }
 void jeWindow_flushVertexBuffer(jeWindow* window) {
-	jeVertexBuffer_sortTriangles(&window->vertexBuffer);
+	jeVertexBuffer_sort(&window->vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES);
 
 	glUseProgram(window->program);
 	glBindVertexArray(window->vao);
