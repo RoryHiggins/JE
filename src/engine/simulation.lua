@@ -53,9 +53,13 @@ function Simulation.isRunning()
 	return client.state.running
 end
 function Simulation:draw()
+	util.trace("")
+
 	self:broadcast("onSimulationDraw", self.screen)
 end
 function Simulation:stepClient()
+	util.trace("stepClient")
+
 	client.step()
 
 	self.screen = {
@@ -66,12 +70,10 @@ function Simulation:stepClient()
 	}
 
 	self.fps = client.state.fps
+	util.trace("stepClient complete, fps=%d", self.fps)
 end
 function Simulation:step()
-	-- avoid pumping client during simulation unit tests, in case it's a real client
-	if not self.runningTests then
-		self:stepClient()
-	end
+	util.trace("")
 
 	self:broadcast("onSimulationStep")
 end
@@ -79,8 +81,6 @@ function Simulation:destroy()
 	if not self.created then
 		return
 	end
-
-	util.info("")
 
 	self:broadcast("onSimulationDestroy")
 	self.state = {}
@@ -90,30 +90,79 @@ function Simulation:destroy()
 	end
 
 	self.created = false
+	self.started = false
+
+	util.debug("")
 end
 function Simulation:create()
 	self:destroy()
 
-	util.info("")
+	util.debug("")
 
 	math.randomseed(0)
 
 	self.created = true
+	self.started = false
 	self.state.saveVersion = 1
 
-	for systemName, system in pairs(self.systems) do
-		util.trace("systemName=%s, created=%s", systemName, self.systemsCreated[systemName])
-		if not self.systemsCreated[systemName] then
-			util.debug("creating system, name=%s", systemName)
+	-- clear anything drawn by previous simulation
+	client.drawReset()
+
+	for _, system in pairs(self.systems) do
+		util.trace("system.SYSTEM_NAME=%s, created=%s", system.SYSTEM_NAME, self.systemsCreated[system.SYSTEM_NAME])
+		if not self.systemsCreated[system.SYSTEM_NAME] then
+			util.debug("creating system, system.SYSTEM_NAME=%s", system.SYSTEM_NAME)
 
 			-- marking as created first, to prevent recursion with circular dependencies
-			self.systemsCreated[systemName] = true
+			self.systemsCreated[system.SYSTEM_NAME] = true
 
 			if system.onSimulationCreate then
 				system:onSimulationCreate(self)
 			end
 		end
 	end
+end
+function Simulation:start()
+	util.info("")
+
+	if not self.created then
+		util.warn("simulation not created yet")
+		self:create()
+	end
+
+	if self.started then
+		util.warn("simulation already started")
+		return
+	end
+
+	self.started = true
+
+	for _, system in pairs(self.systems) do
+		if system.onSimulationStart then
+			system:onSimulationStart(self)
+		end
+	end
+end
+function Simulation:finish()
+	util.debug("")
+
+	if not self.created then
+		util.warn("simulation not created")
+		return
+	end
+
+	if not self.started then
+		util.warn("simulation not started")
+		return
+	end
+
+	for _, system in pairs(self.systems) do
+		if system.onSimulationFinish then
+			system:onSimulationFinish(self)
+		end
+	end
+
+	self.started = false
 end
 function Simulation:save(filename)
 	util.debug("filename=%s", filename)
@@ -164,7 +213,7 @@ function Simulation:dump(filename)
 
 	return true
 end
-function Simulation:onSimulationRunTests()
+function Simulation:onRunTests()
 	self:create()
 	self:step()
 	self:draw()
@@ -185,59 +234,69 @@ function Simulation:onSimulationRunTests()
 	self:destroy()
 end
 function Simulation:runTests()
+	local startTimeSeconds = os.clock()
+
 	local logLevelBackup = util.logLevel
 	util.logLevel = client.state.testsLogLevel
 
 	util.info("starting")
-	self.runningTests = true
 
 	local testSuitesCount = 0
 
+	-- create once to let systems add dependencies
+	self:create()
+	self:destroy()
+
 	for _, system in pairs(self.systems) do
-		if system.onSimulationRunTests then
+		if system.onRunTests and system.SYSTEM_NAME ~= "simulation" then
 			util.info("running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
 			self:create()
 
-			system:onSimulationRunTests()
-
-			testSuitesCount = testSuitesCount + 1
+			testSuitesCount = testSuitesCount + (system:onRunTests() or 1)
 		end
 	end
 
 	self:destroy()
 
-	util.info("complete")
-	self.runningTests = false
-
 	util.logLevel = logLevelBackup
 
-	return testSuitesCount
+	local endTimeSeconds = os.clock()
+	local testTimeSeconds = endTimeSeconds - startTimeSeconds
+	util.info("complete, testSuitesCount=%d, testTimeSeconds=%.2f",
+				  testSuitesCount, testTimeSeconds)
 end
 function Simulation:run()
-	self:stepClient()
+	local startTimeSeconds = os.clock()
+	-- self:stepClient()
+	local logLevelBackup = util.logLevel
 	util.logLevel = client.state.logLevel
 
 	if client.state.testsEnabled then
-		util.info("running tests")
-		local testSuitesCount = self:runTests()
-		util.info("running tests complete for %d test suites", testSuitesCount)
+		self:runTests()
 	end
 
-	util.info("starting")
 	self:create()
+	self:start()
 
 	while self:isRunning() do
+		self:stepClient()
 		self:step()
 		self:draw()
 	end
 
-	util.info("ending")
+	self:finish()
 
 	-- self:save(self.SAVE_FILE)
 	-- self:dump(self.DUMP_FILE)
 	self:destroy()
+
+	util.logLevel = logLevelBackup
+
+	local endTimeSeconds = os.clock()
+	local runTimeSeconds = endTimeSeconds - startTimeSeconds
+	util.info("complete, runTimeSeconds=%.2f", runTimeSeconds)
 end
 
 function Simulation.new()
@@ -247,7 +306,7 @@ function Simulation.new()
 		["state"] = {},
 		["static"] = {},
 		["created"] = false,
-		["runningTests"] = false,  -- use extremely sparingly
+		["started"] = false,
 		["screen"] = {
 			["x"] = 0,
 			["y"] = 0,
@@ -265,6 +324,9 @@ function Simulation.new()
 
 	util.SYSTEM_NAME = "util"
 	simulation.systems.util = util
+
+	client.SYSTEM_NAME = "client"
+	simulation.systems.client = client
 
 	return simulation
 end

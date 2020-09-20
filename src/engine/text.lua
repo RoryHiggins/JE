@@ -60,7 +60,7 @@ function Text:onCameraDraw(camera)
 		client.drawText(entity, fonts[entity.fontId], camera)
 	end
 end
-function Text:onSimulationRunTests()
+function Text:onRunTests()
 	local entity = self.entitySys:create()
 	local testFont = self:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 
@@ -70,6 +70,8 @@ function Text:onSimulationRunTests()
 	assert(entity.fontId == "test")
 	assert(entity.tags.text)
 	assert(entity.text == "hello")
+
+	self.simulation:draw()
 
 	self:detach(entity, testFont)
 	assert(entity.spriteId == nil)

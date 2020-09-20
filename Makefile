@@ -1,5 +1,5 @@
 # RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
-TARGET := DEVELOPMENT
+TARGET := DEBUG
 
 CC := gcc
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla

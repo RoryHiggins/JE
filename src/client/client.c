@@ -8,15 +8,15 @@
 
 
 bool jeClient_run(jeClient* client) {
+	JE_DEBUG("client=%p", client);
+
 	bool ok = true;
 
 	client->window = NULL;
 	client->lua = NULL;
 
-	JE_INFO("");
-
 	if (ok) {
-		client->window = jeWindow_create();
+		client->window = jeWindow_create(/*startVisible*/ true);
 	}
 
 	ok = ok && (client->window != NULL);

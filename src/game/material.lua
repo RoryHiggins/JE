@@ -26,7 +26,7 @@ function Material:onEntityTag(entity, tag, tagId)
 		end
 	end
 end
-function Material:onSimulationRunTests()
+function Material:onRunTests()
 	assert(self.simulation.static.materials ~= nil)
 end
 

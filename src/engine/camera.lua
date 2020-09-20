@@ -27,7 +27,7 @@ function Camera:onSimulationDraw(screen)
 
 	self.simulation:broadcast("onCameraDraw", camera)
 end
-function Camera:onSimulationRunTests()
+function Camera:onRunTests()
 	assert(self.simulation.state.camera ~= nil)
 	self:onSimulationDraw(self.simulation.screen)
 end

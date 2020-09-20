@@ -32,7 +32,7 @@ function Wall:onSimulationCreate(simulation)
 		},
 	})
 end
-function Wall:onSimulationRunTests()
+function Wall:onRunTests()
 	self.templateSys:instantiate(self.template)
 end
 

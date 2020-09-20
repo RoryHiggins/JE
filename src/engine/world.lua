@@ -7,16 +7,16 @@ function World:destroy()
 		return
 	end
 
-	util.info("")
-
 	self.simulation:broadcast("onWorldDestroy")
 	self.created = false
 	self.simulation.state.world = nil
+
+	util.debug("")
 end
 function World:create()
 	self:destroy()
 
-	util.info("")
+	util.debug("")
 
 	local world = {}
 	self.simulation.state.world = world
@@ -31,7 +31,7 @@ end
 function World:onSimulationDestroy()
 	self:destroy()
 end
-function World:onSimulationRunTests()
+function World:onRunTests()
 	assert(self.simulation.state.world ~= nil)
 end
 

@@ -326,7 +326,7 @@ function Entity.onWorldCreate(_, world)
 	world.chunkEntities = {}
 	world.destroyedEntities = {}
 end
-function Entity:onSimulationRunTests()
+function Entity:onRunTests()
 	self.worldSys:create()
 
 	local entityChunkSizeBackup = self.ENTITY_CHUNK_SIZE

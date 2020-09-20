@@ -29,13 +29,19 @@ end
 function headlessClient.readData(filename)
 	return util.readDataUncompressed(filename)
 end
-function headlessClient.onRunTests()
-	headlessClient.writeData("clientTestFile", "")
-	assert(headlessClient.readData("clientTestFile") == "")
-	os.remove("clientTestFile")
-end
 
 -- injected by the c client in main.c:jeGame_registerLuaClientBindings()
 local client = jeLuaClientBindings or headlessClient  -- luacheck: globals jeLuaClientBindings
+function client.onRunTests()
+	headlessClient.writeData("clientTestFile", "")
+	assert(headlessClient.readData("clientTestFile") == "")
+	os.remove("clientTestFile")
+
+	local numTestSuites = 1
+	if client ~= headlessClient then
+		numTestSuites = client.runTests()
+	end
+	return numTestSuites
+end
 
 return client

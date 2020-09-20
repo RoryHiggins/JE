@@ -4,7 +4,7 @@
 
 
 void jeImage_destroy(jeImage* image) {
-	JE_TRACE("");
+	JE_TRACE("image=%p", image);
 
 	free(image->buffer);
 
@@ -12,14 +12,19 @@ void jeImage_destroy(jeImage* image) {
 	image->width = 0;
 	image->buffer = NULL;
 }
-bool jeImage_create(jeImage* image, const char* filename) {
+void jeImage_create(jeImage* image) {
+	JE_TRACE("image=%p", image);
+
+	image->height = 0;
+	image->width = 0;
+	image->buffer = NULL;
+}
+bool jeImage_createFromFile(jeImage* image, const char* filename) {
+	JE_DEBUG("image=%p, filename=%s", image, filename);
+
 	bool ok = true;
 
-	JE_DEBUG("filename=%s", filename);
-	
-	image->buffer = NULL;
-	image->width = 0;
-	image->height = 0;
+	jeImage_create(image);
 
 	png_image pngImage;
 	memset((void*)&pngImage, 0, sizeof(pngImage));
@@ -65,4 +70,15 @@ bool jeImage_create(jeImage* image, const char* filename) {
 	png_image_free(&pngImage);
 
 	return ok;
+}
+
+void jeImageRunTests() {
+	JE_DEBUG("");
+
+	jeImage image;
+	jeImage_create(&image);
+	image.buffer = malloc(1);
+
+	jeImage_destroy(&image);
+	JE_ASSERT(image.buffer == NULL);
 }

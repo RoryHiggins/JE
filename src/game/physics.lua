@@ -316,7 +316,7 @@ function Physics.onEntityTag(_, entity, tag, tagId)
 		entity.physicsCanCarry = entity.physicsCanCarry or false
 	end
 end
-function Physics:onSimulationRunTests()
+function Physics:onRunTests()
 	self.worldSys:create()
 
 	local static = self.simulation.static

@@ -21,5 +21,6 @@ bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity);
 bool jeBuffer_push(jeBuffer* buffer, const void* data, int count);
 bool jeBuffer_pushOne(jeBuffer* buffer, const void* data);
 
+void jeContainerRunTests();
 
 #endif

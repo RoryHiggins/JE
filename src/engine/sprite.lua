@@ -57,7 +57,7 @@ function Sprite:onCameraDraw(camera)
 		client.drawSprite(entity, sprites[entity.spriteId], camera)
 	end
 end
-function Sprite:onSimulationRunTests()
+function Sprite:onRunTests()
 	local entity = self.entitySys:create()
 	local testSprite = self:addSprite("test", 40, 0, 8, 8)
 
@@ -66,6 +66,8 @@ function Sprite:onSimulationRunTests()
 	self:attach(entity, testSprite)
 	assert(entity.spriteId == "test")
 	assert(entity.tags.sprite)
+
+	self.simulation:draw()
 
 	self:detach(entity, testSprite)
 	assert(entity.spriteId == nil)

@@ -17,14 +17,19 @@
 #define JE_WINDOW_MIN_WIDTH 160
 #define JE_WINDOW_MIN_HEIGHT 120
 
+typedef int jeInputId;
+
 
 typedef struct jeWindow jeWindow;
-jeWindow* jeWindow_create();
 void jeWindow_destroy(jeWindow* window);
-void jeWindow_step(jeWindow* window);
+jeWindow* jeWindow_create(bool startVisible);
+void jeWindow_show(jeWindow* window);
+bool jeWindow_step(jeWindow* window);
+void jeWindow_resetPrimitives(jeWindow* window);
 void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimitiveType primitiveType);
-bool jeWindow_getIsOpen(jeWindow* window);
-int jeWindow_getFps(jeWindow* window);
-bool jeWindow_getInput(jeWindow* window, int inputId);
+bool jeWindow_getIsOpen(const jeWindow* window);
+int jeWindow_getFps(const jeWindow* window);
+bool jeWindow_getInput(const jeWindow* window, jeInputId inputId);
+void jeWindowRunTests();
 
 #endif

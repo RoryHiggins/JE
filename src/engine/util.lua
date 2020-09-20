@@ -193,7 +193,7 @@ function util.readDataUncompressed(filename)
 	return dataStr
 end
 
-function util.onSimulationRunTests()
+function util.onRunTests()
 	util.noop()
 	assert(util.getKeys({["a"] = 1})[1] == "a")
 	assert(util.getEscapedString("\n\"\0") == "\\n\\\"?")

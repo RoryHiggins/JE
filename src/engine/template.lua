@@ -41,7 +41,7 @@ function Template:onSimulationCreate(simulation)
 
 	self.simulation.static.templates = {}
 end
-function Template:onSimulationRunTests()
+function Template:onRunTests()
 	assert(self.simulation.static.templates ~= nil)
 
 	local template = self:add("yee", {

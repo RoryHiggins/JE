@@ -41,7 +41,7 @@ function Game:createTestWorld()
 	templateSys:instantiate(wallSys.template, 0, 0, 8, levelH)
 	templateSys:instantiate(wallSys.template, levelW - 8, 0, 8, levelH)
 
-	-- -- top and bottom walls
+	-- top and bottom walls
 	templateSys:instantiate(wallSys.template, 0, 0, levelW, 8)
 	templateSys:instantiate(wallSys.template, 0, levelH - 8, levelW, 8)
 
@@ -77,7 +77,27 @@ function Game:createTestWorld()
 			entitySys:destroy(physicsObject)
 		end
 	end
-	util.debug("physicsObjectCount=%d", #entitySys:findAll("physicsObject"))
+
+	local spriteObjectTemplate = templateSys:add("spriteObject", {
+		["properties"] = {
+			["spriteId"] = "physicsObject",
+			["w"] = 6,
+			["h"] = 6,
+		},
+		["tags"] = {
+			["sprite"] = true,
+		},
+	})
+	for _ = 1, 0 do
+		local spriteObject = templateSys:instantiate(spriteObjectTemplate)
+		entitySys:setBounds(
+			spriteObject,
+			16 + math.floor(math.random(levelW - 16)),
+			16 + math.floor(math.random(levelH - 16)),
+			6,
+			6)
+	end
+	util.debug("spriteObjectCount=%d", #entitySys:findAll("spriteObject"))
 end
 function Game:onSimulationCreate(simulation)
 	self.simulation = simulation
@@ -86,14 +106,15 @@ function Game:onSimulationCreate(simulation)
 	self.shapeSys = self.simulation:addSystem(Shape)
 
 	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
-
-	if not self.simulation.runningTests then
-		self:createTestWorld()
-	end
+end
+function Game:onSimulationStart()
+	self:createTestWorld()
 end
 function Game:onSimulationStep()
-	if self.inputSys:getReleased("x") then
-		self:createTestWorld()
+	if self.simulation.started then
+		if self.inputSys:getReleased("x") then
+			self:createTestWorld()
+		end
 	end
 end
 function Game:onSimulationDraw(screen)
@@ -118,6 +139,7 @@ function Game:onSimulationDraw(screen)
 		["r"] = 0,
 		["g"] = 1,
 		["b"] = 0,
+		["a"] = 1,
 	}
 	self.shapeSys:drawTriangle(testTriangle, screen)
 
@@ -125,13 +147,13 @@ function Game:onSimulationDraw(screen)
 		["x"] = 8,
 		["y"] = 8,
 		["z"] = -3,
-
 		["w"] = -8,
 		["h"] = 8,
 
 		["r"] = 1,
 		["g"] = 0,
 		["b"] = 0,
+		["a"] = 1,
 	}
 	self.shapeSys:drawLine(testLine, screen)
 
@@ -143,6 +165,7 @@ function Game:onSimulationDraw(screen)
 		["r"] = 0,
 		["g"] = 0,
 		["b"] = 1,
+		["a"] = 1,
 	}
 	self.shapeSys:drawPoint(testPoint, screen)
 end

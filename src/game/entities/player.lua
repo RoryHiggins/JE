@@ -138,7 +138,7 @@ function Player:onSimulationStep()
 		self:tickEntity(player)
 	end
 end
-function Player:onSimulationRunTests()
+function Player:onRunTests()
 	self.templateSys:instantiate(self.template)
 	for _ = 1, 10 do
 		self:onSimulationStep()
