@@ -1,4 +1,4 @@
-local client = require("src/engine/client")
+local client = require("engine/client")
 
 local Input = {}
 Input.SYSTEM_NAME = "input"

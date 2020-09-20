@@ -1,7 +1,7 @@
-local util = require("src/engine/util")
-local Input = require("src/engine/input")
-local Text = require("src/engine/text")
-local Shape = require("src/engine/shape")
+local util = require("engine/util")
+local Input = require("engine/input")
+local Text = require("engine/text")
+local Shape = require("engine/shape")
 
 local Game = {}
 Game.SYSTEM_NAME = "game"
@@ -11,12 +11,12 @@ function Game:createTestWorld()
 	local wallSys = self.simulation:addSystem(require("src/game/entities/wall"))
 	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
 
-	local worldSys = self.simulation:addSystem(require("src/engine/world"))
+	local worldSys = self.simulation:addSystem(require("engine/world"))
 	worldSys:create()
 
-	local entitySys = self.simulation:addSystem(require("src/engine/entity"))
-	local templateSys = self.simulation:addSystem(require("src/engine/template"))
-	local spriteSys = self.simulation:addSystem(require("src/engine/sprite"))
+	local entitySys = self.simulation:addSystem(require("engine/entity"))
+	local templateSys = self.simulation:addSystem(require("engine/template"))
+	local spriteSys = self.simulation:addSystem(require("engine/sprite"))
 
 	local levelW = 256
 	local levelH = 256

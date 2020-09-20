@@ -1,7 +1,7 @@
-local util = require("src/engine/util")
-local client = require("src/engine/client")
-local Entity = require("src/engine/entity")
-local Camera = require("src/engine/camera")
+local util = require("engine/util")
+local client = require("engine/client")
+local Entity = require("engine/entity")
+local Camera = require("engine/camera")
 
 
 local Sprite = {}

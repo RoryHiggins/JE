@@ -1,5 +1,5 @@
-local util = require("src/engine/util")
-local World = require("src/engine/world")
+local util = require("engine/util")
+local World = require("engine/world")
 
 local FLOAT_EPSILON = 1.19e-07
 local utilRectCollides = util.rectCollides

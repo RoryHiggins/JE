@@ -1,4 +1,4 @@
-local Simulation = require("src/engine/simulation")
+local Simulation = require("engine/simulation")
 local Game = require("src/game/game")
 
 local function main()

@@ -1,5 +1,5 @@
-local Sprite = require("src/engine/sprite")
-local Template = require("src/engine/template")
+local Sprite = require("engine/sprite")
+local Template = require("engine/template")
 
 local Wall = {}
 Wall.SYSTEM_NAME = "wall"

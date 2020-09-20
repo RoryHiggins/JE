@@ -1,4 +1,4 @@
-local Entity = require("src/engine/entity")
+local Entity = require("engine/entity")
 
 local Template = {}
 Template.SYSTEM_NAME = "template"

@@ -1,6 +1,6 @@
 local json = require("lib/json/json")
-local util = require("src/engine/util")
-local client = require("src/engine/client")
+local util = require("engine/util")
+local client = require("engine/client")
 
 
 local Simulation = {}
