@@ -2,7 +2,7 @@ local util = require("engine/util")
 local World = require("engine/world")
 local Entity = require("engine/entity")
 local Template = require("engine/template")
-local Material = require("src/game/material")
+local Material = require("games/j25/material")
 
 local Physics = {}
 Physics.SYSTEM_NAME = "physics"

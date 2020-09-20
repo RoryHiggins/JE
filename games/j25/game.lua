@@ -8,8 +8,8 @@ Game.SYSTEM_NAME = "game"
 function Game:createTestWorld()
 	util.info("")
 
-	local wallSys = self.simulation:addSystem(require("src/game/entities/wall"))
-	local playerSys = self.simulation:addSystem(require("src/game/entities/player"))
+	local wallSys = self.simulation:addSystem(require("games/j25/entities/wall"))
+	local playerSys = self.simulation:addSystem(require("games/j25/entities/player"))
 
 	local worldSys = self.simulation:addSystem(require("engine/world"))
 	worldSys:create()

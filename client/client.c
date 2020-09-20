@@ -4,7 +4,7 @@
 #include "window.h"
 #include "lua_client.h"
 
-#define JE_CLIENT_LUA_MAIN_FILENAME "src/game/main.lua"
+#define JE_CLIENT_LUA_MAIN_FILENAME "games/j25/main.lua"
 
 
 bool jeClient_run(jeClient* client) {

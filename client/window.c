@@ -12,7 +12,7 @@
 #define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_CAPTION ""
-#define JE_WINDOW_SPRITE_FILENAME "data/sprites.png"
+#define JE_WINDOW_SPRITE_FILENAME "games/j25/data/sprites.png"
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
