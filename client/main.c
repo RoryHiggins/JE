@@ -16,8 +16,18 @@ int main(int argc, char** argv) {
 	jeClient client;
 
 	const char* gameDir = "games/game";
-	if (argc > 1) {
-		gameDir = argv[1];
+
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "-game") == 0) {
+			ok = ok && ((i + 1) < argc);
+
+			if (ok) {
+				gameDir = argv[i + 1];
+			}
+		}
+		if (strcmp(argv[i], "-debug") == 0) {
+			ok = ok && ((i + 1) < argc);
+		}
 	}
 
 	ok = ok && jeClient_run(&client, gameDir);

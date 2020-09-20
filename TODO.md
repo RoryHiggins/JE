@@ -64,14 +64,14 @@ Command line as a first-class citizen
 	Ordered by most recently used
 	Optional 
 
-- Filter: filtered out entites are translucent and cannot be selected
+- Filter: filtered out entities are translucent and cannot be selected
 - Selection:
 
 	hold left mouse button and drag to select area
 	double-tap action to select all unfiltered entities
 	tap shift to add to selection
 	hold shift and drag to extend selection
-	tap esc to deselect
+	tap ESC to deselect
 
 - Selection mode: add rectangle, remove rectangle
 - 

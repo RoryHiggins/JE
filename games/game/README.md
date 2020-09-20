@@ -1,5 +1,5 @@
 # J25
-Game developed in parallel with the engine.
+Game being developed in parallel with the engine, to test its features.
 
 The game in *J25/games/game* is the default game run by the engine.
 

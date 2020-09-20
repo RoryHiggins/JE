@@ -11,6 +11,7 @@
 j25_*.tar.gz
 gmon.out
 profile.txt
+README.html
 
 *.sublime-project
 *.sublime-workspace
