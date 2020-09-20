@@ -15,10 +15,12 @@ int main(int argc, char** argv) {
 
 	jeClient client;
 
-	ok = ok && jeClient_run(&client);
+	const char* gameDir = "games/game";
+	if (argc > 1) {
+		gameDir = argv[1];
+	}
 
-	JE_MAYBE_UNUSED(argc);
-	JE_MAYBE_UNUSED(argv);
+	ok = ok && jeClient_run(&client, gameDir);
 
 	return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

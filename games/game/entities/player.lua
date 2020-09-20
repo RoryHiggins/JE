@@ -3,7 +3,7 @@ local Input = require("engine/input")
 local Entity = require("engine/entity")
 local Sprite = require("engine/sprite")
 local Template = require("engine/template")
-local Physics = require("games/j25/physics")
+local Physics = require("games/game/physics")
 
 local Player = {}
 Player.SYSTEM_NAME = "player"

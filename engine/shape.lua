@@ -5,22 +5,22 @@ local Sprite = require("engine/sprite")
 local Shape = {}
 Shape.SYSTEM_NAME = "Shape"
 function Shape:drawPoint(renderable, camera)
-	client.drawPoint(renderable, self.flatColorSprite, camera)
+	client.drawPoint(renderable, self.untexturedSprite, camera)
 end
 function Shape:drawLine(renderable, camera)
-	client.drawLine(renderable, self.flatColorSprite, camera)
+	client.drawLine(renderable, self.untexturedSprite, camera)
 end
 function Shape:drawRect(renderable, camera)
-	client.drawSprite(renderable, self.flatColorSprite, camera)
+	client.drawSprite(renderable, self.untexturedSprite, camera)
 end
 function Shape:drawTriangle(renderable, camera)
-	client.drawTriangle(renderable, self.flatColorSprite, camera)
+	client.drawTriangle(renderable, self.untexturedSprite, camera)
 end
 function Shape:onSimulationCreate(simulation)
 	self.simulation = simulation
 	self.spriteSys = self.simulation:addSystem(Sprite)
 
-	self.flatColorSprite = self.spriteSys:addSprite("flatColor", 0, 0, 0, 0)
+	self.untexturedSprite = self.spriteSys:getUntextured()
 end
 
 

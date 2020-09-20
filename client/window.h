@@ -22,7 +22,7 @@ typedef int jeInputId;
 
 typedef struct jeWindow jeWindow;
 void jeWindow_destroy(jeWindow* window);
-jeWindow* jeWindow_create(bool startVisible);
+jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename);
 void jeWindow_show(jeWindow* window);
 bool jeWindow_step(jeWindow* window);
 void jeWindow_resetPrimitives(jeWindow* window);

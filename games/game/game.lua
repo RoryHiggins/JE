@@ -8,8 +8,8 @@ Game.SYSTEM_NAME = "game"
 function Game:createTestWorld()
 	util.info("")
 
-	local wallSys = self.simulation:addSystem(require("games/j25/entities/wall"))
-	local playerSys = self.simulation:addSystem(require("games/j25/entities/player"))
+	local wallSys = self.simulation:addSystem(require("games/game/entities/wall"))
+	local playerSys = self.simulation:addSystem(require("games/game/entities/player"))
 
 	local worldSys = self.simulation:addSystem(require("engine/world"))
 	worldSys:create()
@@ -65,7 +65,7 @@ function Game:createTestWorld()
 			["physicsObject"] = true,
 		},
 	})
-	for _ = 1, 10 do
+	for _ = 1, 150 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
 		entitySys:setBounds(
 			physicsObject,
@@ -127,7 +127,7 @@ function Game:onSimulationDraw(screen)
 	}
 	self.textSys:draw(fps, self.font, screen)
 
-	local testTriangle = {
+	--[[local testTriangle = {
 		["x1"] = 16,
 		["y1"] = 16,
 		["x2"] = 24,
@@ -167,7 +167,7 @@ function Game:onSimulationDraw(screen)
 		["b"] = 1,
 		["a"] = 1,
 	}
-	self.shapeSys:drawPoint(testPoint, screen)
+	self.shapeSys:drawPoint(testPoint, screen)--]]
 end
 
 return Game

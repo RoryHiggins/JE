@@ -34,6 +34,9 @@ end
 function Sprite:get(spriteId)
 	return self.simulation.static.sprites[spriteId]
 end
+function Sprite:getUntextured()
+	return self.simulation.static.untexturedSprite
+end
 function Sprite:attach(entity, sprite)
 	entity.spriteId = sprite.spriteId
 
@@ -49,6 +52,8 @@ function Sprite:onSimulationCreate(simulation)
 	self.cameraSys = self.simulation:addSystem(Camera)
 
 	self.simulation.static.sprites = {}
+
+	self.simulation.static.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
 end
 function Sprite:onCameraDraw(camera)
 	local sprites = self.simulation.static.sprites

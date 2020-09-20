@@ -4,25 +4,33 @@
 #include "window.h"
 #include "lua_client.h"
 
-#define JE_CLIENT_LUA_MAIN_FILENAME "games/j25/main.lua"
 
-
-bool jeClient_run(jeClient* client) {
-	JE_DEBUG("client=%p", client);
+bool jeClient_run(jeClient* client, const char* gameDir) {
+	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
 
 	bool ok = true;
 
 	client->window = NULL;
 	client->lua = NULL;
 
+	jeString luaMainFilename;
+	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
+
+	jeString spritesFilename;
+	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
+
 	if (ok) {
-		client->window = jeWindow_create(/*startVisible*/ true);
+		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename));
 	}
 
 	ok = ok && (client->window != NULL);
-	ok = ok && jeLuaClient_run(client->window, JE_CLIENT_LUA_MAIN_FILENAME);
+
+	ok = ok && jeLuaClient_run(client->window, jeString_get(&luaMainFilename));
 
 	jeWindow_destroy(client->window);
+
+	jeString_destroy(&spritesFilename);
+	jeString_destroy(&luaMainFilename);
 
 	return ok;
 }

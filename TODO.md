@@ -3,6 +3,7 @@ Rendering pipeline refresh
 --------------------------
 
 Add viewports support, particularly for the GUI.  Planned interface (by example):
+```
 	camera = {["x1"] = ..., ["y1"] = ..., ["x2"] = ..., ["y2"] = ...,}
 	client.drawClear()
 
@@ -11,6 +12,7 @@ Add viewports support, particularly for the GUI.  Planned interface (by example)
 
 	self:broadcast("onSimulationDrawGui")
 	client.draw()  -- defaults to full size at window resolution
+```
 
 Modularization
 --------------
@@ -35,12 +37,14 @@ Editor thoughts
 GUI at native scale
 
 Keyboard + mouse focused
+
 - Mouse wheel to zoom
 - Space + left mouse to drag
 - ESC to close focused window or to unfocus text input
 - HOLD ESC for a few seconds for a prompt to close the 
 
 GUI elements
+
 - Buttons
 - Checkboxes
 - Text input
@@ -50,13 +54,11 @@ GUI windows
 - Prompt windows (yes/no). enter=yes and ESC=no
 
 Command line as a first-class citizen
+
 - / button to start a command.  / key to start typing a command
 - Display list of recent and important commands
 - Fuzzy autocomplete with tab
 - Zero-argument commands (deselect all, )
-- 
-
-
 - Command mode: on keyboard, press / to start a command
 
 	Ordered by most recently used
@@ -85,12 +87,3 @@ Editor support
 - UI Element: Dialog
 - UI Element: Button
 - UI Element: Textbox
-
-
-Optimizations
--------------
-
-Reduce jeVertex byte size:
-- remove w
-- change r,g,b,a type to u8
-- change x,y,z,u,v type to u16

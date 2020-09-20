@@ -1,4 +1,3 @@
-local json = require("lib/json/json")
 local util = require("engine/util")
 local client = require("engine/client")
 
@@ -167,7 +166,7 @@ end
 function Simulation:save(filename)
 	util.debug("filename=%s", filename)
 
-	if not client.writeData(filename, json.encode(self.state)) then
+	if not client.writeData(filename, util.json.encode(self.state)) then
 		util.error("client.writeData() failed")
 		return false
 	end
@@ -182,7 +181,7 @@ function Simulation:load(filename)
 		return false
 	end
 
-	local loadedState = json.decode(loadedStateStr)
+	local loadedState = util.json.decode(loadedStateStr)
 
 	if loadedState.saveVersion and (loadedState.saveVersion > self.state.saveVersion) then
 		util.error("save version is too new, saveVersion=%d, save.saveVersion=%d",

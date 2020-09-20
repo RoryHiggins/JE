@@ -1,4 +1,4 @@
-local json = require("lib/json/json")
+local json = require("engine/lib/json/json")
 
 local util = {}
 util.LOG_LEVEL_TRACE = 0
@@ -216,5 +216,7 @@ function util.onRunTests()
 	assert(not util.setEquality({1, 2, ["a"] = "b"}, {1, 2}))
 	assert(not util.setEquality({1, 2, ["a"] = "b"}, {1, ["a"] = "b"}))
 end
+
+util.json = json
 
 return util

@@ -50,7 +50,6 @@ void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, cons
 		fprintf(stdout, "[%s %s:%d] %s() ", label, loggerContext.file, loggerContext.line, loggerContext.function);
 
 		va_list args;
-
 		va_start(args, formatStr);
 		vfprintf(stdout, formatStr, args);
 		va_end(args);

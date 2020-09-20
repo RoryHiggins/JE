@@ -8,11 +8,10 @@
 #define JE_CONTROLLER_DB_FILENAME "client/data/gamecontrollerdb.txt"
 
 #define JE_WINDOW_FRAME_RATE 60
-#define JE_WINDOW_START_SCALE 8
+#define JE_WINDOW_START_SCALE 4
 #define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
-#define JE_WINDOW_START_CAPTION ""
-#define JE_WINDOW_SPRITE_FILENAME "games/j25/data/sprites.png"
+#define JE_WINDOW_START_CAPTION "J25"
 
 /*https://www.khronos.org/registry/OpenGL/specs/gl/glspec21.pdf*/
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
@@ -265,8 +264,8 @@ struct jeWindow {
 	GLuint vbo;
 	GLuint vao;
 };
-static const GLchar *jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
-static const GLchar *jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
+static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
+static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
 static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
 bool jeWindow_getIsOpen(const jeWindow* window) {
@@ -511,7 +510,7 @@ bool jeWindow_initGL(jeWindow* window) {
 	if (ok) {
 		glGenTextures(1, &window->texture);
 		glBindTexture(GL_TEXTURE_2D, window->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window->image.width, window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window->image.width, window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -540,8 +539,8 @@ bool jeWindow_initGL(jeWindow* window) {
 		scaleXyz[2] = 1.0f / (float)(1 << 20);
 
 		/*Converts image coords to normalized texture coords (0.0 to 1.0)*/
-		scaleUv[0] = 1.0f / (float)window->image.width;
-		scaleUv[1] = 1.0f / (float)window->image.height;
+		scaleUv[0] = 1.0f / (float)(window->image.width ? window->image.width : 1);
+		scaleUv[1] = 1.0f / (float)(window->image.height ? window->image.height : 1);
 
 		GLint scaleXyzLocation = glGetUniformLocation(window->program, "scaleXyz");
 		GLint scaleUvLocation = glGetUniformLocation(window->program, "scaleUv");
@@ -580,6 +579,11 @@ bool jeWindow_initGL(jeWindow* window) {
 	}
 
 	return ok;
+}
+void jeWindow_show(jeWindow* window) {
+	JE_TRACE("window=%p", window);
+
+	SDL_ShowWindow(window->window);
 }
 bool jeWindow_step(jeWindow* window) {
 	JE_TRACE("window=%p", window);
@@ -744,7 +748,7 @@ void jeWindow_destroy(jeWindow* window) {
 		free(window);
 	}
 }
-jeWindow* jeWindow_create(bool startVisible) {
+jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 	JE_DEBUG("window=%p");
 
 	bool ok = true;
@@ -785,11 +789,21 @@ jeWindow* jeWindow_create(bool startVisible) {
 
 	if (ok) {
 		SDL_SetWindowMinimumSize(window->window, JE_WINDOW_MIN_WIDTH, JE_WINDOW_MIN_HEIGHT);
+
+		if ((optSpritesFilename == NULL) || !jeImage_createFromFile(&window->image, optSpritesFilename)) {
+			/*
+			 * As a fallback, create a gray texture big enough to allow mapping of color.
+			 * Gray is chosen to have it be visible against the white fill color.
+			 */
+			jeImage_destroy(&window->image);
+			jeImage_create(&window->image, 2048, 2048, jeColor_gray);
+
+			/*Topleft texel is used for rendering without texture and must be white*/
+			((jeColor*)window->image.buffer.data)[0] = jeColor_white;
+		}
 	}
 
 	ok = ok && jeVertexBuffer_create(&window->vertexBuffer);
-
-	ok = ok && jeImage_createFromFile(&window->image, JE_WINDOW_SPRITE_FILENAME);
 
 	ok = ok && jeWindow_initGL(window);
 
@@ -819,11 +833,6 @@ jeWindow* jeWindow_create(bool startVisible) {
 	}
 
 	return window;
-}
-void jeWindow_show(jeWindow* window) {
-	JE_TRACE("window=%p", window);
-
-	SDL_ShowWindow(window->window);
 }
 bool jeWindow_getInput(const jeWindow* window, jeInputId inputId) {
 	static const float axisMaxValue = 32767;
@@ -881,7 +890,7 @@ void jeWindowRunTests() {
 
 	JE_ASSERT(jeSDL_initReentrant());
 
-	jeWindow* window = jeWindow_create(/*startVisible*/ false);
+	jeWindow* window = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
 	JE_ASSERT(window != NULL);
 
 	JE_ASSERT(jeWindow_getIsOpen(window));
@@ -902,7 +911,7 @@ void jeWindowRunTests() {
 	jeWindow_pushPrimitive(window, triangleVertices, JE_PRIMITIVE_TYPE_TRIANGLES);
 
 	/*Create a second window before displaying to see if they clobbering each other w/ opengl state*/
-	jeWindow* window2 = jeWindow_create(/*startVisible*/ false);
+	jeWindow* window2 = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
 	JE_ASSERT(window2 != NULL);
 	jeWindow_destroy(window2);
 

@@ -108,6 +108,9 @@ end
 function Entity:setPos(entity, x, y)
 	self:setBounds(entity, x, y, entity.w, entity.h)
 end
+function Entity:movePos(entity, offsetX, offsetY)
+	self:setBounds(entity, entity.x + offsetX, entity.y + offsetY, entity.w, entity.h)
+end
 function Entity:tag(entity, tag)
 	local entityTags = entity.tags
 	if entityTags[tag] ~= nil then
