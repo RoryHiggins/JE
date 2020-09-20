@@ -1,5 +1,5 @@
 # RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
-TARGET := DEBUG
+TARGET := DEVELOPMENT
 
 CC := gcc
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla
@@ -19,25 +19,25 @@ LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
 CFLAGS_TRACE := $(CFLAGS_DEBUG) -D JE_BUILD_TRACE
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
-client: Makefile stdafx.h.gch src/client/*.c src/client/*.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) src/client/main.c $(LFLAGS_$(TARGET)) -o client
-stdafx.h.gch: Makefile src/client/stdafx.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) src/client/stdafx.h -o stdafx.h.gch
+client_launcher: Makefile stdafx.h.gch client/*.c client/*.h
+	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o client_launcher
+stdafx.h.gch: Makefile client/stdafx.h
+	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o stdafx.h.gch
 
 release:
 	rm -rf release
 	mkdir release
 	mkdir release/src
-	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE src/client/main.c $(LFLAGS_RELEASE) -o release/client
+	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE client/main.c $(LFLAGS_RELEASE) -o release/client_launcher
 	cp -r lib/ data/ -- release/
 	cp -r src/engine src/game -- release/src
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
-run: client
-	./client
+run: client_launcher
+	./client_launcher
 profile: gmon.out
-	gprof -b client* gmon.out > profile.txt
+	gprof -b client_launcher* gmon.out > profile.txt
 clean:
-	rm -f client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
+	rm -f client_launcher game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
 	rm -rf release
 
 .PHONY: release run profile clean

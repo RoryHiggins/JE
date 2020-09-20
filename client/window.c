@@ -5,7 +5,7 @@
 #include "image.h"
 #include "rendering.h"
 
-#define JE_CONTROLLER_DB_FILENAME "data/gamecontrollerdb.txt"
+#define JE_CONTROLLER_DB_FILENAME "client/data/gamecontrollerdb.txt"
 
 #define JE_WINDOW_FRAME_RATE 60
 #define JE_WINDOW_START_SCALE 8
