@@ -65,14 +65,13 @@ function Game:createTestWorld()
 			["physicsObject"] = true,
 		},
 	})
-	for _ = 1, 150 do
+	for _ = 1, 10 do
 		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
-		entitySys:setBounds(
+		entitySys:setPos(
 			physicsObject,
 			16 + math.floor(math.random(levelW - 16)),
-			16 + math.floor(math.random(levelH - 16)),
-			6,
-			6)
+			16 + math.floor(math.random(levelH - 16))
+		)
 		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
 			entitySys:destroy(physicsObject)
 		end

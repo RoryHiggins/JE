@@ -1,4 +1,12 @@
 
+Issues
+------
+
+- Releasing with a specified game does not change the client's default target
+- No docs example of running a game headless (no client) - add a makefile target?
+
+
+
 Rendering pipeline refresh
 --------------------------
 
@@ -13,6 +21,7 @@ Add viewports support, particularly for the GUI.  Planned interface (by example)
 	self:broadcast("onSimulationDrawGui")
 	client.draw()  -- defaults to full size at window resolution
 ```
+
 
 Modularization
 --------------

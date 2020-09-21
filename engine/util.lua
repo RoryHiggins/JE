@@ -57,13 +57,19 @@ end
 function util.deepcopy(data)
 	return json.decode(json.encode(data))
 end
-function util.tableExtend(dest, ...)
-	local arg = {...}
-	for _, overrides in ipairs(arg) do
-		overrides = util.deepcopy(overrides)
-		for key, val in pairs(overrides) do
-			dest[key] = val
+function util.tableExtend(dest, overrides)
+	for key, value in pairs(overrides) do
+		if type(value) == "table" then
+			local destTable = dest[key]
+			if type(dest[key]) ~= "table" then
+				destTable = {}
+				dest[key] = destTable
+			end
+			util.tableExtend(destTable, value)
+		else
+			dest[key] = value
 		end
+		dest[key] = value
 	end
 
 	return dest

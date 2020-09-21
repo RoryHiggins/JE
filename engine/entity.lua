@@ -16,6 +16,13 @@ function Entity:setBounds(entity, x, y, w, h)
 	local oldEntityW = entity.w
 	local oldEntityH = entity.h
 
+	-- optimization: early return if bounds are unchanged, as this call is expensive
+	if ((oldEntityX == x) and (oldEntityY == y)
+		and (oldEntityW == w) and (oldEntityH == h)) then
+		return
+	end
+
+	-- cannot move a destroyed entity or non-entity
 	local entityId = entity.id
 	if entityId == nil then
 		return
@@ -266,10 +273,9 @@ function Entity:destroy(entity)
 	local destroyedEntities = self.simulation.state.world.destroyedEntities
 	destroyedEntities[#destroyedEntities + 1] = entityId
 end
-function Entity:create(template)
+function Entity:create()
 	local world = self.simulation.state.world
 	local entities = world.entities
-	local entitiesCount = #entities
 
 	local destroyedEntities = world.destroyedEntities
 	local destroyedEntitiesCount = #destroyedEntities
@@ -279,43 +285,21 @@ function Entity:create(template)
 		entityId = destroyedEntities[destroyedEntitiesCount]
 		destroyedEntities[destroyedEntitiesCount] = nil
 	else
-		entityId = entitiesCount + 1
+		entityId = #entities + 1
 	end
 
-	local entity = {}
-	local templateProps
-	if template ~= nil then
-		templateProps = template.properties
-		if templateProps ~= nil then
-			entity = util.deepcopy(templateProps)
-		end
-	end
+	local entity = {
+		["id"] = entityId,
+		["x"] = 0,
+		["y"] = 0,
+		["z"] = 0,
+		["w"] = 0,
+		["h"] = 0,
+		["chunks"] = {},
+		["tags"] = {},
+	}
 
-	entity.id = entityId
-	entity.x = 0
-	entity.y = 0
-	entity.z = 0
-	entity.w = 0
-	entity.h = 0
-	entity.chunks = {}
-	entity.tags = {}
-
-	if template ~= nil then
-		if templateProps ~= nil then
-			self:setBounds(entity, templateProps.x or 0, templateProps.y or 0, templateProps.w or 0, templateProps.h or 0)
-		end
-
-		entity.z = templateProps.z or 0
-
-		local templateTags = template.tags
-		if templateTags ~= nil then
-			for tag, _ in pairs(templateTags) do
-				self:tag(entity, tag)
-			end
-		end
-	end
-
-	world.entities[entityId] = entity
+	entities[entityId] = entity
 
 	return entity
 end

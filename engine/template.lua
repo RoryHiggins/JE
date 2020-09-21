@@ -1,3 +1,4 @@
+local util = require("engine/util")
 local Entity = require("engine/entity")
 
 local Template = {}
@@ -13,23 +14,53 @@ end
 function Template:get(templateId)
 	return self.simulation.static.templates[templateId]
 end
+function Template:apply(entity, template)
+	local entitySys = self.entitySys
+
+	local templateProperties = template.properties
+	if templateProperties ~= nil then
+		-- backup fields that cannot be set by a template
+		local entityId = entity.id
+		local x = entity.x
+		local y = entity.y
+		local w = entity.w
+		local h = entity.h
+
+		util.tableExtend(entity, templateProperties)
+
+		-- restore fields that cannot be set by a template
+		entity.x = x
+		entity.y = y
+		entity.w = w
+		entity.h = h
+		entity.id = entityId
+
+		-- set bounds in case they are partially specified by the entity
+		x = templateProperties.x or x
+		y = templateProperties.y or y
+		w = templateProperties.w or w
+		h = templateProperties.h or h
+		entitySys:setBounds(entity, x, y, w, h)
+	end
+
+	local templateTags = template.tags
+	if templateTags ~= nil then
+		for tag, enabled in pairs(templateTags) do
+			if enabled then
+				entitySys:tag(entity, tag)
+			end
+		end
+	end
+end
 function Template:instantiate(template, x, y, w, h)
 	local entity = self.entitySys:create(template)
 
-	if x == nil then
-		x = entity.x
-	end
-	if y == nil then
-		y = entity.y
-	end
+	self:apply(entity, template)
 
-	if w == nil then
-		w = entity.w
-	end
-	if h == nil then
-		h = entity.h
-	end
-
+	x = x or entity.x
+	y = y or entity.y
+	w = w or entity.w
+	h = h or entity.h
 	self.entitySys:setBounds(entity, x, y, w, h)
 
 	return entity
