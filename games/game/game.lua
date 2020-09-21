@@ -89,12 +89,10 @@ function Game:createTestWorld()
 	})
 	for _ = 1, 0 do
 		local spriteObject = templateSys:instantiate(spriteObjectTemplate)
-		entitySys:setBounds(
+		entitySys:setPos(
 			spriteObject,
 			16 + math.floor(math.random(levelW - 16)),
-			16 + math.floor(math.random(levelH - 16)),
-			6,
-			6)
+			16 + math.floor(math.random(levelH - 16)))
 	end
 	util.debug("spriteObjectCount=%d", #entitySys:findAll("spriteObject"))
 end
@@ -117,7 +115,6 @@ function Game:onSimulationStep()
 	end
 end
 function Game:onSimulationDraw(screen)
-	-- TODO "Renderable" class
 	local fps = {
 		["x"] = 0,
 		["y"] = 0,

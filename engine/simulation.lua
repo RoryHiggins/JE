@@ -13,16 +13,16 @@ function Simulation:broadcast(event, ...)
 		end
 	end
 end
-function Simulation:addSystem(class)
-	if type(class) ~= "table" then
-		util.error("class is not a table, class=%s", util.toComparable(class))
+function Simulation:addSystem(prototype)
+	if type(prototype) ~= "table" then
+		util.error("prototype is not a table, prototype=%s", util.toComparable(prototype))
 		return {}
 	end
 
-	local systemName = class.SYSTEM_NAME
+	local systemName = prototype.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.error("class.SYSTEM_NAME is not valid, class=%s", util.toComparable(class))
+		util.error("prototype.SYSTEM_NAME is not valid, prototype=%s", util.toComparable(prototype))
 		return {}
 	end
 
@@ -30,8 +30,8 @@ function Simulation:addSystem(class)
 	if system == nil then
 		util.debug("instantiating system, systemName=%s", systemName)
 
-		class.__index = class
-		system = setmetatable({}, class)
+		prototype.__index = prototype
+		system = setmetatable({}, prototype)
 		self.systems[systemName] = system
 		self.systemsCreated[systemName] = false
 	end

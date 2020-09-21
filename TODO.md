@@ -1,14 +1,7 @@
 
-Issues
-------
 
-- Releasing with a specified game does not change the client's default target
-- No docs example of running a game headless (no client) - add a makefile target?
-
-
-
-Rendering pipeline refresh
---------------------------
+Render targets
+-------------------
 
 Add viewports support, particularly for the GUI.  Planned interface (by example):
 ```
@@ -38,6 +31,13 @@ Configuration
 -------------
 By default one file for all, but support multiple files with a defined parse order
 Lives in the game/ folder
+
+Flow for configuring the client:
+	client.configure(static.client)
+	client.open()
+
+Rename minimal -> minimal_example
+Add minimal_client_example showing the minimum needed to have a
 
 
 Editor thoughts
@@ -96,3 +96,21 @@ Editor support
 - UI Element: Dialog
 - UI Element: Button
 - UI Element: Textbox
+
+
+
+Text rendering
+--------------
+Bounding
+- Overflow text onto next row if width is reached.
+- Clamp text within width/height bounds.
+
+Font loading and unicode.  Bring alcohol.
+
+
+Misc Issues
+-----------
+
+- Releasing with a specified game does not change the client's default target
+- No docs example of running a game headless (no client) - add a makefile target?
+

@@ -123,7 +123,7 @@ function util.toComparable(input, stack)
 		local fieldStrings = {}
 		for _, key in ipairs(keys) do
 			local val = input[key]
-			local fieldString = string.format("%s: %s", util.toComparable(key), util.toComparable(val, stack))
+			local fieldString = string.format("\"%s\": %s", tostring(key), util.toComparable(val, stack))
 			fieldStrings[#fieldStrings + 1] = fieldString
 		end
 
