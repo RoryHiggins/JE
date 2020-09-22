@@ -31,9 +31,11 @@ Lua/C game engine for game jams.  Very much WIP, only for personal use.
 
 
 ## Games
+[games/minimal/](games/minimal/README.md) - example game with the minimum code needed to do something interesting with the engine
+
 [games/game/](games/game/README.md) - platformer game built in parallel with the engine
 
-[games/minimal/](games/minimal/README.md) - example game with the minimum code needed to do something interesting with the engine
+![Default game example](./example_output.png)
 
 
 ## Getting set up

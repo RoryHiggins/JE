@@ -13,40 +13,42 @@ function Simulation:broadcast(event, ...)
 		end
 	end
 end
-function Simulation:addSystem(prototype)
-	if type(prototype) ~= "table" then
-		util.error("prototype is not a table, prototype=%s", util.toComparable(prototype))
+function Simulation:addSystem(system)
+	if type(system) ~= "table" then
+		util.error("system is not a table, system=%s",
+				   util.toComparable(system))
 		return {}
 	end
 
-	local systemName = prototype.SYSTEM_NAME
+	local systemName = system.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.error("prototype.SYSTEM_NAME is not valid, prototype=%s", util.toComparable(prototype))
+		util.error("system.SYSTEM_NAME is not valid, system=%s",
+				   util.toComparable(system))
 		return {}
 	end
 
-	local system = self.systems[systemName]
-	if system == nil then
+	local systemInstance = self.systems[systemName]
+	if systemInstance == nil then
 		util.debug("instantiating system, systemName=%s", systemName)
 
-		prototype.__index = prototype
-		system = setmetatable({}, prototype)
-		self.systems[systemName] = system
+		system.__index = system
+		systemInstance = setmetatable({}, system)
+		self.systems[systemName] = systemInstance
 		self.systemsCreated[systemName] = false
 	end
 
 	if self.created and not self.systemsCreated[systemName] then
-		util.debug("creating system, systemName=%s", systemName)
+		util.debug("creating systemInstance, systemName=%s", systemName)
 
 		-- marking as created first, to prevent recursion with circular dependencies
 		self.systemsCreated[systemName] = true
-		if system.onSimulationCreate then
-			system:onSimulationCreate(self)
+		if systemInstance.onSimulationCreate then
+			systemInstance:onSimulationCreate(self)
 		end
 	end
 
-	return system
+	return systemInstance
 end
 function Simulation.isRunning()
 	return client.state.running
@@ -288,7 +290,7 @@ function Simulation:run()
 	self:finish()
 
 	-- self:save(self.SAVE_FILE)
-	-- self:dump(self.DUMP_FILE)
+	self:dump(self.DUMP_FILE)
 	self:destroy()
 
 	util.logLevel = logLevelBackup

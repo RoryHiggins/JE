@@ -101,8 +101,10 @@ function util.getEscapedString(input)
 		:gsub("[^%w%p%s]", "?")
 	)
 end
-function util.toComparable(input, stack)
+function util.toComparable(input, stack, indentation)
 	local inputType = type(input)
+
+	indentation = indentation or ""
 
 	if inputType == "number" then
 		return tostring(input)
@@ -118,16 +120,29 @@ function util.toComparable(input, stack)
 
 		stack[#stack + 1] = input
 
+		-- get keys in sorted order (to be deterministic)
 		local keys = util.getKeys(input)
 
 		local fieldStrings = {}
+		local innerIndentation = indentation.."\t"
 		for _, key in ipairs(keys) do
 			local val = input[key]
-			local fieldString = string.format("\"%s\": %s", tostring(key), util.toComparable(val, stack))
+
+			local fieldString = string.format(
+				"\n%s\"%s\": %s",
+				innerIndentation,
+				tostring(key),
+				util.toComparable(val, stack, innerIndentation)
+			)
 			fieldStrings[#fieldStrings + 1] = fieldString
 		end
 
-		return "{"..table.concat(fieldStrings, ", ").."}"
+		local result = indentation.."{"..table.concat(fieldStrings, ", ").."\n"..indentation.."}"
+		if indentation ~= "" then
+			result = "\n"..result
+		end
+
+		return result
 	elseif inputType == "nil" then
 		return "null"
 	elseif inputType == "function" then

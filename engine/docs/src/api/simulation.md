@@ -20,16 +20,22 @@ simulation:run()
 ```
 
 
-## Simulation:addSystem(prototype)
-Instantiates and adds system to the simulation, if not already added.
+## Simulation:addSystem(system)
+Adds the specified system to the simulation, if not already present.  Returns an instance of that system.
+
+Systems are uniquely keyed by system.SYSTEM_NAME. If a system with that key does not exist, this method will instantiate the system as follows:
+
+- Creates a new table, systemInstance
+- set system as the metatable for systemInstance
+- registers systemInstance into the simulation's SYSTEM_NAME to system instance mapping
 
 **Arguments**
 
-- "prototype" - table used as the prototype for the system instance
+- "system" - metatable used for the system instance
 
 **Returns**
 
-- instance of the requested system
+- instance of the specified system
 
 **Examples**
 
@@ -126,14 +132,19 @@ simulation:dump("simulation_dump.json")
 
 
 ## Simulation:save(filename)
-Saves simulation state to the given filename.  Only state in simulation.state is saved.
+Saves simulation state as gzipped JSON to the given filename.  Only state in simulation.state is saved.
+
 There are some major restrictions simulation.state must adhere to, in order to support saving:
 
-- primitive types only, i.e. must only be composed of tables, strings, numbers, bool, and nil
 - no table recursion, i.e. a table cannot contain itself, directly or indirectly
+- primitive types only, i.e. must only be composed of tables, strings, numbers, bool, and nil
 - no sparse arrays (nils in tables containing only number keys)
 - cannot mix string keys and number keys in tables
-- no metatables
+
+There are also some restrictions which simulation.state should adhere to, else information will be lost:
+
+- no metatables - tables will not include their metatable nor metatable members when the save is loaded
+- only store one reference to a table - each reference will be its own table when the save is loaded
 
 **Arguments**
 
@@ -151,7 +162,7 @@ simulation:save("save.dat")
 
 
 ## Simulation:load(filename)
-Loads simulation state from the given filename.  If successful, replaces what is already in simulation.state.
+Loads simulation state as gzipped JSON from the given filename.  If successful, replaces what is already in simulation.state.
 
 **Arguments**
 

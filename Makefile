@@ -48,8 +48,10 @@ run_debugger: engine_client
 	gdb --args ./engine_client $(GAME)
 profile: gmon.out
 	gprof -b engine_client* gmon.out > profile.txt
+docs:
+	scripts/build_docs_html.sh
 clean:
 	rm -f engine_client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
 	rm -rf release
 
-.PHONY: release run run_debugger profile clean
+.PHONY: release run run_debugger profile docs clean
