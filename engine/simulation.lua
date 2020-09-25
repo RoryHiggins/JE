@@ -64,10 +64,10 @@ function Simulation:stepClient()
 	client.step()
 
 	self.screen = {
-		["x"] = 0,
-		["y"] = 0,
-		["w"] = client.state.width,
-		["h"] = client.state.height,
+		["x1"] = 0,
+		["y1"] = 0,
+		["x2"] = client.state.width,
+		["y2"] = client.state.height,
 	}
 
 	self.fps = client.state.fps
@@ -309,10 +309,10 @@ function Simulation.new()
 		["created"] = false,
 		["started"] = false,
 		["screen"] = {
-			["x"] = 0,
-			["y"] = 0,
-			["w"] = 0,
-			["h"] = 0,
+			["x1"] = 0,
+			["y1"] = 0,
+			["x2"] = 0,
+			["y2"] = 0,
 		},
 		["fps"] = 0,
 	}

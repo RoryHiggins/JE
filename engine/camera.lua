@@ -7,23 +7,23 @@ function Camera:onSimulationCreate(simulation)
 	self.entitySys = self.simulation:addSystem(Entity)
 
 	self.simulation.state.camera = {
-		["x"] = 0,
-		["y"] = 0,
-		["w"] = self.simulation.screen.w,
-		["h"] = self.simulation.screen.h,
+		["x1"] = 0,
+		["y1"] = 0,
+		["x2"] = self.simulation.screen.x2,
+		["y2"] = self.simulation.screen.y2,
 	}
 end
 function Camera:onSimulationDraw(screen)
 	local camera = self.simulation.state.camera
 
-	camera.w = screen.w
-	camera.h = screen.h
-
 	local cameraTarget = self.entitySys:find("cameraTarget")
 	if cameraTarget then
-		camera.x = math.floor(cameraTarget.x + (cameraTarget.w / 2) - (camera.w / 2))
-		camera.y = math.floor(cameraTarget.y + (cameraTarget.h / 2) - (camera.h / 2))
+		camera.x1 = math.floor(cameraTarget.x + (cameraTarget.w / 2) - ((camera.x2 - camera.x1) / 2))
+		camera.y1 = math.floor(cameraTarget.y + (cameraTarget.h / 2) - ((camera.y2 - camera.y1) / 2))
 	end
+
+	camera.x2 = camera.x1 + screen.x2
+	camera.y2 = camera.y1 + screen.y2
 
 	self.simulation:broadcast("onCameraDraw", camera)
 end

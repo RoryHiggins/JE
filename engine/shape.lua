@@ -26,10 +26,10 @@ end
 
 function Shape:onRunTests()
 	local screen = {
-		["x"] = 0,
-		["y"] = 0,
-		["w"] = self.simulation.screen.w,
-		["h"] = self.simulation.screen.h,
+		["x1"] = 0,
+		["y1"] = 0,
+		["x2"] = self.simulation.screen.x2,
+		["y2"] = self.simulation.screen.y2,
 	}
 
 	local testTriangle = {
