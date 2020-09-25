@@ -1,3 +1,6 @@
+"""
+Script to build the docs as markdown
+"""
 import os
 import argparse
 import logging
@@ -108,10 +111,12 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--src_dir', type=str, default="../engine/docs/src")
-    arg_parser.add_argument('--build_dir', type=str, default="../engine/docs/build")
+    arg_parser.add_argument('--src-dir', type=str, default="../engine/docs/src")
+    arg_parser.add_argument('--build-dir', type=str, default="../engine/docs/build")
 
     args = arg_parser.parse_args()
+
+    os.makedirs(args.build_dir, exist_ok=True)
 
     docs_src_dir = pathlib.Path(args.src_dir).resolve(strict=True)
     docs_build_dir = pathlib.Path(args.build_dir).resolve(strict=True)

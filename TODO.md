@@ -1,18 +1,47 @@
 
-
 Render targets
 -------------------
 
-Add viewports support, particularly for the GUI.  Planned interface (by example):
+Add texture atlas support:
+
+- (re-)allocate and reset an area with a unique key name
+- render texture support, with the caveat that switching render target flushes draw calls
+- make textureId a required field in draw calls, and dynamically compute offsets
+- allow loading unknown texture sizes from a file
+
+```lua
+client.defineTexture({["textureId"] = ..., ["w"] = ..., ["h"] = ...})
+client.defineTexture({["textureId"] = ..., ["filename"] = ...})
 ```
-	camera = {["x1"] = ..., ["y1"] = ..., ["x2"] = ..., ["y2"] = ...,}
-	client.drawClear()
 
-	self:broadcast("onSimulationDraw")
-	client.draw({"cameras": {camera}})  -- splits window evenly between provided viewports.  renders at specified size before drawing to 
+Add viewports support, particularly for the GUI.  Planned interface (by example):
+```lua
+-- clear 
+client.defineTexture({["textureId"] = "camera_1", ["w"] = 160, ["h"] = 120})
+client.drawBegin({["textureId"] = "camera_1", ["r"] = 1, ["g"] = 1, ["b"] = 1, ["a"] = 1})
+-- draw the game with all its viewports onto a render target
+self:broadcast("onSimulationDraw")
+client.drawEnd()
 
-	self:broadcast("onSimulationDrawGui")
-	client.draw()  -- defaults to full size at window resolution
+-- then draw the game on the screen (may be a different resolution than the game)
+
+-- NEED TO ADD TEXTURE ATLAS SUPPORT FIRST FOR FBO TO BE DRAWABLE!
+-- might also want to be smarter on the simulation side (integer scaling, keep aspect ratio)
+client.targetScreen()
+client.drawBegin()
+client.drawSprite({
+	["textureId"] = "game",
+	["x1"] = 0,
+	["y1"] = 0,
+	["x2"] = client.state.w,
+	["y2"] = client.state.h,
+	["u1"] = 0,
+	["v1"] = 0,
+	["u2"] = 160,
+	["v2"] = 120,
+})
+self:broadcast("onSimulationDrawScreen")
+client.drawEnd()
 ```
 
 

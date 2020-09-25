@@ -280,7 +280,7 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, jeVertex *vertices, int vertex
 	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y", 0.0f);
 	vertices[0].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
 	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
-	vertices[0].z = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "z", 0.0f);
+	vertices[0].z = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "z1", 0.0f);
 	vertices[0].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0f);
 	vertices[0].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0f);
 
@@ -317,12 +317,17 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, jeVertex *vertices, int vertex
 		vertices[i].a = vertices[0].a;
 	}
 
-	float cameraX = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x", 0.0f);
-	float cameraY = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y", 0.0f);
-	float cameraW = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "w", 0.0f);
-	float cameraH = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "h", 0.0f);
-	float cameraOffsetX = -cameraX - (float)floor(cameraW / 2.0f);
-	float cameraOffsetY = -cameraY - (float)floor(cameraH / 2.0f);
+	float cameraX1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x", 0.0f);
+	float cameraY1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y", 0.0f);
+	float cameraX2 = cameraX1 + jeLuaClient_getOptionalNumberField(lua, cameraIndex, "w", 0.0f);
+	float cameraY2 = cameraY1 + jeLuaClient_getOptionalNumberField(lua, cameraIndex, "h", 0.0f);
+	cameraX1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
+	cameraY1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
+	cameraX2 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
+	cameraY2 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
+
+	float cameraOffsetX = -cameraX1 - (float)floor((cameraX2 - cameraX1) / 2.0f);
+	float cameraOffsetY = -cameraY1 - (float)floor((cameraY2 - cameraY1) / 2.0f);
 	for (int i = 0; i < vertexCount; i++) {
 		vertices[i].x += cameraOffsetX;
 		vertices[i].y += cameraOffsetY;
@@ -477,7 +482,6 @@ bool jeLuaClient_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(drawTriangle),
 		JE_LUA_CLIENT_BINDING(drawSprite),
 		JE_LUA_CLIENT_BINDING(drawText),
-		JE_LUA_CLIENT_BINDING(drawLine),
 		JE_LUA_CLIENT_BINDING(drawReset),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),

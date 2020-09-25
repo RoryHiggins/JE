@@ -25,7 +25,7 @@ struct jeVertex {
 	float x;
 	float y;
 	float z;
-	float w;  /*not used*/
+	float unused;
 
 	float r;
 	float g;

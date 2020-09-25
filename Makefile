@@ -49,9 +49,10 @@ run_debugger: engine_client
 profile: gmon.out
 	gprof -b engine_client* gmon.out > profile.txt
 docs:
-	scripts/build_docs_html.sh
+	python -m pip install --quiet -r scripts/requirements.txt
+	python scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
 clean:
 	rm -f engine_client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
-	rm -rf release
+	rm -rf release engine/docs/build
 
 .PHONY: release run run_debugger profile docs clean

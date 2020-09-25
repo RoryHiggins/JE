@@ -910,7 +910,7 @@ void jeWindowRunTests() {
 	jeVertex triangleVertices[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT];
 	jeWindow_pushPrimitive(window, triangleVertices, JE_PRIMITIVE_TYPE_TRIANGLES);
 
-	/*Create a second window before displaying to see if they clobbering each other w/ opengl state*/
+	/*Create a second window before displaying to see if they clobbering each other with opengl state*/
 	jeWindow* window2 = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
 	JE_ASSERT(window2 != NULL);
 	jeWindow_destroy(window2);
