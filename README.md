@@ -56,7 +56,9 @@ pacman -S --needed \
 	mingw-w64-x86_64-luajit \
 	mingw-w64-x86_64-SDL2 \
 	mingw-w64-x86_64-zlib \
-	mingw-w64-x86_64-libpng
+	mingw-w64-x86_64-libpng \
+	python3 \
+	python3-pip
 ```
 
 4. Checkout repository:
@@ -71,7 +73,8 @@ cd JE
 
 1. Install dependencies.  With apt:
 ```
-sudo apt install gcc make libluajit-5.1-dev libsdl2-dev zlib1g-dev libpng-dev
+sudo apt update
+sudo apt install gcc make libluajit-5.1-dev libsdl2-dev zlib1g-dev libpng-dev python3 python3-pip
 ```
 
 4. Checkout repository:
@@ -91,16 +94,17 @@ make
 # run the default game using the built client.  builds client if not already built
 make run
 
-# run the game headless (no client)
+# run the game headless (no client).  client calls are stubbed.  useful for running automated tests
 make run_headless
 
 # override the game to run
 make run GAME=games/game
+make run_headless GAME=games/game
 
-# override target and rebuild with debug logging and gdb-friendly debug symbols
+# override target and rebuild client with debug logging and gdb-friendly debug symbols
 make -B TARGET=DEBUG
 
-# other targets are:
+# other client targets are:
 # - RELEASE - all optimizations, no logging, no debug symbols.  for releases
 # - PROFILED - release build with enough extra information to generate a profile with gprof
 # - DEVELOPMENT (default) - optimized for compile-time, minimal logging
@@ -116,6 +120,9 @@ make release GAME=games/game
 # generate a performance profile using gprof.  build with TARGET=PROFILED, run game, then run this command
 make profile
 
+# build docs
+make docs
+
 # clean artefacts
 make clean
 ```
@@ -123,21 +130,25 @@ make clean
 
 ### Dependency versions
 
-Tested version range:
+Tested dependency versions:
 
-GCC >= 7.4.0, GCC <= 10.2.0
+GCC 7.4.0, 10.2.0
 
-Make >= 4.1, Make <= 4.3
+Make 4.1.0, 4.3.0
 
-GLEW >= 2.0.0, GLEW <= 2.2.0
+GLEW 2.0.0, 2.2.0
 
-LuaJIT == 2.1.0_beta3
+LuaJIT 2.1.0
 
-SDL2 >= 2.0.8, SDL <= 2.0.12
+SDL2 2.0.8, SDL 2.0.12
 
-zlib == 1.2.11
+zlib 1.2.11
 
-libpng >= 1.6.37, libpng <= 1.6.37
+libpng 1.6.34, 1.6.37
+
+python 3.8.2, 3.9.0
+
+pip 9.0.1, pip 20.2.0
 
 
 ### Running the tests

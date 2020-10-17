@@ -1,6 +1,7 @@
 /bin/
 /release/
 /old/
+/engine/docs/build
 
 *.exe
 *.sav

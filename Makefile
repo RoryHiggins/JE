@@ -1,10 +1,10 @@
 # RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
-TARGET := DEVELOPMENT
+CLIENT_TARGET := DEVELOPMENT
 GAME := games/game
-RELEASE_TARGET := RELEASE
 
 CC := gcc
 LUA := luajit
+PYTHON := python3
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla
 
 LFLAGS_COMMON := -lm -lpng -lz -lGL -lGLU -lGLEW -lluajit-5.1
@@ -30,14 +30,14 @@ CFLAGS_TRACE := $(CFLAGS_DEBUG) -D JE_BUILD_TRACE
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
 engine_client: Makefile stdafx.h.gch client/*.c client/*.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o engine_client
+	$(CC) $(CFLAGS_$(CLIENT_TARGET)) -D JE_BUILD_$(CLIENT_TARGET) client/main.c $(LFLAGS_$(CLIENT_TARGET)) -o engine_client
 stdafx.h.gch: Makefile client/stdafx.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o stdafx.h.gch
+	$(CC) $(CFLAGS_$(CLIENT_TARGET)) -D JE_BUILD_$(CLIENT_TARGET) client/stdafx.h -o stdafx.h.gch
 
 release:
 	rm -rf release
 	mkdir release
-	$(CC) $(CFLAGS_$(RELEASE_TARGET)) -D JE_BUILD_$(RELEASE_TARGET) client/main.c $(LFLAGS_$(RELEASE_TARGET)) -o release/engine_client
+	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE client/main.c $(LFLAGS_RELEASE) -o release/engine_client
 
 	mkdir release/client
 	cp -r client/data -- release/client
@@ -57,8 +57,8 @@ run_debugger: engine_client
 profile: gmon.out
 	gprof -b engine_client* gmon.out > profile.txt
 docs:
-	python -m pip install --quiet -r scripts/requirements.txt
-	python scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
+	$(PYTHON) -m pip install -r scripts/requirements.txt
+	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
 clean:
 	rm -f engine_client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
 	rm -rf release engine/docs/build
