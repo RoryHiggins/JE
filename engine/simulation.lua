@@ -3,8 +3,8 @@ local client = require("engine/client")
 
 
 local Simulation = {}
-Simulation.DUMP_FILE = ".\\game_dump.sav"
-Simulation.SAVE_FILE = ".\\game_save.sav"
+Simulation.DUMP_FILE = "./game_dump.sav"
+Simulation.SAVE_FILE = "./game_save.sav"
 function Simulation:broadcast(event, ...)
 	for _, system in pairs(self.systems) do
 		local eventHandler = system[event]

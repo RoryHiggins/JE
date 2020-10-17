@@ -35,7 +35,7 @@ function Template:apply(entity, template)
 		entity.h = h
 		entity.id = entityId
 
-		-- set bounds in case they are partially specified by the entity
+		-- set bounds from template
 		x = templateProperties.x or x
 		y = templateProperties.y or y
 		w = templateProperties.w or w

@@ -4,18 +4,24 @@ GAME := games/game
 RELEASE_TARGET := RELEASE
 
 CC := gcc
+LUA := luajit
 CFLAGS := -std=c99 -Wall -Wextra -pedantic -Werror=vla
+
+LFLAGS_COMMON := -lm -lpng -lz -lGL -lGLU -lGLEW -lluajit-5.1
+ifeq ($(OS),Windows_NT)
+	LFLAGS_COMMON := -lm -lpng -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1
+endif
 
 CFLAGS_RELEASE := $(CFLAGS) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows -D NDEBUG
 SDL_FLAGS_RELEASE := `sdl2-config --static-libs --cflags`
-LFLAGS_RELEASE := -static $(SDL_FLAGS_RELEASE) -lm -lpng -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1 -static-libstdc++ -static-libgcc
+LFLAGS_RELEASE := -static $(SDL_FLAGS_RELEASE) $(LFLAGS_COMMON) -static-libstdc++ -static-libgcc
 
 CFLAGS_PROFILED := $(CFLAGS_RELEASE) -pg -fno-inline-functions -fno-omit-frame-pointer
 LFLAGS_PROFILED := $(LFLAGS_RELEASE)
 
 CFLAGS_DEVELOPMENT := $(CFLAGS) -Winvalid-pch -O0
-SDL_FLAGS_DEVELOPMENT := `sdl2-config --libs --cflags | sed -e 's/-mwindows//g'` # exclude -mwindows to 
-LFLAGS_DEVELOPMENT := $(SDL_FLAGS_DEVELOPMENT) -lm -lpng -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1
+SDL_FLAGS_DEVELOPMENT := `sdl2-config --libs --cflags | sed -e 's/-mwindows//g'` # exclude -mwindows
+LFLAGS_DEVELOPMENT := $(SDL_FLAGS_DEVELOPMENT) $(LFLAGS_COMMON)
 
 CFLAGS_DEBUG := $(CFLAGS_DEVELOPMENT) -O0 -ggdb3 -fno-inline-functions -fno-omit-frame-pointer -fexceptions -D JE_BUILD_DEBUG
 LFLAGS_DEBUG := $(LFLAGS_DEVELOPMENT)
@@ -44,6 +50,8 @@ release:
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
 run: engine_client
 	./engine_client $(GAME)
+run_headless: engine_client
+	$(LUA) $(GAME)/main.lua
 run_debugger: engine_client
 	gdb --args ./engine_client $(GAME)
 profile: gmon.out

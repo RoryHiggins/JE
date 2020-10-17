@@ -20,9 +20,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <luajit-2.0/lua.h>
-#include <luajit-2.0/lualib.h>
-#include <luajit-2.0/lauxlib.h>
+#include <luajit-2.1/lua.h>
+#include <luajit-2.1/lualib.h>
+#include <luajit-2.1/lauxlib.h>
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif
@@ -33,8 +33,8 @@ extern "C" {
 #define GLEW_STATIC
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
-#include <gl/glew.h>
-#include <gl/glu.h>
+#include <GL/glew.h>
+#include <GL/glu.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>

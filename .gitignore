@@ -9,6 +9,7 @@
 *.obj
 *.gcda
 j25_*.tar.gz
+engine_client
 gmon.out
 profile.txt
 README.html

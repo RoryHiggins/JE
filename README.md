@@ -51,6 +51,7 @@ Lua/C game engine for game jams.  Very much WIP, only for personal use.
 # some dependencies may come with MSYS2, --needed only installs ones you don't have
 pacman -S --needed \
 	mingw-w64-x86_64-gcc \
+	mingw-w64-x86_64-glew \
 	mingw-w64-x86_64-make \
 	mingw-w64-x86_64-luajit \
 	mingw-w64-x86_64-SDL2 \
@@ -67,8 +68,19 @@ cd JE
 ```
 
 ### Building - Linux
-Untested on Linux.  Package manager dependencies should be identical to Windows, but the Makefile may require tweaking.
 
+1. Install dependencies.  With apt:
+```
+sudo apt install gcc make libluajit-5.1-dev libsdl2-dev zlib1g-dev libpng-dev
+```
+
+4. Checkout repository:
+```
+cd ~/Downloads
+git clone git@github.com:RoryHiggins/JE.git
+
+cd JE
+```
 
 ### Running
 Everything can be done from the Makefile:
@@ -78,6 +90,9 @@ make
 
 # run the default game using the built client.  builds client if not already built
 make run
+
+# run the game headless (no client)
+make run_headless
 
 # override the game to run
 make run GAME=games/game
@@ -108,17 +123,21 @@ make clean
 
 ### Dependency versions
 
-GCC == 10.2.0
+Tested version range:
 
-LuaJIT == 2.0.5
+GCC >= 7.4.0, GCC <= 10.2.0
 
-SDL2 == 2.0.12
+Make >= 4.1, Make <= 4.3
+
+GLEW >= 2.0.0, GLEW <= 2.2.0
+
+LuaJIT == 2.1.0_beta3
+
+SDL2 >= 2.0.8, SDL <= 2.0.12
 
 zlib == 1.2.11
 
-libpng == 1.6.37
-
-These are the only tested versions.  Earlier versions are likely supported for these libraries.
+libpng >= 1.6.37, libpng <= 1.6.37
 
 
 ### Running the tests

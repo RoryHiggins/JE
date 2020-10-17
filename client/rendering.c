@@ -344,18 +344,18 @@ void jeRenderingRunTests() {
 	JE_DEBUG("");
 
 	jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
-	JE_ASSERT(jeVertex_toDebugString(&vertices[0]) != NULL);
+	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
 	for (int i = 0; i < (int)(sizeof(jeVertex) / sizeof(float)); i++) {
-		((float*)&vertices[0])[i] = 1.0f / 3.0f;
+		((float*)vertices)[i] = 1.0f / 3.0f;
 	}
-	JE_ASSERT(jeVertex_toDebugString(&vertices[0]) != NULL);
-	JE_ASSERT(strnlen(jeVertex_toDebugString(&vertices[0]), JE_VERTEX_DEBUG_STRING_BUFFER_SIZE) < JE_VERTEX_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
+	JE_ASSERT(strlen(jeVertex_toDebugString(vertices)) < JE_VERTEX_DEBUG_STRING_BUFFER_SIZE);
 
 	for (int i = 1; i < JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT; i++) {
 		vertices[i] = vertices[0];
 	}
 	JE_ASSERT(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT) != NULL);
-	JE_ASSERT(strnlen(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT), JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE) < JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(strlen(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT)) < JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE);
 
 	jeVertex primitiveVertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	memset((void*)primitiveVertices, 0, sizeof(primitiveVertices));
@@ -369,7 +369,7 @@ void jeRenderingRunTests() {
 	JE_ASSERT(jePrimitiveType_getVertexCount(JE_PRIMITIVE_TYPE_TRIANGLES) > 0);
 	JE_ASSERT(jePrimitiveType_getVertexCount(JE_PRIMITIVE_TYPE_QUADS) > 0);
 	JE_ASSERT(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS) != NULL);
-	JE_ASSERT(strnlen(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS), JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE) < JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(strlen(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS)) < JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE);
 
 	jeVertexBuffer vertexBuffer;
 	JE_ASSERT(jeVertexBuffer_create(&vertexBuffer));
