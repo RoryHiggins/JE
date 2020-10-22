@@ -94,12 +94,16 @@ make
 # run the default game using the built client.  builds client if not already built
 make run
 
-# run the game headless (no client).  client calls are stubbed.  useful for running automated tests
+# run the game headless (no client).  client calls are stubbed
 make run_headless
 
 # override the game to run
 make run GAME=games/game
 make run_headless GAME=games/game
+
+# run the built client directly
+./engine_client
+./engine_client games/game
 
 # override target and rebuild client with debug logging and gdb-friendly debug symbols
 make -B TARGET=DEBUG
@@ -111,7 +115,7 @@ make -B TARGET=DEBUG
 # - DEBUG - optimized for debugging with gdb.  some extra logging enabled
 # - TRACE - debug build with some extremely verbose logging enabled
 
-# run client in gdb.  for debugging client crashes
+# run game with client running in gdb.  for debugging the client
 make run_debugger
 
 # create a fully packaged release.tar.gz which can be delivered standalone

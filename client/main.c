@@ -9,13 +9,17 @@
 #include "lua_client.c"
 #include "client.c"
 
+#if !defined(JE_DEFAULT_GAME_DIR)
+#define JE_DEFAULT_GAME_DIR "games/game"
+#endif
+
 
 int main(int argc, char** argv) {
 	bool ok = true;
 
 	jeClient client;
 
-	const char* gameDir = "games/game";
+	const char* gameDir = JE_DEFAULT_GAME_DIR;
 
 	for (int i = 0; i < argc; i++) {
 		if (strcmp(argv[i], "-game") == 0) {

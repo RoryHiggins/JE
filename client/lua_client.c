@@ -20,8 +20,7 @@
 #define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL
 #endif
 
-
-#if LUA_VERSION_NUM < 520
+#if (LUA_VERSION_NUM < 520) && !(defined(LUAJIT_VERSION_NUM) && (LUAJIT_VERSION_NUM >= 20100))
 /*Shim adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
 void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount) {
 	luaL_checkstack(lua, functionsCount+1, "too many upvalues");
@@ -40,6 +39,7 @@ void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsC
 	lua_pop(lua, functionsCount);  /* remove upvalues */
 }
 #endif
+
 #if LUA_VERSION_NUM >= 520
 size_t lua_objlen(lua_State *lua, int i) {
 	return lua_rawlen(lua, i);

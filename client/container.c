@@ -28,6 +28,8 @@ bool jeBuffer_create(jeBuffer* buffer, int stride) {
 	buffer->count = 0;
 	buffer->capacity = 0;
 
+	ok = ok && jeBuffer_setCapacity(buffer, 0);
+
 	if (!ok) {
 		jeBuffer_destroy(buffer);
 	}
@@ -79,8 +81,14 @@ bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
 		ok = false;
 	}
 
+	/* ensure we have a pointer to heap memory; realloc() for size 0 may return NULL */
+	int byteCapacity = capacity * buffer->stride;
+	if (byteCapacity == 0) {
+		byteCapacity = 1;
+	}
+
 	if (ok) {
-		buffer->data = realloc(buffer->data, capacity * buffer->stride);
+		buffer->data = realloc(buffer->data, byteCapacity);
 
 		if (buffer->data == NULL) {
 			JE_ERROR("allocation failed, buffer=%p, capacity=%d stride=%d", buffer, capacity, buffer->stride);
@@ -318,5 +326,6 @@ void jeContainerRunTests() {
 
 		jeString_destroy(&string);
 		JE_ASSERT(jeString_createFormatted(&string, "hello %s number %d", "person", 42));
+		jeString_destroy(&string);
 	}
 }

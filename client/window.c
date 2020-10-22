@@ -51,29 +51,33 @@ struct jeSDL {
 	bool intialized;
 	int entryCount;
 };
-static jeSDL jeSDL_sdl;
+static jeSDL jeSDL_sdl = {false, 0};
 bool jeSDL_initReentrant() {
 	bool ok = true;
 
+	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
+
 	if (!jeSDL_sdl.intialized) {
+		JE_TRACE("SDL_Init");
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 			JE_ERROR("SDL_Init() failed with error=%s", SDL_GetError());
 			ok = false;
 		}
 	}
 
-	if (ok) {
-		jeSDL_sdl.intialized = true;
-	}
-
+	jeSDL_sdl.intialized = true;
 	jeSDL_sdl.entryCount++;
 
 	return ok;
 }
 void jeSDL_destroyReentrant() {
+	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
+
 	jeSDL_sdl.entryCount--;
 
 	if ((jeSDL_sdl.entryCount <= 0) && jeSDL_sdl.intialized) {
+		JE_TRACE("SDL_Quit");
+
 		jeSDL_sdl.entryCount = 0;
 		jeSDL_sdl.intialized = false;
 		SDL_Quit();
@@ -361,6 +365,8 @@ void jeWindow_destroyGL(jeWindow* window) {
 
 	if (canUseContext) {
 		if (window->vao != 0) {
+			JE_TRACE("deleting vao, vao=%u", window->vao);
+
 			glBindVertexArray(window->vao);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glDeleteVertexArrays(1, &window->vao);
@@ -370,34 +376,37 @@ void jeWindow_destroyGL(jeWindow* window) {
 		glBindVertexArray(0);
 
 		if (window->vbo != 0) {
+			JE_TRACE("deleting vbo, vbo=%u", window->vbo);
+
 			glDeleteBuffers(1, &window->vbo);
 			window->vbo = 0;
 		}
 
 		if (window->texture != 0) {
+			JE_TRACE("deleting texture, texture=%u", window->texture);
+
 			glDeleteTextures(1, &window->texture);
 			window->texture = 0;
 		}
 
 		if (window->program != 0) {
+			JE_TRACE("deleting program, program=%u, vertShader=%u, fragShader=%u",
+					 window->program, window->vertShader, window->fragShader);
+
 			glDetachShader(window->program, window->fragShader);
 			glDetachShader(window->program, window->vertShader);
 			glDeleteProgram(window->program);
-			window->program = 0;
-		}
-
-		if (window->fragShader != 0) {
 			glDeleteShader(window->fragShader);
-			window->fragShader = 0;
-		}
-
-		if (window->vertShader != 0) {
 			glDeleteShader(window->vertShader);
+			window->program = 0;
+			window->fragShader = 0;
 			window->vertShader = 0;
 		}
 	}
 
 	if (window->context != NULL) {
+		JE_TRACE("deleting context, context=%p", window->context);
+
 		SDL_GL_DeleteContext(window->context);
 		window->context = NULL;
 	}
@@ -753,23 +762,22 @@ jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 
 	bool ok = true;
 
+	jeWindow* window = (jeWindow*)malloc(sizeof(jeWindow));
+	memset((void*)window, 0, sizeof(*window));
+
 	ok = ok && jeSDL_initReentrant();
 
-	jeWindow* window = NULL;
 	if (ok) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
-#if defined(JE_BUILD_DEBUG)
-		/*replace with OpenGL 3.2 context for RenderDoc support when debugging*/
+#if defined(JE_BUILD_OPENGL_FORWARD_COMPATIBLE)
+		/*Replace with OpenGL 3.2 context for RenderDoc support*/
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #endif
-
-		window = (jeWindow*)malloc(sizeof(jeWindow));
-		memset((void*)window, 0, sizeof(*window));
 	}
 
 	if (ok) {
@@ -830,6 +838,7 @@ jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 
 	if (!ok) {
 		jeWindow_destroy(window);
+		window = NULL;
 	}
 
 	return window;

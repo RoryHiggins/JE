@@ -259,6 +259,10 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 	ok = ok && jeBuffer_create(&unsortedPrimitivesBuffer, sizeof(jeVertex));
 	ok = ok && jeBuffer_setCount(&unsortedPrimitivesBuffer, vertexCount);
 	const jeVertex *unsortedVertices = (const jeVertex*)unsortedPrimitivesBuffer.data;
+	if (vertices == NULL)
+	{
+		JE_TRACE("!");
+	}
 	memcpy((void*)unsortedVertices, (const void*)vertices, sizeof(jeVertex) * vertexCount);
 
 	jeBuffer sortKeysBuffer;

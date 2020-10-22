@@ -21,12 +21,12 @@
 
 #if defined(NDEBUG)
 #define JE_LOG_LEVEL JE_LOG_LEVEL_NONE
-#elif !defined(JE_BUILD_DEBUG)
-#define JE_LOG_LEVEL JE_LOG_LEVEL_INFO
-#elif !defined(JE_BUILD_TRACE)
+#elif defined(JE_BUILD_TRACE)
+#define JE_LOG_LEVEL JE_LOG_LEVEL_TRACE
+#elif defined(JE_BUILD_DEBUG)
 #define JE_LOG_LEVEL JE_LOG_LEVEL_DEBUG
 #else
-#define JE_LOG_LEVEL JE_LOG_LEVEL_TRACE
+#define JE_LOG_LEVEL JE_LOG_LEVEL_INFO
 #endif
 
 #if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR

@@ -23,6 +23,9 @@ extern "C" {
 #include <luajit-2.1/lua.h>
 #include <luajit-2.1/lualib.h>
 #include <luajit-2.1/lauxlib.h>
+
+// Only used for version checking via LUAJIT_VERSION_NUM
+#include <luajit-2.1/luajit.h>
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif
