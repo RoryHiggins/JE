@@ -1,7 +1,6 @@
 #if !defined(JE_RENDERABLE_H)
 #define JE_RENDERABLE_H
 
-#include "stdafx.h"
 #include "container.h"
 
 #define JE_PRIMITIVE_TYPE_UNKNOWN 0
@@ -47,7 +46,7 @@ void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VER
 
 typedef struct jeVertexBuffer jeVertexBuffer;
 struct jeVertexBuffer {
-	jeHeapArray vertices;
+	jeArray vertices;
 };
 void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer);
 bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer);

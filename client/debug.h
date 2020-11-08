@@ -1,8 +1,6 @@
 #if !defined(JE_DEBUG_H)
 #define JE_DEBUG_H
 
-#include "stdafx.h"
-
 #define JE_LOG_CONTEXT jeLoggerContext_create(__FILE__, __func__, __LINE__)
 
 #define JE_LOG_LABEL_TRACE "trace"

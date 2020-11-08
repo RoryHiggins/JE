@@ -1,16 +1,15 @@
 #if !defined(JE_IMAGE_H)
 #define JE_IMAGE_H
 
-#include "stdafx.h"
 #include "container.h"
 
 
 typedef struct jeColor jeColor;
 struct jeColor {
-	Uint8 r;
-	Uint8 g;
-	Uint8 b;
-	Uint8 a;
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+	unsigned char a;
 };
 static const jeColor jeColor_none =      {0x00, 0x00, 0x00, 0x00};
 static const jeColor jeColor_black =     {0x00, 0x00, 0x00, 0xFF};
@@ -26,7 +25,7 @@ typedef struct jeImage jeImage;
 struct jeImage {
 	int width;
 	int height;
-	jeHeapArray buffer;
+	jeArray buffer;
 };
 void jeImage_destroy(jeImage* image);
 bool jeImage_create(jeImage* image, int width, int height, jeColor fillColor);

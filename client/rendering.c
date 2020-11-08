@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "private_dependencies.h"
 #include "rendering.h"
 #include "debug.h"
 #include "container.h"
@@ -235,15 +235,15 @@ int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
 void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
-	jeHeapArray_destroy(&vertexBuffer->vertices);
+	jeArray_destroy(&vertexBuffer->vertices);
 }
 bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
-	return jeHeapArray_create(&vertexBuffer->vertices, sizeof(jeVertex));
+	return jeArray_create(&vertexBuffer->vertices, sizeof(jeVertex));
 }
 void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
-	jeHeapArray_setCount(&vertexBuffer->vertices, 0);
+	jeArray_setCount(&vertexBuffer->vertices, 0);
 }
 bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitiveType) {
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
@@ -255,9 +255,9 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 
 	bool ok = true;
 
-	jeHeapArray unsortedPrimitivesBuffer;
-	ok = ok && jeHeapArray_create(&unsortedPrimitivesBuffer, sizeof(jeVertex));
-	ok = ok && jeHeapArray_setCount(&unsortedPrimitivesBuffer, vertexCount);
+	jeArray unsortedPrimitivesBuffer;
+	ok = ok && jeArray_create(&unsortedPrimitivesBuffer, sizeof(jeVertex));
+	ok = ok && jeArray_setCount(&unsortedPrimitivesBuffer, vertexCount);
 	const jeVertex *unsortedVertices = (const jeVertex*)unsortedPrimitivesBuffer.data;
 	if (vertices == NULL)
 	{
@@ -265,9 +265,9 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 	}
 	memcpy((void*)unsortedVertices, (const void*)vertices, sizeof(jeVertex) * vertexCount);
 
-	jeHeapArray sortKeysBuffer;
-	ok = ok && jeHeapArray_create(&sortKeysBuffer, sizeof(jePrimitiveSortKey));
-	ok = ok && jeHeapArray_setCount(&sortKeysBuffer, primitiveCount);
+	jeArray sortKeysBuffer;
+	ok = ok && jeArray_create(&sortKeysBuffer, sizeof(jePrimitiveSortKey));
+	ok = ok && jeArray_setCount(&sortKeysBuffer, primitiveCount);
 	jePrimitiveSortKey *sortKeys = (jePrimitiveSortKey*)sortKeysBuffer.data;
 
 	if (ok) {
@@ -304,8 +304,8 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 		}
 	}
 
-	jeHeapArray_destroy(&sortKeysBuffer);
-	jeHeapArray_destroy(&unsortedPrimitivesBuffer);
+	jeArray_destroy(&sortKeysBuffer);
+	jeArray_destroy(&unsortedPrimitivesBuffer);
 
 	return ok;
 }
@@ -316,25 +316,25 @@ void jeVertexBuffer_pushPrimitive(jeVertexBuffer* vertexBuffer, const jeVertex* 
 	switch (primitiveType) {
 		case JE_PRIMITIVE_TYPE_POINTS: {
 			jeVertex_createPointQuad(quadVertices, vertices);
-			jeHeapArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
+			jeArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
 			break;
 		}
 		case JE_PRIMITIVE_TYPE_LINES: {
 			jeVertex_createLineQuad(quadVertices, vertices);
-			jeHeapArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
+			jeArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
 			break;
 		}
 		case JE_PRIMITIVE_TYPE_SPRITES: {
 			jeVertex_createSpriteQuad(quadVertices, vertices);
-			jeHeapArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
+			jeArray_push(&vertexBuffer->vertices, (const void*)&quadVertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
 			break;
 		}
 		case JE_PRIMITIVE_TYPE_TRIANGLES: {
-			jeHeapArray_push(&vertexBuffer->vertices, (const void*)vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT);
+			jeArray_push(&vertexBuffer->vertices, (const void*)vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT);
 			break;
 		}
 		case JE_PRIMITIVE_TYPE_QUADS: {
-			jeHeapArray_push(&vertexBuffer->vertices, (const void*)vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
+			jeArray_push(&vertexBuffer->vertices, (const void*)vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT);
 			break;
 		}
 		default: {
@@ -390,23 +390,23 @@ void jeRenderingRunTests() {
 	vertices[3].z = 1;
 	jeVertexBuffer_pushPrimitive(&vertexBuffer, vertices, JE_PRIMITIVE_TYPE_QUADS);
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->x == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->y == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->z == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
 
 	JE_ASSERT(jeVertexBuffer_sort(&vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES));
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->x == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->y == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, 0))->z == 1);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((jeVertex*)jeHeapArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 1);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
 
 
 	jeVertexBuffer_reset(&vertexBuffer);

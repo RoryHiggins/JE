@@ -32,10 +32,10 @@ endif
 CFLAGS_TRACE := $(CFLAGS_DEBUG)
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
-engine_client: Makefile stdafx.h.gch client/*.c client/*.h
+engine_client: Makefile private_dependencies.h.gch client/*.c client/*.h
 	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o engine_client
-stdafx.h.gch: Makefile client/stdafx.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o stdafx.h.gch
+private_dependencies.h.gch: Makefile client/private_dependencies.h
+	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/private_dependencies.h -o private_dependencies.h.gch
 
 run: engine_client
 	./engine_client -game $(GAME)
@@ -63,7 +63,7 @@ release:
 
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
 clean:
-	rm -f engine_client game_dump.sav game_save.sav stdafx.h.gch gmon.out profile.txt
+	rm -f engine_client game_dump.sav game_save.sav private_dependencies.h.gch gmon.out profile.txt
 	rm -rf release engine/docs/build
 
 .PHONY: run run_debugger run_headless profile docs release clean

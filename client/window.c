@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "private_dependencies.h"
 #include "window.h"
 #include "debug.h"
 #include "container.h"

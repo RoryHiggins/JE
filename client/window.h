@@ -1,7 +1,6 @@
 #if !defined(JE_WINDOW_H)
 #define JE_WINDOW_H
 
-#include "stdafx.h"
 #include "rendering.h"
 
 #define JE_INPUT_LEFT 0

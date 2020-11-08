@@ -1,6 +1,6 @@
 /*Precompiled header*/
-#if !defined(JE_STDAFX_H)
-#define JE_STDAFX_H
+#if !defined(JE_CORE_PRIVATE_DEPENDENCIES_H)
+#define JE_CORE_PRIVATE_DEPENDENCIES_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -24,7 +24,7 @@ extern "C" {
 #include <luajit-2.1/lualib.h>
 #include <luajit-2.1/lauxlib.h>
 
-// Only used for version checking via LUAJIT_VERSION_NUM
+/* Only used for version checking via LUAJIT_VERSION_NUM */
 #include <luajit-2.1/luajit.h>
 #ifdef __cplusplus
 } /*extern "C"*/
