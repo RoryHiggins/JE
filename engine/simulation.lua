@@ -5,6 +5,10 @@ local client = require("engine/client")
 local Simulation = {}
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
+Simulation.STATE_NEW = "new"
+Simulation.STATE_CREATED = "created"
+Simulation.STATE_STARTED = "started"
+Simulation.STATE_STOPPED = "stopped"
 function Simulation:broadcast(event, ...)
 	for _, system in pairs(self.systems) do
 		local eventHandler = system[event]
@@ -144,7 +148,7 @@ function Simulation:start()
 		end
 	end
 end
-function Simulation:finish()
+function Simulation:stop()
 	util.debug("")
 
 	if not self.created then
@@ -287,7 +291,7 @@ function Simulation:run()
 		self:draw()
 	end
 
-	self:finish()
+	self:stop()
 
 	-- self:save(self.SAVE_FILE)
 	self:dump(self.DUMP_FILE)

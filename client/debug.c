@@ -44,8 +44,15 @@ jeLoggerContext jeLoggerContext_create(const char* file, const char* function, i
 	return loggerContext;
 }
 
+void jeErr() {
+	// dummy function to breakpoint errors
+}
 void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, const char* formatStr, ...) {
-	if (loggerLevel >= jeLoggerLevel_override) {
+	if (jeLoggerLevel_override <= loggerLevel) {
+		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
+			jeErr();
+		}
+
 		const char* label = jeLoggerLevel_getLabel(loggerLevel);
 		fprintf(stdout, "[%s %s:%d] %s() ", label, loggerContext.file, loggerContext.line, loggerContext.function);
 
@@ -56,6 +63,12 @@ void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, cons
 
 		fputc('\n', stdout);
 		fflush(stdout);
+	}
+}
+void jeLogger_assert(jeLoggerContext loggerContext, bool value, const char* expressionStr) {
+	if ((jeLoggerLevel_override <= JE_LOG_LEVEL_ERR) && (!value)) {
+		jeErr();
+		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
 }
 

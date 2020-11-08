@@ -1,6 +1,36 @@
 
+Simulation-side quitting
+------------------------
+Replace started/created with a state machine
+
+Rename "created" to initialized in simulation and systems
+
+Reindexing
+----------
+entity.indexed table, for indexed values of data
+entitySys:onEntityReindex
+	entitySys:reindexBounds
+	entitySys:reindexTags
+
+
+
+Client indexing
+---------------
+
+IN ADDITION TO simulation indexing (does not replace it)
+
+Client entity id allocation
+
+
+Static initialization phase
+---------------------------
+
+game.static created and populated all in one game event
+world.static created and populated all in one world event
+
+
 Render targets
--------------------
+--------------
 
 Add texture atlas support:
 

@@ -26,7 +26,7 @@ typedef struct jeImage jeImage;
 struct jeImage {
 	int width;
 	int height;
-	jeBuffer buffer;
+	jeHeapArray buffer;
 };
 void jeImage_destroy(jeImage* image);
 bool jeImage_create(jeImage* image, int width, int height, jeColor fillColor);

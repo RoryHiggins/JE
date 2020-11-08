@@ -47,7 +47,7 @@ void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VER
 
 typedef struct jeVertexBuffer jeVertexBuffer;
 struct jeVertexBuffer {
-	jeBuffer vertices;
+	jeHeapArray vertices;
 };
 void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer);
 bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer);

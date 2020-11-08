@@ -3,7 +3,7 @@
 #include "debug.h"
 
 
-void jeBuffer_destroy(jeBuffer* buffer) {
+void jeHeapArray_destroy(jeHeapArray* buffer) {
 	JE_TRACE("buffer=%p", buffer);
 
 	free(buffer->data);
@@ -13,7 +13,7 @@ void jeBuffer_destroy(jeBuffer* buffer) {
 	buffer->stride = 0;
 	buffer->data = NULL;
 }
-bool jeBuffer_create(jeBuffer* buffer, int stride) {
+bool jeHeapArray_create(jeHeapArray* buffer, int stride) {
 	JE_TRACE("buffer=%p, stride=%d", buffer, stride);
 
 	bool ok = true;
@@ -28,15 +28,15 @@ bool jeBuffer_create(jeBuffer* buffer, int stride) {
 	buffer->count = 0;
 	buffer->capacity = 0;
 
-	ok = ok && jeBuffer_setCapacity(buffer, 0);
+	ok = ok && jeHeapArray_setCapacity(buffer, 0);
 
 	if (!ok) {
-		jeBuffer_destroy(buffer);
+		jeHeapArray_destroy(buffer);
 	}
 
 	return ok;
 }
-void* jeBuffer_getElement(jeBuffer* buffer, int index) {
+void* jeHeapArray_getElement(jeHeapArray* buffer, int index) {
 	JE_TRACE("buffer=%p, index=%d", buffer, index);
 
 	bool ok = true;
@@ -63,10 +63,10 @@ void* jeBuffer_getElement(jeBuffer* buffer, int index) {
 
 	return result;
 }
-void* jeBuffer_get(jeBuffer* buffer) {
-	return jeBuffer_getElement(buffer, 0);
+void* jeHeapArray_get(jeHeapArray* buffer) {
+	return jeHeapArray_getElement(buffer, 0);
 }
-bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
+bool jeHeapArray_setCapacity(jeHeapArray* buffer, int capacity) {
 	JE_TRACE("buffer=%p, newCapacity=%d, currentCapacity=%d", buffer, capacity, buffer->capacity);
 
 	bool ok = true;
@@ -92,7 +92,7 @@ bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
 
 		if (buffer->data == NULL) {
 			JE_ERROR("allocation failed, buffer=%p, capacity=%d stride=%d", buffer, capacity, buffer->stride);
-			jeBuffer_destroy(buffer);
+			jeHeapArray_destroy(buffer);
 			ok = false;
 		}
 	}
@@ -106,12 +106,12 @@ bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity) {
 	}
 
 	if (!ok) {
-		jeBuffer_destroy(buffer);
+		jeHeapArray_destroy(buffer);
 	}
 
 	return ok;
 }
-bool jeBuffer_ensureCapacity(jeBuffer* buffer, int minCapacity) {
+bool jeHeapArray_ensureCapacity(jeHeapArray* buffer, int minCapacity) {
 	JE_TRACE("buffer=%p, minCapacity=%d, currentCapacity=%d", buffer, minCapacity, buffer->capacity);
 
 	bool ok = true;
@@ -132,17 +132,17 @@ bool jeBuffer_ensureCapacity(jeBuffer* buffer, int minCapacity) {
 	}
 
 	if (newCapacity > buffer->capacity) {
-		ok = ok && jeBuffer_setCapacity(buffer, newCapacity);
+		ok = ok && jeHeapArray_setCapacity(buffer, newCapacity);
 	}
 
 	return ok;
 }
-bool jeBuffer_setCount(jeBuffer* buffer, int count) {
+bool jeHeapArray_setCount(jeHeapArray* buffer, int count) {
 	JE_TRACE("buffer=%p, newCount=%d, currentCount=%d", buffer, count, buffer->count);
 
 	bool ok = true;
 
-	ok = ok && jeBuffer_ensureCapacity(buffer, buffer->count + count);
+	ok = ok && jeHeapArray_ensureCapacity(buffer, buffer->count + count);
 
 	if (ok) {
 		buffer->count = count;
@@ -150,16 +150,16 @@ bool jeBuffer_setCount(jeBuffer* buffer, int count) {
 
 	return ok;
 }
-bool jeBuffer_push(jeBuffer* buffer, const void* data, int count) {
+bool jeHeapArray_push(jeHeapArray* buffer, const void* data, int count) {
 	JE_TRACE("buffer=%p, count=%d", buffer, count);
 
 	bool ok = true;
 
-	ok = ok && jeBuffer_setCount(buffer, buffer->count + count);
+	ok = ok && jeHeapArray_setCount(buffer, buffer->count + count);
 
 	void* dest = NULL;
 	if (ok) {
-		dest = jeBuffer_getElement(buffer, buffer->count - count);
+		dest = jeHeapArray_getElement(buffer, buffer->count - count);
 	}
 
 	ok = ok && (dest != NULL);
@@ -170,22 +170,22 @@ bool jeBuffer_push(jeBuffer* buffer, const void* data, int count) {
 
 	return ok;
 }
-bool jeBuffer_pushOne(jeBuffer* buffer, const void* data) {
+bool jeHeapArray_pushOne(jeHeapArray* buffer, const void* data) {
 	JE_TRACE("buffer=%p", buffer);
 
-	return jeBuffer_push(buffer, data, 1);
+	return jeHeapArray_push(buffer, data, 1);
 }
 
-void jeString_destroy(jeString* string) {
-	jeBuffer_destroy(&string->buffer);
+void jeHeapString_destroy(jeHeapString* string) {
+	jeHeapArray_destroy(&string->buffer);
 }
-bool jeString_create(jeString* string) {
-	return jeBuffer_create(&string->buffer, sizeof(char));
+bool jeHeapString_create(jeHeapString* string) {
+	return jeHeapArray_create(&string->buffer, sizeof(char));
 }
-bool jeString_createFormatted(jeString* string, const char* formatStr, ...) {
+bool jeHeapString_createFormatted(jeHeapString* string, const char* formatStr, ...) {
 	JE_TRACE("string=%p, formatStr=%s", string, formatStr);
 
-	bool ok = jeString_create(string);
+	bool ok = jeHeapString_create(string);
 
 	va_list args;
 	va_start(args, formatStr);
@@ -206,14 +206,14 @@ bool jeString_createFormatted(jeString* string, const char* formatStr, ...) {
 		}
 	}
 
-	ok = ok && jeString_setCount(string, formattedStringSize + 1);
+	ok = ok && jeHeapString_setCount(string, formattedStringSize + 1);
 
 	char* dest = NULL;
 	if (ok) {
-		dest = jeString_get(string);
+		dest = jeHeapString_get(string);
 
 		if (dest == NULL) {
-			JE_ERROR("jeString_get() failed with string=%p", string);
+			JE_ERROR("jeHeapString_get() failed with string=%p", string);
 			ok = false;
 		}
 	}
@@ -233,99 +233,99 @@ bool jeString_createFormatted(jeString* string, const char* formatStr, ...) {
 
 	return ok;
 }
-int jeBuffer_getCount(jeBuffer* buffer) {
+int jeHeapArray_getCount(jeHeapArray* buffer) {
 	return buffer->count;
 }
-int jeBuffer_getCapacity(jeBuffer* buffer) {
+int jeHeapArray_getCapacity(jeHeapArray* buffer) {
 	return buffer->capacity;
 }
-int jeString_getCount(jeString* string) {
+int jeHeapString_getCount(jeHeapString* string) {
 	return string->buffer.count;
 }
-int jeString_getCapacity(jeString* string) {
+int jeHeapString_getCapacity(jeHeapString* string) {
 	return string->buffer.capacity;
 }
-char* jeString_getElement(jeString* string, int index) {
-	return (char*)jeBuffer_getElement(&string->buffer, index);
+char* jeHeapString_getElement(jeHeapString* string, int index) {
+	return (char*)jeHeapArray_getElement(&string->buffer, index);
 }
-char* jeString_get(jeString* string) {
-	return jeString_getElement(string, 0);
+char* jeHeapString_get(jeHeapString* string) {
+	return jeHeapString_getElement(string, 0);
 }
-bool jeString_setCapacity(jeString* string, int capacity) {
-	return jeBuffer_setCapacity(&string->buffer, capacity);
+bool jeHeapString_setCapacity(jeHeapString* string, int capacity) {
+	return jeHeapArray_setCapacity(&string->buffer, capacity);
 }
-bool jeString_ensureCapacity(jeString* string, int minCapacity) {
-	return jeBuffer_ensureCapacity(&string->buffer, minCapacity);
+bool jeHeapString_ensureCapacity(jeHeapString* string, int minCapacity) {
+	return jeHeapArray_ensureCapacity(&string->buffer, minCapacity);
 }
-bool jeString_setCount(jeString* string, int count) {
-	return jeBuffer_setCount(&string->buffer, count);
+bool jeHeapString_setCount(jeHeapString* string, int count) {
+	return jeHeapArray_setCount(&string->buffer, count);
 }
-bool jeString_push(jeString* string, const char* data, int count) {
-	return jeBuffer_push(&string->buffer, (const void*)data, count);
+bool jeHeapString_push(jeHeapString* string, const char* data, int count) {
+	return jeHeapArray_push(&string->buffer, (const void*)data, count);
 }
-bool jeString_pushString(jeString* string, const char* data) {
-	return jeString_push(string, data, strlen(data) + 1);
+bool jeHeapString_pushString(jeHeapString* string, const char* data) {
+	return jeHeapString_push(string, data, strlen(data) + 1);
 }
 
 void jeContainerRunTests() {
 	JE_DEBUG("");
 
 	{
-		jeBuffer buffer;
-		JE_ASSERT(jeBuffer_create(&buffer, 1));
-		jeBuffer_destroy(&buffer);
+		jeHeapArray buffer;
+		JE_ASSERT(jeHeapArray_create(&buffer, 1));
+		jeHeapArray_destroy(&buffer);
 		JE_ASSERT(buffer.data == NULL);
 
-		JE_ASSERT(jeBuffer_create(&buffer, sizeof(int)));
+		JE_ASSERT(jeHeapArray_create(&buffer, sizeof(int)));
 		int value = 4;
-		JE_ASSERT(jeBuffer_push(&buffer, (void*)&value, 1));
-		JE_ASSERT(jeBuffer_get(&buffer) != NULL);
-		JE_ASSERT(jeBuffer_getCount(&buffer) == 1);
-		JE_ASSERT(jeBuffer_getCapacity(&buffer) >= jeBuffer_getCount(&buffer));
-		JE_ASSERT(jeBuffer_getElement(&buffer, 0) != NULL);
-		JE_ASSERT(*(int*)jeBuffer_getElement(&buffer, 0) == value);
+		JE_ASSERT(jeHeapArray_push(&buffer, (void*)&value, 1));
+		JE_ASSERT(jeHeapArray_get(&buffer) != NULL);
+		JE_ASSERT(jeHeapArray_getCount(&buffer) == 1);
+		JE_ASSERT(jeHeapArray_getCapacity(&buffer) >= jeHeapArray_getCount(&buffer));
+		JE_ASSERT(jeHeapArray_getElement(&buffer, 0) != NULL);
+		JE_ASSERT(*(int*)jeHeapArray_getElement(&buffer, 0) == value);
 		value++;
-		JE_ASSERT(*(int*)jeBuffer_getElement(&buffer, 0) != value);
+		JE_ASSERT(*(int*)jeHeapArray_getElement(&buffer, 0) != value);
 
 		value++;
-		JE_ASSERT(jeBuffer_pushOne(&buffer, (void*)&value));
+		JE_ASSERT(jeHeapArray_pushOne(&buffer, (void*)&value));
 		JE_ASSERT(buffer.count == 2);
 		JE_ASSERT(buffer.capacity >= buffer.count);
-		JE_ASSERT(*(int*)jeBuffer_getElement(&buffer, 1) == value);
-		JE_ASSERT(*(int*)jeBuffer_getElement(&buffer, 0) != *(int*)jeBuffer_getElement(&buffer, 1));
+		JE_ASSERT(*(int*)jeHeapArray_getElement(&buffer, 1) == value);
+		JE_ASSERT(*(int*)jeHeapArray_getElement(&buffer, 0) != *(int*)jeHeapArray_getElement(&buffer, 1));
 
-		JE_ASSERT(jeBuffer_setCount(&buffer, 5));
+		JE_ASSERT(jeHeapArray_setCount(&buffer, 5));
 		JE_ASSERT(buffer.count == 5);
 		JE_ASSERT(buffer.capacity >= 5);
 
-		JE_ASSERT(jeBuffer_ensureCapacity(&buffer, 10));
+		JE_ASSERT(jeHeapArray_ensureCapacity(&buffer, 10));
 		JE_ASSERT(buffer.count == 5);
 		JE_ASSERT(buffer.capacity >= 10);
 
-		JE_ASSERT(jeBuffer_setCount(&buffer, 20));
+		JE_ASSERT(jeHeapArray_setCount(&buffer, 20));
 		JE_ASSERT(buffer.count == 20);
 		JE_ASSERT(buffer.capacity >= 20);
 
-		JE_ASSERT(jeBuffer_getElement(&buffer, buffer.count - 1) != NULL);
+		JE_ASSERT(jeHeapArray_getElement(&buffer, buffer.count - 1) != NULL);
 
-		jeBuffer_destroy(&buffer);
+		jeHeapArray_destroy(&buffer);
 	}
 
 	{
-		jeString string;
-		JE_ASSERT(jeString_create(&string));
-		JE_ASSERT(jeString_push(&string, "hello", 6));
-		jeString_destroy(&string);
+		jeHeapString string;
+		JE_ASSERT(jeHeapString_create(&string));
+		JE_ASSERT(jeHeapString_push(&string, "hello", 6));
+		jeHeapString_destroy(&string);
 
-		JE_ASSERT(jeString_create(&string));
-		JE_ASSERT(jeString_pushString(&string, "hello"));
-		JE_ASSERT(jeString_get(&string) != NULL);
-		JE_ASSERT(jeString_getCount(&string) >= 5);
-		JE_ASSERT(jeString_getCapacity(&string) >= jeString_getCount(&string));
-		JE_ASSERT(jeString_getElement(&string, 0) != NULL);
+		JE_ASSERT(jeHeapString_create(&string));
+		JE_ASSERT(jeHeapString_pushString(&string, "hello"));
+		JE_ASSERT(jeHeapString_get(&string) != NULL);
+		JE_ASSERT(jeHeapString_getCount(&string) >= 5);
+		JE_ASSERT(jeHeapString_getCapacity(&string) >= jeHeapString_getCount(&string));
+		JE_ASSERT(jeHeapString_getElement(&string, 0) != NULL);
 
-		jeString_destroy(&string);
-		JE_ASSERT(jeString_createFormatted(&string, "hello %s number %d", "person", 42));
-		jeString_destroy(&string);
+		jeHeapString_destroy(&string);
+		JE_ASSERT(jeHeapString_createFormatted(&string, "hello %s number %d", "person", 42));
+		jeHeapString_destroy(&string);
 	}
 }

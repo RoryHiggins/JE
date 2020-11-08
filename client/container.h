@@ -6,41 +6,41 @@
 #define JE_BUFFER_START_CAPACITY 32
 
 
-typedef struct jeBuffer jeBuffer;
-struct jeBuffer {
+typedef struct jeHeapArray jeHeapArray;
+struct jeHeapArray {
 	void* data;
 	int stride;
 	int count;
 	int capacity;
 };
-void jeBuffer_destroy(jeBuffer* buffer);
-bool jeBuffer_create(jeBuffer* buffer, int stride);
-int jeBuffer_getCount(jeBuffer* buffer);
-int jeBuffer_getCapacity(jeBuffer* buffer);
-void* jeBuffer_getElement(jeBuffer* buffer, int index);
-void* jeBuffer_get(jeBuffer* buffer);
-bool jeBuffer_setCapacity(jeBuffer* buffer, int capacity);
-bool jeBuffer_ensureCapacity(jeBuffer* buffer, int minCapacity);
-bool jeBuffer_setCount(jeBuffer* buffer, int count);
-bool jeBuffer_push(jeBuffer* buffer, const void* data, int count);
-bool jeBuffer_pushOne(jeBuffer* buffer, const void* data);
+void jeHeapArray_destroy(jeHeapArray* buffer);
+bool jeHeapArray_create(jeHeapArray* buffer, int stride);
+int jeHeapArray_getCount(jeHeapArray* buffer);
+int jeHeapArray_getCapacity(jeHeapArray* buffer);
+void* jeHeapArray_getElement(jeHeapArray* buffer, int index);
+void* jeHeapArray_get(jeHeapArray* buffer);
+bool jeHeapArray_setCapacity(jeHeapArray* buffer, int capacity);
+bool jeHeapArray_ensureCapacity(jeHeapArray* buffer, int minCapacity);
+bool jeHeapArray_setCount(jeHeapArray* buffer, int count);
+bool jeHeapArray_push(jeHeapArray* buffer, const void* data, int count);
+bool jeHeapArray_pushOne(jeHeapArray* buffer, const void* data);
 
-typedef struct jeString jeString;
-struct jeString {
-	jeBuffer buffer;
+typedef struct jeHeapString jeHeapString;
+struct jeHeapString {
+	jeHeapArray buffer;
 };
-void jeString_destroy(jeString* string);
-bool jeString_create(jeString* string);
-bool jeString_createFormatted(jeString* string, const char* formatStr, ...);
-int jeString_getCount(jeString* string);
-int jeString_getCapacity(jeString* string);
-char* jeString_getElement(jeString* string, int index);
-char* jeString_get(jeString* string);
-bool jeString_setCapacity(jeString* string, int capacity);
-bool jeString_ensureCapacity(jeString* string, int minCapacity);
-bool jeString_setCount(jeString* string, int count);
-bool jeString_push(jeString* string, const char* data, int count);
-bool jeString_pushString(jeString* string, const char* data);
+void jeHeapString_destroy(jeHeapString* string);
+bool jeHeapString_create(jeHeapString* string);
+bool jeHeapString_createFormatted(jeHeapString* string, const char* formatStr, ...);
+int jeHeapString_getCount(jeHeapString* string);
+int jeHeapString_getCapacity(jeHeapString* string);
+char* jeHeapString_getElement(jeHeapString* string, int index);
+char* jeHeapString_get(jeHeapString* string);
+bool jeHeapString_setCapacity(jeHeapString* string, int capacity);
+bool jeHeapString_ensureCapacity(jeHeapString* string, int minCapacity);
+bool jeHeapString_setCount(jeHeapString* string, int count);
+bool jeHeapString_push(jeHeapString* string, const char* data, int count);
+bool jeHeapString_pushString(jeHeapString* string, const char* data);
 
 void jeContainerRunTests();
 
