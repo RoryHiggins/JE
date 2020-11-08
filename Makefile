@@ -39,7 +39,7 @@ private_dependencies.h.gch: Makefile client/private_dependencies.h
 
 run: engine_client
 	./engine_client -game $(GAME)
-run_headless: engine_client
+run_headless:
 	$(LUA) $(GAME)/main.lua
 run_debugger: engine_client
 	gdb --args ./engine_client -game $(GAME)

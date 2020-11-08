@@ -5,12 +5,12 @@ local client = require("engine/client")
 local Simulation = {}
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
-Simulation.STATE_NEW = "new"
-Simulation.STATE_CREATED = "created"
+Simulation.STATE_UNINITIALIZED = "uninitialized"
+Simulation.STATE_INITALIZED = "initialized"
 Simulation.STATE_STARTED = "started"
 Simulation.STATE_STOPPED = "stopped"
 function Simulation:broadcast(event, ...)
-	for _, system in pairs(self.systems) do
+	for _, system in ipairs(self.systemsOrder) do
 		local eventHandler = system[event]
 		if eventHandler then
 			eventHandler(system, ...)
@@ -39,17 +39,13 @@ function Simulation:addSystem(system)
 		system.__index = system
 		systemInstance = setmetatable({}, system)
 		self.systems[systemName] = systemInstance
-		self.systemsCreated[systemName] = false
-	end
 
-	if self.created and not self.systemsCreated[systemName] then
-		util.debug("creating systemInstance, systemName=%s", systemName)
-
-		-- marking as created first, to prevent recursion with circular dependencies
-		self.systemsCreated[systemName] = true
-		if systemInstance.onSimulationCreate then
-			systemInstance:onSimulationCreate(self)
+		-- marking as initialized first, to prevent recursion with circular dependencies
+		if systemInstance.onInitialize then
+			systemInstance:onInitialize(self)
 		end
+
+		self.systemsOrder[#self.systemsOrder + 1] = systemInstance
 	end
 
 	return systemInstance
@@ -60,10 +56,10 @@ end
 function Simulation:draw()
 	util.trace("")
 
-	self:broadcast("onSimulationDraw", self.screen)
+	self:broadcast("onDraw", self.screen)
 end
-function Simulation:stepClient()
-	util.trace("stepClient")
+function Simulation:clientStep()
+	util.trace("clientStep")
 
 	client.step()
 
@@ -75,64 +71,62 @@ function Simulation:stepClient()
 	}
 
 	self.fps = client.state.fps
-	util.trace("stepClient complete, fps=%d", self.fps)
+	util.trace("clientStep complete, fps=%d", self.fps)
 end
 function Simulation:step()
 	util.trace("")
 
-	self:broadcast("onSimulationStep")
+	self:broadcast("onStep")
 end
 function Simulation:destroy()
-	if not self.created then
+	if not self.initialized then
 		return
 	end
 
-	self:broadcast("onSimulationDestroy")
-	self.state = {}
+	self:broadcast("onDestroy", self)
+	self.world = {}
 
-	for systemName, _ in pairs(self.systems) do
-		self.systemsCreated[systemName] = false
-	end
-
-	self.created = false
+	self.initialized = false
 	self.started = false
 
 	util.debug("")
 end
-function Simulation:create()
+function Simulation:worldInitialize()
+	util.debug("")
+
+	self.world = {}
+	self:broadcast("onWorldInitialize", self.world)
+	self:broadcast("onWorldStart", self.world)
+end
+function Simulation:initialize()
 	self:destroy()
 
 	util.debug("")
 
 	math.randomseed(0)
 
-	self.created = true
+	
 	self.started = false
-	self.state.saveVersion = 1
+	self.static.saveVersion = 1
 
 	-- clear anything drawn by previous simulation
 	client.drawReset()
 
-	for _, system in pairs(self.systems) do
-		util.trace("system.SYSTEM_NAME=%s, created=%s", system.SYSTEM_NAME, self.systemsCreated[system.SYSTEM_NAME])
-		if not self.systemsCreated[system.SYSTEM_NAME] then
-			util.debug("creating system, system.SYSTEM_NAME=%s", system.SYSTEM_NAME)
+	self:broadcast("onInitialize", self)
 
-			-- marking as created first, to prevent recursion with circular dependencies
-			self.systemsCreated[system.SYSTEM_NAME] = true
+	self:worldInitialize()
 
-			if system.onSimulationCreate then
-				system:onSimulationCreate(self)
-			end
-		end
-	end
+	self.initialized = true
+
+	self:broadcast("onStart", self)
+	self.started = true
 end
 function Simulation:start()
 	util.info("")
 
-	if not self.created then
-		util.warn("simulation not created yet")
-		self:create()
+	if not self.initialized then
+		util.warn("simulation not initialized yet")
+		self:initialize()
 	end
 
 	if self.started then
@@ -142,17 +136,13 @@ function Simulation:start()
 
 	self.started = true
 
-	for _, system in pairs(self.systems) do
-		if system.onSimulationStart then
-			system:onSimulationStart(self)
-		end
-	end
+	
 end
 function Simulation:stop()
 	util.debug("")
 
-	if not self.created then
-		util.warn("simulation not created")
+	if not self.initialized then
+		util.warn("simulation not initialized")
 		return
 	end
 
@@ -161,18 +151,18 @@ function Simulation:stop()
 		return
 	end
 
-	for _, system in pairs(self.systems) do
-		if system.onSimulationFinish then
-			system:onSimulationFinish(self)
-		end
-	end
-
+	self:broadcast("onStop")
 	self.started = false
 end
 function Simulation:save(filename)
 	util.debug("filename=%s", filename)
 
-	if not client.writeData(filename, util.json.encode(self.state)) then
+	local save = {
+		["saveVersion"] = self.static.saveVersion,
+		["world"] = self.world,
+	}
+
+	if not client.writeData(filename, util.json.encode(save)) then
 		util.error("client.writeData() failed")
 		return false
 	end
@@ -182,24 +172,24 @@ end
 function Simulation:load(filename)
 	util.info("filename=%s", filename)
 
-	local loadedStateStr = client.readData(filename)
-	if not loadedStateStr then
+	local loadedSaveStr = client.readData(filename)
+	if not loadedSaveStr then
 		return false
 	end
 
-	local loadedState = util.json.decode(loadedStateStr)
+	local loadedSave = util.json.decode(loadedSaveStr)
 
-	if loadedState.saveVersion and (loadedState.saveVersion > self.state.saveVersion) then
+	if loadedSave.saveVersion and (loadedSave.saveVersion > self.static.saveVersion) then
 		util.error("save version is too new, saveVersion=%d, save.saveVersion=%d",
-				   self.state.saveVersion, loadedState.saveVersion)
+				   self.static.saveVersion, loadedSave.saveVersion)
 		return false
 	end
-	if loadedState.saveVersion and (loadedState.saveVersion < self.state.saveVersion) then
+	if loadedSave.saveVersion and (loadedSave.saveVersion < self.static.saveVersion) then
 		util.info("save version is older, saveVersion=%d, save.saveVersion=%d",
-				   self.state.saveVersion, loadedState.saveVersion)
+				   self.static.saveVersion, loadedSave.saveVersion)
 	end
 
-	self.state = loadedState
+	self.world = loadedSave.world
 
 	return true
 end
@@ -207,7 +197,7 @@ function Simulation:dump(filename)
 	util.debug("filename=%s", filename)
 
 	local dump = {
-		["state"] = self.state,
+		["world"] = self.world,
 		["static"] = self.static,
 		["systems"] = util.getKeys(self.systems),
 	}
@@ -219,18 +209,18 @@ function Simulation:dump(filename)
 	return true
 end
 function Simulation:onRunTests()
-	self:create()
+	self:initialize()
 	self:step()
 	self:draw()
 
-	local gameBeforeSave = util.toComparable(self.state)
+	local gameBeforeSave = util.toComparable(self.world)
 	assert(self:dump("test_dump.sav"))
 	assert(self:save("test_save.sav"))
 	assert(self:load("test_save.sav"))
 	os.remove("test_dump.sav")
 	os.remove("test_save.sav")
 
-	local gameAfterLoad = util.toComparable(self.state)
+	local gameAfterLoad = util.toComparable(self.world)
 	if gameBeforeSave ~= gameAfterLoad then
 		util.error("Mismatched state before save and after load: before=%s, after=%s",
 				   gameBeforeSave, gameAfterLoad)
@@ -248,8 +238,8 @@ function Simulation:runTests()
 
 	local testSuitesCount = 0
 
-	-- create once to let systems add dependencies
-	self:create()
+	-- initialize once to let systems add dependencies
+	self:initialize()
 	self:destroy()
 
 	for _, system in pairs(self.systems) do
@@ -257,7 +247,7 @@ function Simulation:runTests()
 			util.info("running tests for %s", system.SYSTEM_NAME)
 
 			self:destroy()
-			self:create()
+			self:initialize()
 
 			testSuitesCount = testSuitesCount + (system:onRunTests() or 1)
 		end
@@ -274,7 +264,6 @@ function Simulation:runTests()
 end
 function Simulation:run()
 	local startTimeSeconds = os.clock()
-	-- self:stepClient()
 	local logLevelBackup = util.logLevel
 	util.logLevel = client.state.logLevel
 
@@ -282,11 +271,11 @@ function Simulation:run()
 		self:runTests()
 	end
 
-	self:create()
+	self:initialize()
 	self:start()
 
 	while self:isRunning() do
-		self:stepClient()
+		self:clientStep()
 		self:step()
 		self:draw()
 	end
@@ -307,10 +296,10 @@ end
 function Simulation.new()
 	local simulation = {
 		["systems"] = {},
-		["systemsCreated"] = {},
-		["state"] = {},
+		["systemsOrder"] = {},
+		["world"] = {},
 		["static"] = {},
-		["created"] = false,
+		["initialized"] = false,
 		["started"] = false,
 		["screen"] = {
 			["x1"] = 0,

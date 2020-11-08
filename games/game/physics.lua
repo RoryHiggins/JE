@@ -1,5 +1,4 @@
 local util = require("engine/util")
-local World = require("engine/world")
 local Entity = require("engine/entity")
 local Template = require("engine/template")
 local Material = require("games/game/material")
@@ -268,9 +267,8 @@ function Physics:tick(entity)
 	self:tickForces(entity)
 	self:tickMovement(entity)
 end
-function Physics:onSimulationCreate(simulation)
+function Physics:onInitialize(simulation)
 	self.simulation = simulation
-	self.worldSys = self.simulation:addSystem(World)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.materialSys = self.simulation:addSystem(Material)
@@ -296,7 +294,7 @@ function Physics:onSimulationCreate(simulation)
 	airPhysics.friction = 0.1
 	airPhysics.moveForceStrength = 0.5
 end
-function Physics:onSimulationStep()
+function Physics:onStep()
 	for _, entity in ipairs(self.entitySys:findAll("physics")) do
 		self:tick(entity)
 	end
@@ -317,7 +315,7 @@ function Physics.onEntityTag(_, entity, tag, tagId)
 	end
 end
 function Physics:onRunTests()
-	self.worldSys:create()
+	self.simulation:worldInitialize()
 
 	local static = self.simulation.static
 
@@ -375,7 +373,7 @@ function Physics:onRunTests()
 	assert(entity.speedX == 0)
 	assert(entity.speedY == 0)
 	for _ = 1, 5 do
-		self:onSimulationStep()
+		self:onStep()
 		assert(entity.x == 0)
 		assert(entity.y == 0)
 	end
@@ -384,7 +382,7 @@ function Physics:onRunTests()
 	for _ = 1, 100 do
 		entity.forceX = entity.forceX + (static.physicsGravityY)
 		entity.forceY = entity.forceY + (static.physicsGravityX)
-		self:onSimulationStep()
+		self:onStep()
 	end
 	assert(util.sign(entity.x) ~= 0)
 	assert(util.sign(entity.y) ~= 0)

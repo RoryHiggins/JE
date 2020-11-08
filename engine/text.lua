@@ -46,7 +46,7 @@ function Text:detach(entity)
 	entity.text = nil
 	entity.fontId = nil
 end
-function Text:onSimulationCreate(simulation)
+function Text:onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.cameraSys = self.simulation:addSystem(Camera)

@@ -1,53 +1,51 @@
 local util = require("engine/util")
 local Input = require("engine/input")
+local Entity = require("engine/entity")
+local Template = require("engine/template")
+local Sprite = require("engine/sprite")
 local Text = require("engine/text")
 local Shape = require("engine/shape")
 
+local Wall = require("games/game/entities/wall")
+local Player = require("games/game/entities/player")
+
 local Game = {}
 Game.SYSTEM_NAME = "game"
-function Game:createTestWorld()
+function Game:testWorldInitialize()
 	util.info("")
 
-	local wallSys = self.simulation:addSystem(require("games/game/entities/wall"))
-	local playerSys = self.simulation:addSystem(require("games/game/entities/player"))
-
-	local worldSys = self.simulation:addSystem(require("engine/world"))
-	worldSys:create()
-
-	local entitySys = self.simulation:addSystem(require("engine/entity"))
-	local templateSys = self.simulation:addSystem(require("engine/template"))
-	local spriteSys = self.simulation:addSystem(require("engine/sprite"))
+	self.simulation:worldInitialize()
 
 	local levelW = 256
 	local levelH = 256
 
-	templateSys:instantiate(playerSys.template, 64, 16)
+	self.templateSys:instantiate(self.playerSys.template, 64, 16)
 
 	-- step floors
 	for i = 1, 7 do
 		local x = 16 + ((i - 1) * 32)
 		local y = 16 + ((i - 1) * 32)
-		spriteSys:attach(templateSys:instantiate(wallSys.template, x, y, 8, 8),
-						 spriteSys:get("wallMetalVerticalLeft"))
-		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 8, y, 8, 8),
-						 spriteSys:get("wallMetalVerticalMid"))
-		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 16, y, 8, 8),
-						 spriteSys:get("wallMetalVerticalMid"))
-		spriteSys:attach(templateSys:instantiate(wallSys.template, x + 24, y, 8, 8),
-						 spriteSys:get("wallMetalVerticalRight"))
+		self.spriteSys:attach(self.templateSys:instantiate(self.wallSys.template, x, y, 8, 8),
+							  self.spriteSys:get("wallMetalVerticalLeft"))
+		self.spriteSys:attach(self.templateSys:instantiate(self.wallSys.template, x + 8, y, 8, 8),
+							  self.spriteSys:get("wallMetalVerticalMid"))
+		self.spriteSys:attach(self.templateSys:instantiate(self.wallSys.template, x + 16, y, 8, 8),
+							  self.spriteSys:get("wallMetalVerticalMid"))
+		self.spriteSys:attach(self.templateSys:instantiate(self.wallSys.template, x + 24, y, 8, 8),
+							  self.spriteSys:get("wallMetalVerticalRight"))
 	end
 
 	-- side walls
-	templateSys:instantiate(wallSys.template, 0, 0, 8, levelH)
-	templateSys:instantiate(wallSys.template, levelW - 8, 0, 8, levelH)
+	self.templateSys:instantiate(self.wallSys.template, 0, 0, 8, levelH)
+	self.templateSys:instantiate(self.wallSys.template, levelW - 8, 0, 8, levelH)
 
 	-- top and bottom walls
-	templateSys:instantiate(wallSys.template, 0, 0, levelW, 8)
-	templateSys:instantiate(wallSys.template, 0, levelH - 8, levelW, 8)
+	self.templateSys:instantiate(self.wallSys.template, 0, 0, levelW, 8)
+	self.templateSys:instantiate(self.wallSys.template, 0, levelH - 8, levelW, 8)
 
-	spriteSys:addSprite("physicsObject", 0 + 1, 8 + 2, 6, 6)
+	self.spriteSys:addSprite("physicsObject", 0 + 1, 8 + 2, 6, 6)
 
-	local physicsObjectTemplate = templateSys:add("physicsObject", {
+	local physicsObjectTemplate = self.templateSys:add("physicsObject", {
 		["properties"] = {
 			["spriteId"] = "physicsObject",
 			["w"] = 6,
@@ -66,18 +64,18 @@ function Game:createTestWorld()
 		},
 	})
 	for _ = 1, 10 do
-		local physicsObject = templateSys:instantiate(physicsObjectTemplate)
-		entitySys:setPos(
+		local physicsObject = self.templateSys:instantiate(physicsObjectTemplate)
+		self.entitySys:setPos(
 			physicsObject,
 			16 + math.floor(math.random(levelW - 16)),
 			16 + math.floor(math.random(levelH - 16))
 		)
-		if entitySys:findRelative(physicsObject, 0, 0, "solid") then
-			entitySys:destroy(physicsObject)
+		if self.entitySys:findRelative(physicsObject, 0, 0, "solid") then
+			self.entitySys:destroy(physicsObject)
 		end
 	end
 
-	local spriteObjectTemplate = templateSys:add("spriteObject", {
+	local spriteObjectTemplate = self.templateSys:add("spriteObject", {
 		["properties"] = {
 			["spriteId"] = "physicsObject",
 			["w"] = 6,
@@ -88,33 +86,39 @@ function Game:createTestWorld()
 		},
 	})
 	for _ = 1, 0 do
-		local spriteObject = templateSys:instantiate(spriteObjectTemplate)
+		local spriteObject = self.templateSys:instantiate(spriteObjectTemplate)
 		entitySys:setPos(
 			spriteObject,
 			16 + math.floor(math.random(levelW - 16)),
 			16 + math.floor(math.random(levelH - 16)))
 	end
-	util.debug("spriteObjectCount=%d", #entitySys:findAll("spriteObject"))
+	util.debug("spriteObjectCount=%d", #self.entitySys:findAll("spriteObject"))
 end
-function Game:onSimulationCreate(simulation)
+function Game:onInitialize(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.templateSys = self.simulation:addSystem(Template)
+	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.textSys = self.simulation:addSystem(Text)
 	self.shapeSys = self.simulation:addSystem(Shape)
 
+	self.wallSys = self.simulation:addSystem(Wall)
+	self.playerSys = self.simulation:addSystem(Player)
+
 	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 end
-function Game:onSimulationStart()
-	self:createTestWorld()
+function Game:onStart()
+	self:testWorldInitialize()
 end
-function Game:onSimulationStep()
+function Game:onStep()
 	if self.simulation.started then
 		if self.inputSys:getReleased("x") then
-			self:createTestWorld()
+			self:testWorldInitialize()
 		end
 	end
 end
-function Game:onSimulationDraw(screen)
+function Game:onDraw(screen)
 	local fps = {
 		["x"] = 0,
 		["y"] = 0,

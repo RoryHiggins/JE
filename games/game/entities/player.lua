@@ -93,7 +93,7 @@ function Player:tickEntity(entity)
 		self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
 	end
 end
-function Player:onSimulationCreate(simulation)
+function Player:onInitialize(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -133,7 +133,7 @@ function Player:onSimulationCreate(simulation)
 		},
 	})
 end
-function Player:onSimulationStep()
+function Player:onStep()
 	for _, player in pairs(self.entitySys:findAll("player")) do
 		self:tickEntity(player)
 	end
@@ -141,7 +141,7 @@ end
 function Player:onRunTests()
 	self.templateSys:instantiate(self.template)
 	for _ = 1, 10 do
-		self:onSimulationStep()
+		self:onStep()
 	end
 end
 

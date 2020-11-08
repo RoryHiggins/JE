@@ -16,7 +16,7 @@ end
 function Shape:drawTriangle(renderable, camera)
 	client.drawTriangle(renderable, self.untexturedSprite, camera)
 end
-function Shape:onSimulationCreate(simulation)
+function Shape:onInitialize(simulation)
 	self.simulation = simulation
 	self.spriteSys = self.simulation:addSystem(Sprite)
 

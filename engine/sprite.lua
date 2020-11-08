@@ -46,7 +46,7 @@ function Sprite:detach(entity)
 	self.entitySys:untag(entity, "sprite")
 	entity.spriteId = nil
 end
-function Sprite:onSimulationCreate(simulation)
+function Sprite:onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.cameraSys = self.simulation:addSystem(Camera)

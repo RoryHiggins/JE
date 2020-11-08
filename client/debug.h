@@ -57,8 +57,8 @@
 #define JE_TRACE(...)
 #endif
 
-
 #define JE_ASSERT(EXPR) jeLogger_assert(JE_LOG_CONTEXT, EXPR, #EXPR)
+
 
 typedef int jeLoggerLevel;
 const char* jeLoggerLevel_getLabel(jeLoggerLevel loggerLevel);

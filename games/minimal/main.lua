@@ -5,12 +5,13 @@ local Sprite = require("engine/sprite")
 
 local MinimalGame = {}
 MinimalGame.SYSTEM_NAME = "minimalGame"
-function MinimalGame:onSimulationCreate(simulation)
+function MinimalGame:onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.spriteSys = self.simulation:addSystem(Sprite)
-
+end
+function MinimalGame:onWorldInitialize()
 	-- create a template we'll use for creating entities in the world
 	self.blockTemplate = self.templateSys:add("block", {
 		["properties"] = {
@@ -26,12 +27,11 @@ function MinimalGame:onSimulationCreate(simulation)
 		},
 		["tags"] = {
 			["sprite"] = true,
-			["blockTag"] = true,
+			["block"] = true,  -- used in OnStep to find the block instances by tag
 		},
 	})
 
 	-- create two instances of the template with different colors and positions
-
 	local redBlock = self.templateSys:instantiate(self.blockTemplate, 32, 32)
 	redBlock.r = 1
 	redBlock.g = 0
@@ -42,9 +42,9 @@ function MinimalGame:onSimulationCreate(simulation)
 	blueBlock.g = 0
 	blueBlock.b = 1
 end
-function MinimalGame:onSimulationStep()
+function MinimalGame:onStep()
 	-- move blocks in random directions
-	for _, block in pairs(self.entitySys:findAll("blockTag")) do
+	for _, block in pairs(self.entitySys:findAll("block")) do
 		self.entitySys:movePos(block, math.floor(math.random(3) - 2), math.floor(math.random(3) - 2))
 	end
 end

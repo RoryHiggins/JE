@@ -49,13 +49,13 @@ PhysicsSys.SYSTEM_NAME = "physicsSys"
 
 -- triggered once when the simulation
 -- triggered immediately if the system is added after simulation is created
-PhysicsSys.onSimulationCreate(simulation)
+PhysicsSys.onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 end
 
 -- triggered once per simulation step (60 times a second, when run from the client)
-PhysicsSys.onSimulationStep()
+PhysicsSys.onStep()
 	for _, entity in ipairs(self.entitySys:findAll("physics")) do
 		self.entitySys:movePos(entity, 0, 1)  -- not the most interesting gravity physics
 	end

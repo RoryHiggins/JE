@@ -2,19 +2,20 @@ local Entity = require("engine/entity")
 
 local Camera = {}
 Camera.SYSTEM_NAME = "camera"
-function Camera:onSimulationCreate(simulation)
+function Camera:onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
-
-	self.simulation.state.camera = {
+end
+function Camera:onWorldInitialize(simulation)
+	self.simulation.world.camera = {
 		["x1"] = 0,
 		["y1"] = 0,
 		["x2"] = self.simulation.screen.x2,
 		["y2"] = self.simulation.screen.y2,
 	}
 end
-function Camera:onSimulationDraw(screen)
-	local camera = self.simulation.state.camera
+function Camera:onDraw(screen)
+	local camera = self.simulation.world.camera
 
 	local cameraTarget = self.entitySys:find("cameraTarget")
 	if cameraTarget then
@@ -28,8 +29,8 @@ function Camera:onSimulationDraw(screen)
 	self.simulation:broadcast("onCameraDraw", camera)
 end
 function Camera:onRunTests()
-	assert(self.simulation.state.camera ~= nil)
-	self:onSimulationDraw(self.simulation.screen)
+	assert(self.simulation.world.camera ~= nil)
+	self:onDraw(self.simulation.screen)
 end
 
 return Camera

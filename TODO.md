@@ -50,7 +50,7 @@ Add viewports support, particularly for the GUI.  Planned interface (by example)
 client.defineTexture({["textureId"] = "camera_1", ["w"] = 160, ["h"] = 120})
 client.drawBegin({["textureId"] = "camera_1", ["r"] = 1, ["g"] = 1, ["b"] = 1, ["a"] = 1})
 -- draw the game with all its viewports onto a render target
-self:broadcast("onSimulationDraw")
+self:broadcast("onDraw")
 client.drawEnd()
 
 -- then draw the game on the screen (may be a different resolution than the game)
@@ -70,7 +70,7 @@ client.drawSprite({
 	["u2"] = 160,
 	["v2"] = 120,
 })
-self:broadcast("onSimulationDrawScreen")
+self:broadcast("onDrawScreen")
 client.drawEnd()
 ```
 

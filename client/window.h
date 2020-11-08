@@ -16,8 +16,8 @@
 #define JE_WINDOW_MIN_WIDTH 160
 #define JE_WINDOW_MIN_HEIGHT 120
 
-typedef int jeInputId;
 
+typedef int jeInputId;
 
 typedef struct jeWindow jeWindow;
 void jeWindow_destroy(jeWindow* window);
