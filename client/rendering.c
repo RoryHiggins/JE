@@ -1,4 +1,4 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "rendering.h"
 #include "debug.h"
 #include "container.h"
@@ -9,8 +9,7 @@
 
 #define JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE
 
-
-const char* jeVertex_toDebugString(const jeVertex* vertex) {
+const char* jeVertex_toDebugString(const struct jeVertex* vertex) {
 	JE_TRACE("vertex=%p", vertex);
 
 	static char buffer[JE_VERTEX_DEBUG_STRING_BUFFER_SIZE];
@@ -24,7 +23,7 @@ const char* jeVertex_toDebugString(const jeVertex* vertex) {
 
 	return buffer;
 }
-const char* jeVertex_arrayToDebugString(const jeVertex* vertices, int vertexCount) {
+const char* jeVertex_arrayToDebugString(const struct jeVertex* vertices, int vertexCount) {
 	JE_TRACE("vertices=%p, vertexCount=%d", vertices, vertexCount);
 
 	static char buffer[JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE];
@@ -64,7 +63,7 @@ const char* jeVertex_arrayToDebugString(const jeVertex* vertices, int vertexCoun
 
 	return buffer;
 }
-void jeVertex_createPointQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]) {
+void jeVertex_createPointQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]) {
 	/* Render point as two triangles represented by 6 vertices.
 	 *
 	 * For visualization below, source indices = A..B, dest indices = 0..5,
@@ -95,7 +94,7 @@ void jeVertex_createPointQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERT
 	quadVertices[4].y += pointWidth;
 	quadVertices[5].y += pointWidth;
 }
-void jeVertex_createLineQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]) {
+void jeVertex_createLineQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]) {
 	/* Render line as two triangles represented by 6 vertices.
 	 *
 	 * For visualization below, source indices = A..B, dest indices = 0..5,
@@ -140,7 +139,7 @@ void jeVertex_createLineQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTE
 	quadVertices[5].x += isVerticalLine;
 	quadVertices[5].y += isHorizontalLine;
 }
-void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]) {
+void jeVertex_createSpriteQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]) {
 	/* Render sprite as two triangles represented by 6 clockwise vertices */
 
 	JE_TRACE("quadVertices=%p, spriteVertices=%p", quadVertices, spriteVertices);
@@ -167,7 +166,7 @@ void jeVertex_createSpriteQuad(jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VER
 }
 
 
-int jePrimitiveType_getVertexCount(jePrimitiveType primitiveType) {
+int jePrimitiveType_getVertexCount(int primitiveType) {
 	JE_TRACE("primitiveType=%d", primitiveType);
 
 	int vertexCount = 0;
@@ -201,7 +200,7 @@ int jePrimitiveType_getVertexCount(jePrimitiveType primitiveType) {
 
 	return vertexCount;
 }
-const char* jePrimitiveType_toDebugString(const jeVertex* vertices, jePrimitiveType primitiveType) {
+const char* jePrimitiveType_toDebugString(const struct jeVertex* vertices, int primitiveType) {
 	JE_TRACE("vertices=%p, primitiveType=%d", vertices, primitiveType);
 
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
@@ -209,14 +208,13 @@ const char* jePrimitiveType_toDebugString(const jeVertex* vertices, jePrimitiveT
 }
 
 /* Sort key which preserves both depth and order*/
-typedef struct jePrimitiveSortKey jePrimitiveSortKey;
 struct jePrimitiveSortKey {
 	float z;
 	int index;
 };
 int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
-	const jePrimitiveSortKey* sortKeyA = (const jePrimitiveSortKey*)rawSortKeyA;
-	const jePrimitiveSortKey* sortKeyB = (const jePrimitiveSortKey*)rawSortKeyB;
+	const struct jePrimitiveSortKey* sortKeyA = (const struct jePrimitiveSortKey*)rawSortKeyA;
+	const struct jePrimitiveSortKey* sortKeyB = (const struct jePrimitiveSortKey*)rawSortKeyB;
 
 	int result = 0;
 	if (sortKeyA->z > sortKeyB->z) {
@@ -232,43 +230,43 @@ int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
 	return result;
 }
 
-void jeVertexBuffer_destroy(jeVertexBuffer* vertexBuffer) {
+void jeVertexBuffer_destroy(struct jeVertexArray* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
 	jeArray_destroy(&vertexBuffer->vertices);
 }
-bool jeVertexBuffer_create(jeVertexBuffer* vertexBuffer) {
+bool jeVertexBuffer_create(struct jeVertexArray* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
-	return jeArray_create(&vertexBuffer->vertices, sizeof(jeVertex));
+	return jeArray_create(&vertexBuffer->vertices, sizeof(struct jeVertex));
 }
-void jeVertexBuffer_reset(jeVertexBuffer* vertexBuffer) {
+void jeVertexBuffer_reset(struct jeVertexArray* vertexBuffer) {
 	jeArray_setCount(&vertexBuffer->vertices, 0);
 }
-bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitiveType) {
+bool jeVertexBuffer_sort(struct jeVertexArray* vertexBuffer, int primitiveType) {
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	int vertexCount = vertexBuffer->vertices.count;
 	int primitiveCount = vertexCount / primitiveVertexCount;
-	jeVertex *vertices = (jeVertex*)vertexBuffer->vertices.data;
+	struct jeVertex *vertices = (struct jeVertex*)vertexBuffer->vertices.data;
 
 	JE_TRACE("vertexBuffer=%p, vertexCount=%d, primitiveCount=%d", vertexBuffer, vertexCount, primitiveCount);
 
 	bool ok = true;
 
-	jeArray unsortedPrimitivesBuffer;
-	ok = ok && jeArray_create(&unsortedPrimitivesBuffer, sizeof(jeVertex));
+	struct jeArray unsortedPrimitivesBuffer;
+	ok = ok && jeArray_create(&unsortedPrimitivesBuffer, sizeof(struct jeVertex));
 	ok = ok && jeArray_setCount(&unsortedPrimitivesBuffer, vertexCount);
-	const jeVertex *unsortedVertices = (const jeVertex*)unsortedPrimitivesBuffer.data;
+	const struct jeVertex *unsortedVertices = (const struct jeVertex*)unsortedPrimitivesBuffer.data;
 	if (vertices == NULL)
 	{
 		JE_TRACE("!");
 	}
-	memcpy((void*)unsortedVertices, (const void*)vertices, sizeof(jeVertex) * vertexCount);
+	memcpy((void*)unsortedVertices, (const void*)vertices, sizeof(struct jeVertex) * vertexCount);
 
-	jeArray sortKeysBuffer;
-	ok = ok && jeArray_create(&sortKeysBuffer, sizeof(jePrimitiveSortKey));
+	struct jeArray sortKeysBuffer;
+	ok = ok && jeArray_create(&sortKeysBuffer, sizeof(struct jePrimitiveSortKey));
 	ok = ok && jeArray_setCount(&sortKeysBuffer, primitiveCount);
-	jePrimitiveSortKey *sortKeys = (jePrimitiveSortKey*)sortKeysBuffer.data;
+	struct jePrimitiveSortKey *sortKeys = (struct jePrimitiveSortKey*)sortKeysBuffer.data;
 
 	if (ok) {
 		/*Generate sort keys array from vertices array*/
@@ -279,7 +277,7 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 		}
 
 		/*Sort the sort keys array.  Uses both index and depth in order for sort to be stable*/
-		qsort(sortKeys, primitiveCount, sizeof(jePrimitiveSortKey), jePrimitiveSortKey_less);
+		qsort(sortKeys, primitiveCount, sizeof(struct jePrimitiveSortKey), jePrimitiveSortKey_less);
 
 		/*Sort vertices using sort key order*/
 		for (int i = 0; i < primitiveCount; i++) {
@@ -309,10 +307,10 @@ bool jeVertexBuffer_sort(jeVertexBuffer* vertexBuffer, jePrimitiveType primitive
 
 	return ok;
 }
-void jeVertexBuffer_pushPrimitive(jeVertexBuffer* vertexBuffer, const jeVertex* vertices, jePrimitiveType primitiveType) {
+void jeVertexBuffer_pushPrimitive(struct jeVertexArray* vertexBuffer, const struct jeVertex* vertices, int primitiveType) {
 	JE_TRACE("vertexBuffer=%p, primitiveType=%d, vertices=%s", vertexBuffer, primitiveType, jePrimitiveType_toDebugString(vertices, primitiveType));
 
-	jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT];
+	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT];
 	switch (primitiveType) {
 		case JE_PRIMITIVE_TYPE_POINTS: {
 			jeVertex_createPointQuad(quadVertices, vertices);
@@ -347,9 +345,9 @@ void jeVertexBuffer_pushPrimitive(jeVertexBuffer* vertexBuffer, const jeVertex* 
 void jeRenderingRunTests() {
 	JE_DEBUG("");
 
-	jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
+	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
-	for (int i = 0; i < (int)(sizeof(jeVertex) / sizeof(float)); i++) {
+	for (int i = 0; i < (int)(sizeof(struct jeVertex) / sizeof(float)); i++) {
 		((float*)vertices)[i] = 1.0f / 3.0f;
 	}
 	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
@@ -361,7 +359,7 @@ void jeRenderingRunTests() {
 	JE_ASSERT(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT) != NULL);
 	JE_ASSERT(strlen(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT)) < JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE);
 
-	jeVertex primitiveVertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
+	struct jeVertex primitiveVertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	memset((void*)primitiveVertices, 0, sizeof(primitiveVertices));
 	jeVertex_createPointQuad(vertices, primitiveVertices);
 	jeVertex_createLineQuad(vertices, primitiveVertices);
@@ -375,7 +373,7 @@ void jeRenderingRunTests() {
 	JE_ASSERT(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS) != NULL);
 	JE_ASSERT(strlen(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS)) < JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE);
 
-	jeVertexBuffer vertexBuffer;
+	struct jeVertexArray vertexBuffer;
 	JE_ASSERT(jeVertexBuffer_create(&vertexBuffer));
 	JE_ASSERT(jeVertexBuffer_sort(&vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES));
 
@@ -390,23 +388,23 @@ void jeRenderingRunTests() {
 	vertices[3].z = 1;
 	jeVertexBuffer_pushPrimitive(&vertexBuffer, vertices, JE_PRIMITIVE_TYPE_QUADS);
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
 
 	JE_ASSERT(jeVertexBuffer_sort(&vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES));
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 1);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
 
 
 	jeVertexBuffer_reset(&vertexBuffer);

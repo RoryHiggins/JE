@@ -105,7 +105,6 @@ function Simulation:initialize()
 
 	math.randomseed(0)
 
-	
 	self.started = false
 	self.static.saveVersion = 1
 
@@ -135,8 +134,6 @@ function Simulation:start()
 	end
 
 	self.started = true
-
-	
 end
 function Simulation:stop()
 	util.debug("")

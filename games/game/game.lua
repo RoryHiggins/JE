@@ -87,7 +87,7 @@ function Game:testWorldInitialize()
 	})
 	for _ = 1, 0 do
 		local spriteObject = self.templateSys:instantiate(spriteObjectTemplate)
-		entitySys:setPos(
+		self.entitySys:setPos(
 			spriteObject,
 			16 + math.floor(math.random(levelW - 16)),
 			16 + math.floor(math.random(levelH - 16)))

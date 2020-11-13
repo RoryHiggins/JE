@@ -59,20 +59,17 @@
 
 #define JE_ASSERT(EXPR) jeLogger_assert(JE_LOG_CONTEXT, EXPR, #EXPR)
 
+const char* jeLoggerLevel_getLabel(int loggerLevel);
+extern int jeLoggerLevel_override;
 
-typedef int jeLoggerLevel;
-const char* jeLoggerLevel_getLabel(jeLoggerLevel loggerLevel);
-extern jeLoggerLevel jeLoggerLevel_override;
-
-typedef struct jeLoggerContext jeLoggerContext;
 struct jeLoggerContext {
 	const char* file;
 	const char* function;
 	int line;
 };
-jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line);
+struct jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line);
 
-void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, const char* formatStr, ...);
-void jeLogger_assert(jeLoggerContext loggerContext, bool value, const char* expressionStr);
+void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...);
+void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr);
 
 #endif

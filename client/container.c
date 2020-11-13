@@ -1,9 +1,8 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "container.h"
 #include "debug.h"
 
-
-void jeArray_destroy(jeArray* array) {
+void jeArray_destroy(struct jeArray* array) {
 	JE_TRACE("array=%p", array);
 
 	free(array->data);
@@ -13,7 +12,7 @@ void jeArray_destroy(jeArray* array) {
 	array->stride = 0;
 	array->data = NULL;
 }
-bool jeArray_create(jeArray* array, int stride) {
+bool jeArray_create(struct jeArray* array, int stride) {
 	JE_TRACE("array=%p, stride=%d", array, stride);
 
 	bool ok = true;
@@ -36,7 +35,7 @@ bool jeArray_create(jeArray* array, int stride) {
 
 	return ok;
 }
-void* jeArray_getElement(jeArray* array, int index) {
+void* jeArray_getElement(struct jeArray* array, int index) {
 	JE_TRACE("array=%p, index=%d", array, index);
 
 	bool ok = true;
@@ -63,10 +62,10 @@ void* jeArray_getElement(jeArray* array, int index) {
 
 	return result;
 }
-void* jeArray_get(jeArray* array) {
+void* jeArray_get(struct jeArray* array) {
 	return jeArray_getElement(array, 0);
 }
-bool jeArray_setCapacity(jeArray* array, int capacity) {
+bool jeArray_setCapacity(struct jeArray* array, int capacity) {
 	JE_TRACE("array=%p, newCapacity=%d, currentCapacity=%d", array, capacity, array->capacity);
 
 	bool ok = true;
@@ -111,7 +110,7 @@ bool jeArray_setCapacity(jeArray* array, int capacity) {
 
 	return ok;
 }
-bool jeArray_ensureCapacity(jeArray* array, int minCapacity) {
+bool jeArray_ensureCapacity(struct jeArray* array, int minCapacity) {
 	JE_TRACE("array=%p, minCapacity=%d, currentCapacity=%d", array, minCapacity, array->capacity);
 
 	bool ok = true;
@@ -137,7 +136,7 @@ bool jeArray_ensureCapacity(jeArray* array, int minCapacity) {
 
 	return ok;
 }
-bool jeArray_setCount(jeArray* array, int count) {
+bool jeArray_setCount(struct jeArray* array, int count) {
 	JE_TRACE("array=%p, newCount=%d, currentCount=%d", array, count, array->count);
 
 	bool ok = true;
@@ -150,7 +149,7 @@ bool jeArray_setCount(jeArray* array, int count) {
 
 	return ok;
 }
-bool jeArray_push(jeArray* array, const void* data, int count) {
+bool jeArray_push(struct jeArray* array, const void* data, int count) {
 	JE_TRACE("array=%p, count=%d", array, count);
 
 	bool ok = true;
@@ -170,19 +169,19 @@ bool jeArray_push(jeArray* array, const void* data, int count) {
 
 	return ok;
 }
-bool jeArray_pushOne(jeArray* array, const void* data) {
+bool jeArray_pushOne(struct jeArray* array, const void* data) {
 	JE_TRACE("array=%p", array);
 
 	return jeArray_push(array, data, 1);
 }
 
-void jeString_destroy(jeString* string) {
+void jeString_destroy(struct jeString* string) {
 	jeArray_destroy(&string->array);
 }
-bool jeString_create(jeString* string) {
+bool jeString_create(struct jeString* string) {
 	return jeArray_create(&string->array, sizeof(char));
 }
-bool jeString_createFormatted(jeString* string, const char* formatStr, ...) {
+bool jeString_createFormatted(struct jeString* string, const char* formatStr, ...) {
 	JE_TRACE("string=%p, formatStr=%s", string, formatStr);
 
 	bool ok = jeString_create(string);
@@ -233,37 +232,37 @@ bool jeString_createFormatted(jeString* string, const char* formatStr, ...) {
 
 	return ok;
 }
-int jeArray_getCount(jeArray* array) {
+int jeArray_getCount(struct jeArray* array) {
 	return array->count;
 }
-int jeArray_getCapacity(jeArray* array) {
+int jeArray_getCapacity(struct jeArray* array) {
 	return array->capacity;
 }
-int jeString_getCount(jeString* string) {
+int jeString_getCount(struct jeString* string) {
 	return string->array.count;
 }
-int jeString_getCapacity(jeString* string) {
+int jeString_getCapacity(struct jeString* string) {
 	return string->array.capacity;
 }
-char* jeString_getElement(jeString* string, int index) {
+char* jeString_getElement(struct jeString* string, int index) {
 	return (char*)jeArray_getElement(&string->array, index);
 }
-char* jeString_get(jeString* string) {
+char* jeString_get(struct jeString* string) {
 	return jeString_getElement(string, 0);
 }
-bool jeString_setCapacity(jeString* string, int capacity) {
+bool jeString_setCapacity(struct jeString* string, int capacity) {
 	return jeArray_setCapacity(&string->array, capacity);
 }
-bool jeString_ensureCapacity(jeString* string, int minCapacity) {
+bool jeString_ensureCapacity(struct jeString* string, int minCapacity) {
 	return jeArray_ensureCapacity(&string->array, minCapacity);
 }
-bool jeString_setCount(jeString* string, int count) {
+bool jeString_setCount(struct jeString* string, int count) {
 	return jeArray_setCount(&string->array, count);
 }
-bool jeString_push(jeString* string, const char* data, int count) {
+bool jeString_push(struct jeString* string, const char* data, int count) {
 	return jeArray_push(&string->array, (const void*)data, count);
 }
-bool jeString_pushString(jeString* string, const char* data) {
+bool jeString_pushString(struct jeString* string, const char* data) {
 	return jeString_push(string, data, strlen(data) + 1);
 }
 
@@ -271,7 +270,7 @@ void jeContainerRunTests() {
 	JE_DEBUG("");
 
 	{
-		jeArray array;
+		struct jeArray array;
 		JE_ASSERT(jeArray_create(&array, 1));
 		jeArray_destroy(&array);
 		JE_ASSERT(array.data == NULL);
@@ -312,7 +311,7 @@ void jeContainerRunTests() {
 	}
 
 	{
-		jeString string;
+		struct jeString string;
 		JE_ASSERT(jeString_create(&string));
 		JE_ASSERT(jeString_push(&string, "hello", 6));
 		jeString_destroy(&string);

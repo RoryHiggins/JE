@@ -1,4 +1,4 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "window.h"
 #include "debug.h"
 #include "container.h"
@@ -45,13 +45,11 @@
 		"gl_FragColor = texture2D(srcTexture, uv).rgba * col;" \
 	"}"
 
-
-typedef struct jeSDL jeSDL;
 struct jeSDL {
 	bool intialized;
 	int entryCount;
 };
-static jeSDL jeSDL_sdl = {false, 0};
+static struct jeSDL jeSDL_sdl = {false, 0};
 bool jeSDL_initReentrant() {
 	bool ok = true;
 
@@ -85,7 +83,7 @@ void jeSDL_destroyReentrant() {
 }
 
 
-bool jeGl_getOk(jeLoggerContext loggerContext) {
+bool jeGl_getOk(struct jeLoggerContext loggerContext) {
 	bool ok = true;
 	GLenum glError = GL_NO_ERROR;
 
@@ -100,7 +98,7 @@ bool jeGl_getOk(jeLoggerContext loggerContext) {
 
 	return ok;
 }
-bool jeGl_getShaderOk(GLuint shader, jeLoggerContext loggerContext) {
+bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
 	bool ok = true;
 	GLint compileStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -127,7 +125,7 @@ bool jeGl_getShaderOk(GLuint shader, jeLoggerContext loggerContext) {
 
 	return ok;
 }
-bool jeGl_getProgramOk(GLuint program, jeLoggerContext loggerContext) {
+bool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
 	bool ok = true;
 	GLint linkStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -155,7 +153,6 @@ bool jeGl_getProgramOk(GLuint program, jeLoggerContext loggerContext) {
 	return ok;
 }
 
-typedef struct jeController jeController;
 struct jeController {
 	SDL_GameController* controller;
 
@@ -167,7 +164,7 @@ struct jeController {
 
 	float controllerAxisThreshold;
 };
-void jeController_destroy(jeController* controller) {
+void jeController_destroy(struct jeController* controller) {
 	JE_TRACE("controller=%p", controller);
 
 	if (controller->controller != NULL) {
@@ -175,7 +172,7 @@ void jeController_destroy(jeController* controller) {
 		controller->controller = NULL;
 	}
 }
-void jeController_create(jeController* controller) {
+void jeController_create(struct jeController* controller) {
 	int i = 0;
 
 	JE_TRACE("controller=%p", controller);
@@ -253,11 +250,11 @@ struct jeWindow {
 	Uint32 fpsLastSampleTimeMs;
 	Uint32 nextFrameTimeMs;
 
-	jeVertexBuffer vertexBuffer;
-	jeImage image;
+	struct jeVertexArray vertexBuffer;
+	struct jeImage image;
 	SDL_Window* window;
 
-	jeController controller;
+	struct jeController controller;
 	const Uint8* keyState;
 
 	SDL_GLContext context;
@@ -272,12 +269,12 @@ static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
 static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
-bool jeWindow_getIsOpen(const jeWindow* window) {
+bool jeWindow_getIsOpen(const struct jeWindow* window) {
 	JE_TRACE("window=%p, open=%d", window, (int)window->open);
 
 	return window->open;
 }
-int jeWindow_getWidth(const jeWindow* window) {
+int jeWindow_getWidth(const struct jeWindow* window) {
 	int width = 0;
 	int height = 0;
 
@@ -287,7 +284,7 @@ int jeWindow_getWidth(const jeWindow* window) {
 
 	return width;
 }
-int jeWindow_getHeight(const jeWindow* window) {
+int jeWindow_getHeight(const struct jeWindow* window) {
 	int width = 0;
 	int height = 0;
 
@@ -297,7 +294,7 @@ int jeWindow_getHeight(const jeWindow* window) {
 
 	return height;
 }
-bool jeWindow_clear(jeWindow* window) {
+bool jeWindow_clear(struct jeWindow* window) {
 	bool ok = true;
 
 	JE_TRACE("window=%p", window);
@@ -315,17 +312,17 @@ bool jeWindow_clear(jeWindow* window) {
 
 	return ok;
 }
-void jeWindow_resetPrimitives(jeWindow* window) {
+void jeWindow_resetPrimitives(struct jeWindow* window) {
 	JE_TRACE("window=%p", window);
 
 	jeVertexBuffer_reset(&window->vertexBuffer);
 }
-void jeWindow_pushPrimitive(jeWindow* window, const jeVertex* vertices, jePrimitiveType primitiveType) {
+void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType) {
 	JE_TRACE("window=%p, primitiveType=%d", window, primitiveType);
 
 	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
 }
-bool jeWindow_flushPrimitives(jeWindow* window) {
+bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	bool ok = true;
 
 	int vertexCount = window->vertexBuffer.vertices.count;
@@ -344,7 +341,7 @@ bool jeWindow_flushPrimitives(jeWindow* window) {
 		glBindVertexArray(window->vao);
 
 		const GLvoid* vertexData = (const GLvoid*)window->vertexBuffer.vertices.data;
-		glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(jeVertex), vertexData, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(struct jeVertex), vertexData, GL_DYNAMIC_DRAW);
 		glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 
 		glBindVertexArray(0);
@@ -357,7 +354,7 @@ bool jeWindow_flushPrimitives(jeWindow* window) {
 
 	return ok;
 }
-void jeWindow_destroyGL(jeWindow* window) {
+void jeWindow_destroyGL(struct jeWindow* window) {
 	bool canUseContext = (window->window != NULL) && (window->context != NULL);
 	canUseContext = canUseContext && (SDL_GL_MakeCurrent(window->window, window->context) == 0);
 
@@ -411,7 +408,7 @@ void jeWindow_destroyGL(jeWindow* window) {
 		window->context = NULL;
 	}
 }
-bool jeWindow_initGL(jeWindow* window) {
+bool jeWindow_initGL(struct jeWindow* window) {
 	JE_DEBUG("window=%p", window);
 
 	bool ok = true;
@@ -572,9 +569,9 @@ bool jeWindow_initGL(jeWindow* window) {
 		glEnableVertexAttribArray(srcColLocation);
 		glEnableVertexAttribArray(srcUvLocation);
 
-		glVertexAttribPointer(srcPosLocation, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)0);
-		glVertexAttribPointer(srcColLocation, 4, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(4 * sizeof(GLfloat)));
-		glVertexAttribPointer(srcUvLocation, 2, GL_FLOAT, GL_FALSE, sizeof(jeVertex), (const GLvoid*)(8 * sizeof(GLfloat)));
+		glVertexAttribPointer(srcPosLocation, 4, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)0);
+		glVertexAttribPointer(srcColLocation, 4, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(4 * sizeof(GLfloat)));
+		glVertexAttribPointer(srcUvLocation, 2, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(8 * sizeof(GLfloat)));
 
 		if (jeGl_getOk(JE_LOG_CONTEXT) == false) {
 			JE_ERROR("jeGl_getOk() error");
@@ -589,12 +586,12 @@ bool jeWindow_initGL(jeWindow* window) {
 
 	return ok;
 }
-void jeWindow_show(jeWindow* window) {
+void jeWindow_show(struct jeWindow* window) {
 	JE_TRACE("window=%p", window);
 
 	SDL_ShowWindow(window->window);
 }
-bool jeWindow_step(jeWindow* window) {
+bool jeWindow_step(struct jeWindow* window) {
 	JE_TRACE("window=%p", window);
 
 	bool ok = true;
@@ -733,7 +730,7 @@ bool jeWindow_step(jeWindow* window) {
 
 	return ok;
 }
-void jeWindow_destroy(jeWindow* window) {
+void jeWindow_destroy(struct jeWindow* window) {
 	JE_DEBUG("window=%p");
 
 	if (window != NULL) {
@@ -757,12 +754,12 @@ void jeWindow_destroy(jeWindow* window) {
 		free(window);
 	}
 }
-jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
+struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 	JE_DEBUG("window=%p");
 
 	bool ok = true;
 
-	jeWindow* window = (jeWindow*)malloc(sizeof(jeWindow));
+	struct jeWindow* window = (struct jeWindow*)malloc(sizeof(struct jeWindow));
 	memset((void*)window, 0, sizeof(*window));
 
 	ok = ok && jeSDL_initReentrant();
@@ -807,7 +804,7 @@ jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 			jeImage_create(&window->image, 2048, 2048, jeColor_gray);
 
 			/*Topleft texel is used for rendering without texture and must be white*/
-			((jeColor*)window->image.buffer.data)[0] = jeColor_white;
+			((struct jeColor*)window->image.buffer.data)[0] = jeColor_white;
 		}
 	}
 
@@ -843,7 +840,7 @@ jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
 
 	return window;
 }
-bool jeWindow_getInput(const jeWindow* window, jeInputId inputId) {
+bool jeWindow_getInput(const struct jeWindow* window, int inputId) {
 	static const float axisMaxValue = 32767;
 
 	JE_TRACE("window=%p, inputId=%d", window, inputId);
@@ -882,7 +879,7 @@ bool jeWindow_getInput(const jeWindow* window, jeInputId inputId) {
 
 	return pressed;
 }
-int jeWindow_getFps(const jeWindow* window) {
+int jeWindow_getFps(const struct jeWindow* window) {
 	JE_TRACE("window=%p, fpsEstimate=%d", window, window->fpsEstimate);
 
 	JE_MAYBE_UNUSED(window);
@@ -893,19 +890,19 @@ int jeWindow_getFps(const jeWindow* window) {
 void jeWindowRunTests() {
 	JE_TRACE("");
 
-	jeController controller;
+	struct jeController controller;
 	jeController_create(&controller);
 	jeController_destroy(&controller);
 
 	JE_ASSERT(jeSDL_initReentrant());
 
-	jeWindow* window = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
+	struct jeWindow* window = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
 	JE_ASSERT(window != NULL);
 
 	JE_ASSERT(jeWindow_getIsOpen(window));
 	JE_ASSERT(jeWindow_getWidth(window) == JE_WINDOW_START_WIDTH);
 	JE_ASSERT(jeWindow_getHeight(window) == JE_WINDOW_START_HEIGHT);
-	for (jeInputId i = 0; i < JE_INPUT_COUNT; i++) {
+	for (int i = 0; i < JE_INPUT_COUNT; i++) {
 		jeWindow_getInput(window, i);
 	}
 	jeWindow_getFps(window);
@@ -916,11 +913,11 @@ void jeWindowRunTests() {
 
 	JE_ASSERT(jeWindow_initGL(window));
 
-	jeVertex triangleVertices[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT];
+	struct jeVertex triangleVertices[JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT];
 	jeWindow_pushPrimitive(window, triangleVertices, JE_PRIMITIVE_TYPE_TRIANGLES);
 
 	/*Create a second window before displaying to see if they clobbering each other with opengl state*/
-	jeWindow* window2 = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
+	struct jeWindow* window2 = jeWindow_create(/*startVisible*/ false, /*optSpritesFilename*/ NULL);
 	JE_ASSERT(window2 != NULL);
 	jeWindow_destroy(window2);
 

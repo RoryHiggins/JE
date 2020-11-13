@@ -1,10 +1,9 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "debug.h"
 
+int jeLoggerLevel_override = JE_LOG_LEVEL_TRACE;
 
-jeLoggerLevel jeLoggerLevel_override = JE_LOG_LEVEL_TRACE;
-
-const char* jeLoggerLevel_getLabel(jeLoggerLevel loggerLevel) {
+const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	const char* label = "";
 	switch (loggerLevel) {
 		case JE_LOG_LEVEL_TRACE: {
@@ -34,8 +33,8 @@ const char* jeLoggerLevel_getLabel(jeLoggerLevel loggerLevel) {
 	return label;
 }
 
-jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line) {
-	jeLoggerContext loggerContext;
+struct jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line) {
+	struct jeLoggerContext loggerContext;
 
 	loggerContext.file = file;
 	loggerContext.function = function;
@@ -47,7 +46,7 @@ jeLoggerContext jeLoggerContext_create(const char* file, const char* function, i
 void jeErr() {
 	// dummy function to breakpoint errors
 }
-void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, const char* formatStr, ...) {
+void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...) {
 	if (jeLoggerLevel_override <= loggerLevel) {
 		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
 			jeErr();
@@ -65,7 +64,7 @@ void jeLogger_log(jeLoggerContext loggerContext, jeLoggerLevel loggerLevel, cons
 		fflush(stdout);
 	}
 }
-void jeLogger_assert(jeLoggerContext loggerContext, bool value, const char* expressionStr) {
+void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr) {
 	if ((jeLoggerLevel_override <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeErr();
 		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);

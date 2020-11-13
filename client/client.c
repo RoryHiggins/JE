@@ -1,11 +1,11 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "client.h"
 #include "debug.h"
+#include "container.h"
 #include "window.h"
 #include "lua_client.h"
 
-
-bool jeClient_run(jeClient* client, const char* gameDir) {
+bool jeClient_run(struct jeClient* client, const char* gameDir) {
 	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
 
 	bool ok = true;
@@ -13,10 +13,10 @@ bool jeClient_run(jeClient* client, const char* gameDir) {
 	client->window = NULL;
 	client->lua = NULL;
 
-	jeString luaMainFilename;
+	struct jeString luaMainFilename;
 	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
 
-	jeString spritesFilename;
+	struct jeString spritesFilename;
 	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
 
 	if (ok) {

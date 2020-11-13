@@ -1,4 +1,4 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "debug.h"
 #include "client.h"
 
@@ -15,11 +15,10 @@
 #define JE_DEFAULT_GAME_DIR "games/game"
 #endif
 
-
 int main(int argc, char** argv) {
 	bool ok = true;
 
-	jeClient client;
+	struct jeClient client;
 
 	const char* gameDir = JE_DEFAULT_GAME_DIR;
 

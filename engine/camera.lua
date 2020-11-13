@@ -6,7 +6,7 @@ function Camera:onInitialize(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 end
-function Camera:onWorldInitialize(simulation)
+function Camera:onWorldInitialize(_)
 	self.simulation.world.camera = {
 		["x1"] = 0,
 		["y1"] = 0,

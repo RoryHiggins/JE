@@ -1,4 +1,4 @@
-#include "private_dependencies.h"
+#include "dependencies_private.h"
 #include "lua_client.h"
 #include "debug.h"
 #include "image.h"
@@ -76,11 +76,11 @@ const char* jeLuaClient_getStringField(lua_State* lua, int tableIndex, const cha
 	return result;
 }
 
-jeWindow* jeLuaClient_getWindow(lua_State* lua) {
+struct jeWindow* jeLuaClient_getWindow(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	bool ok = true;
-	jeWindow *window = NULL;
+	struct jeWindow *window = NULL;
 
 	int stackPos = lua_gettop(lua);
 
@@ -94,7 +94,7 @@ jeWindow* jeLuaClient_getWindow(lua_State* lua) {
 	}
 
 	if (ok) {
-		window = (jeWindow*)lua_touserdata(lua, JE_LUA_STACK_TOP);
+		window = (struct jeWindow*)lua_touserdata(lua, JE_LUA_STACK_TOP);
 		JE_TRACE("lua=%p, window=%p", lua, window);
 	}
 
@@ -102,7 +102,7 @@ jeWindow* jeLuaClient_getWindow(lua_State* lua) {
 
 	return window;
 }
-void jeLuaClient_addWindow(lua_State* lua, jeWindow* window) {
+void jeLuaClient_addWindow(lua_State* lua, struct jeWindow* window) {
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
 	int stackPos = lua_gettop(lua);
@@ -117,7 +117,7 @@ void jeLuaClient_updateStates(lua_State* lua) {
 
 	int stackPos = lua_gettop(lua);
 	int stateStackPos = 0;
-	jeWindow* window = jeLuaClient_getWindow(lua);
+	struct jeWindow* window = jeLuaClient_getWindow(lua);
 
 	lua_settop(lua, 0);
 	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
@@ -265,7 +265,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 
 	return numResponses;
 }
-void jeLuaClient_getPrimitiveImpl(lua_State* lua, jeVertex *vertices, int vertexCount) {
+void jeLuaClient_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int vertexCount) {
 	JE_TRACE("lua=%p, vertices=%p, vertexCount=%d", lua, vertices, vertexCount);
 
 	static const int renderableIndex = 1;
@@ -333,12 +333,12 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, jeVertex *vertices, int vertex
 		vertices[i].y += cameraOffsetY;
 	}
 }
-void jeLuaClient_drawPrimitiveImpl(lua_State* lua, jePrimitiveType primitiveType) {
-	jeWindow* window = jeLuaClient_getWindow(lua);
+void jeLuaClient_drawPrimitiveImpl(lua_State* lua, int primitiveType) {
+	struct jeWindow* window = jeLuaClient_getWindow(lua);
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
-	jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
+	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	memset(&vertices, 0, sizeof(vertices));
 
 	int vertexCount = jePrimitiveType_getVertexCount(primitiveType);
@@ -387,7 +387,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 	int textLength = 0;
 	const char* text = jeLuaClient_getStringField(lua, renderableIndex, "text", &textLength);
 
-	jeVertex textBoundsVertices[2];
+	struct jeVertex textBoundsVertices[2];
 	memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
 	jeLuaClient_getPrimitiveImpl(lua, textBoundsVertices, 1);
@@ -409,7 +409,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 		static const float renderScaleX = 1.0f;
 		static const float renderScaleY = 1.0f;
 
-		jeVertex charVertices[2];
+		struct jeVertex charVertices[2];
 		memcpy(charVertices, textBoundsVertices, sizeof(charVertices));
 		charVertices[0].x += (charW * renderScaleX * i);
 		charVertices[0].u += (charW * (charIndex % charColumns));
@@ -428,7 +428,7 @@ int jeLuaClient_drawText(lua_State* lua) {
 	return 0;
 }
 int jeLuaClient_drawReset(lua_State* lua) {
-	jeWindow* window = jeLuaClient_getWindow(lua);
+	struct jeWindow* window = jeLuaClient_getWindow(lua);
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
 	jeWindow_resetPrimitives(window);
@@ -438,7 +438,7 @@ int jeLuaClient_drawReset(lua_State* lua) {
 int jeLuaClient_runTests(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	jeLoggerLevel logLevelbackup = jeLoggerLevel_override;
+	int logLevelbackup = jeLoggerLevel_override;
 	jeLoggerLevel_override = JE_TESTS_LOG_LEVEL;
 
 	int numTestSuites = 0;
@@ -459,7 +459,7 @@ int jeLuaClient_runTests(lua_State* lua) {
 	return 1;
 }
 int jeLuaClient_step(lua_State* lua) {
-	jeWindow* window = jeLuaClient_getWindow(lua);
+	struct jeWindow* window = jeLuaClient_getWindow(lua);
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
@@ -519,7 +519,7 @@ bool jeLuaClient_addBindings(lua_State* lua) {
 
 	return ok;
 }
-bool jeLuaClient_run(jeWindow* window, const char* filename) {
+bool jeLuaClient_run(struct jeWindow* window, const char* filename) {
 	bool ok = true;
 	int luaResponse = 0;
 	lua_State* lua = NULL;
