@@ -1,5 +1,5 @@
-#if !defined(JE_RENDERABLE_H)
-#define JE_RENDERABLE_H
+#if !defined(JE_RENDERING_H)
+#define JE_RENDERING_H
 
 #include "container.h"
 

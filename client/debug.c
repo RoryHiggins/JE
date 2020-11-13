@@ -1,4 +1,4 @@
-#include "dependencies_private.h"
+#include "stdafx.h"
 #include "debug.h"
 
 int jeLoggerLevel_override = JE_LOG_LEVEL_TRACE;
@@ -44,7 +44,7 @@ struct jeLoggerContext jeLoggerContext_create(const char* file, const char* func
 }
 
 void jeErr() {
-	// dummy function to breakpoint errors
+	/*dummy function to breakpoint errors*/
 }
 void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...) {
 	if (jeLoggerLevel_override <= loggerLevel) {

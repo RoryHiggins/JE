@@ -1,4 +1,4 @@
-#include "dependencies_private.h"
+#include "stdafx.h"
 #include "window.h"
 #include "debug.h"
 #include "container.h"
@@ -21,7 +21,7 @@
 	"uniform vec3 scaleXyz;" /*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 to 1.0)*/ \
 	"uniform vec2 scaleUv;" /*Converts image coords to normalized texture coords (0.0 to 1.0)*/ \
 	\
-	"attribute vec3 srcPos;" \
+	"attribute vec4 srcPos;" \
 	"attribute vec4 srcCol;" \
 	"attribute vec2 srcUv;" \
 	\
@@ -29,7 +29,7 @@
 	"varying vec2 uv;" \
 	\
 	"void main() {" \
-		"gl_Position = vec4(srcPos * scaleXyz, 1);" \
+		"gl_Position = vec4(srcPos.xyz * scaleXyz, 1);" \
 		"col = srcCol;" \
 		"uv = srcUv * scaleUv;" \
 	"}"

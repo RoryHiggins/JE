@@ -1,4 +1,4 @@
-#include "dependencies_private.h"
+#include "stdafx.h"
 #include "lua_client.h"
 #include "debug.h"
 #include "image.h"

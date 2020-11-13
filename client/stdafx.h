@@ -1,6 +1,6 @@
 /*Precompiled header*/
-#if !defined(JE_CORE_PRIVATE_DEPENDENCIES_H)
-#define JE_CORE_PRIVATE_DEPENDENCIES_H
+#if !defined(JE_STDAFX_H)
+#define JE_STDAFX_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -42,6 +42,10 @@ extern "C" {
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+/*
+ * Casts the result to void to inform the compiler that the result is not used
+ * Primary use-case is to suppress unused function argument warnings
+ */
 #define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
 
 #endif

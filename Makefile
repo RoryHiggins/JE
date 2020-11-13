@@ -12,14 +12,14 @@ ifeq ($(OS),Windows_NT)
 	LFLAGS_COMMON := -lm -lpng -lz -lopengl32 -lglu32 -lglew32 -lluajit-5.1
 endif
 
-SDL_FLAGS_RELEASE := `sdl2-config --static-libs --cflags`
+SDL_FLAGS_RELEASE := `sdl2-config --static-libs`
 CFLAGS_RELEASE := $(CFLAGS_COMMON) -fno-exceptions -Os -s -ffast-math -flto -fwhole-program -mwindows -D NDEBUG
 LFLAGS_RELEASE := -static $(SDL_FLAGS_RELEASE) $(LFLAGS_COMMON) -static-libstdc++ -static-libgcc
 
 CFLAGS_PROFILED := $(CFLAGS_RELEASE) -pg -fno-inline-functions -fno-omit-frame-pointer
 LFLAGS_PROFILED := $(LFLAGS_RELEASE)
 
-SDL_FLAGS_DEVELOPMENT := `sdl2-config --libs --cflags | sed -e 's/-mwindows//g'` # exclude -mwindows
+SDL_FLAGS_DEVELOPMENT := `sdl2-config --libs | sed -e 's/-mwindows//g'` # exclude -mwindows
 CFLAGS_DEVELOPMENT := $(CFLAGS_COMMON) -Winvalid-pch -O0
 LFLAGS_DEVELOPMENT := $(SDL_FLAGS_DEVELOPMENT) $(LFLAGS_COMMON)
 
@@ -32,10 +32,10 @@ endif
 CFLAGS_TRACE := $(CFLAGS_DEBUG)
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
-engine_client: Makefile dependencies_private.h.gch client/*.c client/*.h
+engine_client: Makefile client/stdafx.h.gch client/*.c client/*.h
 	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o engine_client
-dependencies_private.h.gch: Makefile client/dependencies_private.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/dependencies_private.h -o dependencies_private.h.gch
+client/stdafx.h.gch: Makefile client/stdafx.h
+	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o client/stdafx.h.gch
 
 run: engine_client
 	./engine_client -game $(GAME)
@@ -63,7 +63,7 @@ release:
 
 	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
 clean:
-	rm -f engine_client game_dump.sav game_save.sav dependencies_private.h.gch gmon.out profile.txt
+	rm -f engine_client game_dump.sav game_save.sav client/stdafx.h.gch gmon.out profile.txt
 	rm -rf release engine/docs/build
 
 .PHONY: run run_debugger run_headless profile docs release clean

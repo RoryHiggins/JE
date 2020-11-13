@@ -1,9 +1,13 @@
-#include "dependencies_private.h"
+#include "stdafx.h"
 #include "client.h"
 #include "debug.h"
 #include "container.h"
 #include "window.h"
 #include "lua_client.h"
+
+#if !defined(JE_DEFAULT_GAME_DIR)
+#define JE_DEFAULT_GAME_DIR "games/game"
+#endif
 
 bool jeClient_run(struct jeClient* client, const char* gameDir) {
 	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
@@ -33,4 +37,24 @@ bool jeClient_run(struct jeClient* client, const char* gameDir) {
 	jeString_destroy(&luaMainFilename);
 
 	return ok;
+}
+bool jeClient_run_cli(struct jeClient* client, int argc, char** argv) {
+	bool ok = true;
+
+	const char* gameDir = JE_DEFAULT_GAME_DIR;
+
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "-game") == 0) {
+			ok = ok && ((i + 1) < argc);
+
+			if (ok) {
+				gameDir = argv[i + 1];
+			}
+		}
+		if (strcmp(argv[i], "-debug") == 0) {
+			ok = ok && ((i + 1) < argc);
+		}
+	}
+
+	return jeClient_run(client, gameDir);
 }
