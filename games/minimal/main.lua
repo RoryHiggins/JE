@@ -5,13 +5,12 @@ local Sprite = require("engine/sprite")
 
 local MinimalGame = {}
 MinimalGame.SYSTEM_NAME = "minimalGame"
-function MinimalGame:onInitialize(simulation)
+function MinimalGame:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.spriteSys = self.simulation:addSystem(Sprite)
-end
-function MinimalGame:onWorldInitialize()
+
 	-- create a template we'll use for creating entities in the world
 	self.blockTemplate = self.templateSys:add("block", {
 		["properties"] = {
@@ -27,10 +26,11 @@ function MinimalGame:onWorldInitialize()
 		},
 		["tags"] = {
 			["sprite"] = true,
-			["block"] = true,  -- used in OnStep to find the block instances by tag
+			["block"] = true,  -- used in OnStep to find block instances by tag
 		},
 	})
-
+end
+function MinimalGame:onWorldInit()
 	-- create two instances of the template with different colors and positions
 	local redBlock = self.templateSys:instantiate(self.blockTemplate, 32, 32)
 	redBlock.r = 1

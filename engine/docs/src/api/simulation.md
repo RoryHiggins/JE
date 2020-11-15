@@ -49,15 +49,15 @@ PhysicsSys.SYSTEM_NAME = "physicsSys"
 
 -- triggered once when the simulation
 -- triggered immediately if the system is added after simulation is created
-PhysicsSys.onInitialize(simulation)
+function PhysicsSys:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 end
 
 -- triggered once per simulation step (60 times a second, when run from the client)
-PhysicsSys.onStep()
+function PhysicsSys:onStep()
 	for _, entity in ipairs(self.entitySys:findAll("physics")) do
-		self.entitySys:movePos(entity, 0, 1)  -- not the most interesting gravity physics
+		self.entitySys:movePos(entity, 0, 1)  -- add 1 to y every frame; not the most exciting gravity physics
 	end
 end
 ```
@@ -68,7 +68,7 @@ Runs the simulation loop until completion.
 
 When run from the client, this ends when the client window is closed or ESC is pressed.
 
-When run as a script (headless), the simulation will create and be destroyed.
+When run headless (from a lua interpreter) the simulation will start, step once, and then stop.
 
 **Arguments**
 

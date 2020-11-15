@@ -1,5 +1,11 @@
 """
-Script to build the docs as markdown
+Script to build html docs from markdown
+
+Generates HTML files from each markdown file in the source directory,
+and writes the results to the build directory.
+
+Example:
+$ scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
 """
 import os
 import argparse
@@ -121,7 +127,7 @@ def main():
     docs_src_dir = pathlib.Path(args.src_dir).resolve(strict=True)
     docs_build_dir = pathlib.Path(args.build_dir).resolve(strict=True)
 
-    logging.info("%s -> %s", docs_src_dir, docs_build_dir)
+    logging.info("Building docs dir source=\"%s\" dest=\"%s\"", docs_src_dir, docs_build_dir)
 
     docs_src_filenames = docs_src_dir.rglob('*.md')
     for doc_src_filename in docs_src_filenames:
@@ -131,14 +137,14 @@ def main():
         doc_html_body = markdown.markdown(doc_src, extensions=MARKDOWN_EXTENSIONS)
         doc_html = TEMPLATE_HTML_START + doc_html_body + TEMPLATE_HTML_END
 
-        doc_html_relative_filename = doc_src_filename.relative_to(docs_src_dir).with_suffix(".html")
-        doc_html_filename = docs_build_dir / doc_html_relative_filename
+        doc_dest_relative_filename = doc_src_filename.relative_to(docs_src_dir).with_suffix(".html")
+        doc_dest_filename = docs_build_dir / doc_dest_relative_filename
 
-        os.makedirs(doc_html_filename.parent, exist_ok=True)
-        with open(doc_html_filename, "w") as doc_html_file:
+        os.makedirs(doc_dest_filename.parent, exist_ok=True)
+        with open(doc_dest_filename, "w") as doc_html_file:
             doc_html_file.write(doc_html)
 
-        logging.info("%s -> %s", doc_src_filename, doc_html_filename)
+        logging.info("Building docs file, source=\"%s\" dest=\"%s\"", doc_src_filename, doc_dest_filename)
 
 
 if __name__ == '__main__':

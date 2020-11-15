@@ -15,7 +15,7 @@
 /*
  * C and C++ have different default linkage.
  * Lua(jit) headers don't explicitly state linkage of symbols,
- * so we need to do their job for them.
+ * but libs are (normally) built with C, so we need to do their job for them.
  */
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +42,7 @@ extern "C" {
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
-/*
+/**
  * Casts the result to void to inform the compiler that the result is not used
  * Primary use-case is to suppress unused function argument warnings
  */

@@ -93,7 +93,7 @@ function Player:tickEntity(entity)
 		self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
 	end
 end
-function Player:onInitialize(simulation)
+function Player:onInit(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
 	self.entitySys = self.simulation:addSystem(Entity)

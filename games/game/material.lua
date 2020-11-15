@@ -2,7 +2,7 @@ local Entity = require("engine/entity")
 
 local Material = {}
 Material.SYSTEM_NAME = "material"
-function Material:onInitialize(simulation)
+function Material:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 

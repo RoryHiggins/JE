@@ -5,10 +5,6 @@ local client = require("engine/client")
 local Simulation = {}
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
-Simulation.STATE_UNINITIALIZED = "uninitialized"
-Simulation.STATE_INITALIZED = "initialized"
-Simulation.STATE_STARTED = "started"
-Simulation.STATE_STOPPED = "stopped"
 function Simulation:broadcast(event, ...)
 	for _, system in ipairs(self.systemsOrder) do
 		local eventHandler = system[event]
@@ -19,16 +15,14 @@ function Simulation:broadcast(event, ...)
 end
 function Simulation:addSystem(system)
 	if type(system) ~= "table" then
-		util.error("system is not a table, system=%s",
-				   util.toComparable(system))
+		util.error("system is not a table, system=%s", util.toComparable(system))
 		return {}
 	end
 
 	local systemName = system.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		util.error("system.SYSTEM_NAME is not valid, system=%s",
-				   util.toComparable(system))
+		util.error("system.SYSTEM_NAME is not valid, system=%s", util.toComparable(system))
 		return {}
 	end
 
@@ -40,9 +34,8 @@ function Simulation:addSystem(system)
 		systemInstance = setmetatable({}, system)
 		self.systems[systemName] = systemInstance
 
-		-- marking as initialized first, to prevent recursion with circular dependencies
-		if systemInstance.onInitialize then
-			systemInstance:onInitialize(self)
+		if systemInstance.onInit then
+			systemInstance:onInit(self)
 		end
 
 		self.systemsOrder[#self.systemsOrder + 1] = systemInstance
@@ -50,18 +43,17 @@ function Simulation:addSystem(system)
 
 	return systemInstance
 end
-function Simulation.isRunning()
-	return client.state.running
-end
-function Simulation:draw()
+function Simulation:clientStep()
 	util.trace("")
 
-	self:broadcast("onDraw", self.screen)
-end
-function Simulation:clientStep()
-	util.trace("clientStep")
+	if not client.state.running then
+		self.running = false
+	end
 
-	client.step()
+	-- only update the client if the game is running
+	if self.running then
+		client.step()
+	end
 
 	self.screen = {
 		["x1"] = 0,
@@ -73,83 +65,56 @@ function Simulation:clientStep()
 	self.fps = client.state.fps
 	util.trace("clientStep complete, fps=%d", self.fps)
 end
+function Simulation:draw()
+	util.trace("")
+
+	self:broadcast("onDraw")
+end
 function Simulation:step()
 	util.trace("")
 
+	self:clientStep()
+
 	self:broadcast("onStep")
+
+	self:draw()
 end
-function Simulation:destroy()
-	if not self.initialized then
-		return
-	end
-
-	self:broadcast("onDestroy", self)
-	self.world = {}
-
-	self.initialized = false
-	self.started = false
-
-	util.debug("")
-end
-function Simulation:worldInitialize()
+function Simulation:worldInit()
 	util.debug("")
 
 	self.world = {}
-	self:broadcast("onWorldInitialize", self.world)
-	self:broadcast("onWorldStart", self.world)
+	self:broadcast("onWorldInit")
 end
-function Simulation:initialize()
-	self:destroy()
-
+function Simulation:init()
 	util.debug("")
 
 	math.randomseed(0)
 
-	self.started = false
 	self.static.saveVersion = 1
 
 	-- clear anything drawn by previous simulation
 	client.drawReset()
 
-	self:broadcast("onInitialize", self)
+	self:clientStep()
 
-	self:worldInitialize()
-
-	self.initialized = true
-
-	self:broadcast("onStart", self)
-	self.started = true
+	self:broadcast("onInit", self)
+	self:worldInit({})
 end
 function Simulation:start()
-	util.info("")
+	util.debug("")
 
-	if not self.initialized then
-		util.warn("simulation not initialized yet")
-		self:initialize()
+	if not client.state.running then
+		util.info("client not running, simulation will stop after first tick")
 	end
 
-	if self.started then
-		util.warn("simulation already started")
-		return
-	end
-
-	self.started = true
+	self:broadcast("onStart")
+	self.running = true
 end
 function Simulation:stop()
 	util.debug("")
 
-	if not self.initialized then
-		util.warn("simulation not initialized")
-		return
-	end
-
-	if not self.started then
-		util.warn("simulation not started")
-		return
-	end
-
 	self:broadcast("onStop")
-	self.started = false
+	self.running = false
 end
 function Simulation:save(filename)
 	util.debug("filename=%s", filename)
@@ -206,9 +171,7 @@ function Simulation:dump(filename)
 	return true
 end
 function Simulation:onRunTests()
-	self:initialize()
-	self:step()
-	self:draw()
+	self:init()
 
 	local gameBeforeSave = util.toComparable(self.world)
 	assert(self:dump("test_dump.sav"))
@@ -222,10 +185,13 @@ function Simulation:onRunTests()
 		util.error("Mismatched state before save and after load: before=%s, after=%s",
 				   gameBeforeSave, gameAfterLoad)
 	end
-
-	self:destroy()
 end
 function Simulation:runTests()
+	if not client.state.testsEnabled then
+		util.info("tests not enabled, skipping")
+		return
+	end
+
 	local startTimeSeconds = os.clock()
 
 	local logLevelBackup = util.logLevel
@@ -235,22 +201,17 @@ function Simulation:runTests()
 
 	local testSuitesCount = 0
 
-	-- initialize once to let systems add dependencies
-	self:initialize()
-	self:destroy()
-
 	for _, system in pairs(self.systems) do
 		if system.onRunTests and system.SYSTEM_NAME ~= "simulation" then
 			util.info("running tests for %s", system.SYSTEM_NAME)
 
-			self:destroy()
-			self:initialize()
-
+			self:init()
 			testSuitesCount = testSuitesCount + (system:onRunTests() or 1)
 		end
 	end
 
-	self:destroy()
+	-- clear any garbage left by the last test
+	self:init()
 
 	util.logLevel = logLevelBackup
 
@@ -264,24 +225,19 @@ function Simulation:run()
 	local logLevelBackup = util.logLevel
 	util.logLevel = client.state.logLevel
 
-	if client.state.testsEnabled then
-		self:runTests()
-	end
+	self:init()
+	self:runTests()
 
-	self:initialize()
 	self:start()
 
-	while self:isRunning() do
-		self:clientStep()
+	while self.running do
 		self:step()
-		self:draw()
 	end
 
 	self:stop()
 
-	-- self:save(self.SAVE_FILE)
+	self:save(self.SAVE_FILE)
 	self:dump(self.DUMP_FILE)
-	self:destroy()
 
 	util.logLevel = logLevelBackup
 
@@ -296,8 +252,7 @@ function Simulation.new()
 		["systemsOrder"] = {},
 		["world"] = {},
 		["static"] = {},
-		["initialized"] = false,
-		["started"] = false,
+		["running"] = false,
 		["screen"] = {
 			["x1"] = 0,
 			["y1"] = 0,

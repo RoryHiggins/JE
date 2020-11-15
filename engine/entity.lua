@@ -302,17 +302,18 @@ function Entity:create()
 
 	return entity
 end
-function Entity:onInitialize(simulation)
+function Entity:onInit(simulation)
 	self.simulation = simulation
 end
-function Entity.onWorldInitialize(_, world)
+function Entity:onWorldInit()
+	local world = self.simulation.world
 	world.entities = {}
 	world.tagEntities = {}
 	world.chunkEntities = {}
 	world.destroyedEntities = {}
 end
 function Entity:onRunTests()
-	self.simulation:worldInitialize()
+	self.simulation:worldInit()
 
 	local entityChunkSizeBackup = self.ENTITY_CHUNK_SIZE
 	self.ENTITY_CHUNK_SIZE = 64  -- test values are hard-coded to test this chunk size

@@ -66,7 +66,7 @@ function Template:instantiate(template, x, y, w, h)
 	return entity
 
 end
-function Template:onInitialize(simulation)
+function Template:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 

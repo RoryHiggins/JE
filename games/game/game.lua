@@ -11,10 +11,8 @@ local Player = require("games/game/entities/player")
 
 local Game = {}
 Game.SYSTEM_NAME = "game"
-function Game:testWorldInitialize()
+function Game:testWorldInit()
 	util.info("")
-
-	self.simulation:worldInitialize()
 
 	local levelW = 256
 	local levelH = 256
@@ -94,7 +92,7 @@ function Game:testWorldInitialize()
 	end
 	util.debug("spriteObjectCount=%d", #self.entitySys:findAll("spriteObject"))
 end
-function Game:onInitialize(simulation)
+function Game:onInit(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -109,23 +107,24 @@ function Game:onInitialize(simulation)
 	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 end
 function Game:onStart()
-	self:testWorldInitialize()
+	self:testWorldInit()
 end
 function Game:onStep()
 	if self.simulation.started then
 		if self.inputSys:getReleased("x") then
-			self:testWorldInitialize()
+			self.simulation:worldInit()
+			self:testWorldInit()
 		end
 	end
 end
-function Game:onDraw(screen)
+function Game:onDraw()
 	local fps = {
 		["x"] = 0,
 		["y"] = 0,
 		["z"] = -1,
 		["text"] = "fps="..tostring(self.simulation.fps)
 	}
-	self.textSys:draw(fps, self.font, screen)
+	self.textSys:draw(fps, self.font, self.simulation.screen)
 
 	--[[local testTriangle = {
 		["x1"] = 16,
@@ -141,7 +140,7 @@ function Game:onDraw(screen)
 		["b"] = 0,
 		["a"] = 1,
 	}
-	self.shapeSys:drawTriangle(testTriangle, screen)
+	self.shapeSys:drawTriangle(testTriangle, self.simulation.screen)
 
 	local testLine = {
 		["x"] = 8,
@@ -155,7 +154,7 @@ function Game:onDraw(screen)
 		["b"] = 0,
 		["a"] = 1,
 	}
-	self.shapeSys:drawLine(testLine, screen)
+	self.shapeSys:drawLine(testLine, self.simulation.screen)
 
 	local testPoint = {
 		["x"] = 8,
@@ -167,7 +166,7 @@ function Game:onDraw(screen)
 		["b"] = 1,
 		["a"] = 1,
 	}
-	self.shapeSys:drawPoint(testPoint, screen)--]]
+	self.shapeSys:drawPoint(testPoint, self.simulation.screen)--]]
 end
 
 return Game

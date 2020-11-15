@@ -267,7 +267,7 @@ function Physics:tick(entity)
 	self:tickForces(entity)
 	self:tickMovement(entity)
 end
-function Physics:onInitialize(simulation)
+function Physics:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
@@ -315,7 +315,7 @@ function Physics.onEntityTag(_, entity, tag, tagId)
 	end
 end
 function Physics:onRunTests()
-	self.simulation:worldInitialize()
+	self.simulation:worldInit()
 
 	local static = self.simulation.static
 

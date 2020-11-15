@@ -46,7 +46,7 @@ end
 function Input:getReleased(inputKey)
 	return self.inputs[inputKey].released
 end
-function Input:onInitialize(simulation)
+function Input:onInit(simulation)
 	self.simulation = simulation
 	self:stepInputs()
 end

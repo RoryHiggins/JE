@@ -3,7 +3,7 @@ local Template = require("engine/template")
 
 local Wall = {}
 Wall.SYSTEM_NAME = "wall"
-function Wall:onInitialize(simulation)
+function Wall:onInit(simulation)
 	self.simulation = simulation
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.templateSys = self.simulation:addSystem(Template)
