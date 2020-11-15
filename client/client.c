@@ -9,37 +9,11 @@
 #define JE_DEFAULT_GAME_DIR "games/game"
 #endif
 
-bool jeClient_run(struct jeClient* client, const char* gameDir) {
-	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
-
+bool jeClient_run(struct jeClient* client, int argc, char** argv) {
 	bool ok = true;
 
 	client->window = NULL;
 	client->lua = NULL;
-
-	struct jeString luaMainFilename;
-	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
-
-	struct jeString spritesFilename;
-	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
-
-	if (ok) {
-		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename));
-	}
-
-	ok = ok && (client->window != NULL);
-
-	ok = ok && jeLuaClient_run(client->window, jeString_get(&luaMainFilename));
-
-	jeWindow_destroy(client->window);
-
-	jeString_destroy(&spritesFilename);
-	jeString_destroy(&luaMainFilename);
-
-	return ok;
-}
-bool jeClient_run_cli(struct jeClient* client, int argc, char** argv) {
-	bool ok = true;
 
 	const char* gameDir = JE_DEFAULT_GAME_DIR;
 
@@ -56,5 +30,26 @@ bool jeClient_run_cli(struct jeClient* client, int argc, char** argv) {
 		}
 	}
 
-	return jeClient_run(client, gameDir);
+	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
+
+	struct jeString luaMainFilename;
+	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
+
+	struct jeString spritesFilename;
+	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
+
+	if (ok) {
+		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename));
+	}
+
+	ok = ok && (client->window != NULL);
+
+	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename), argc, argv);
+
+	jeWindow_destroy(client->window);
+
+	jeString_destroy(&spritesFilename);
+	jeString_destroy(&luaMainFilename);
+
+	return ok;
 }

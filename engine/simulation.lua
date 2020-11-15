@@ -104,7 +104,7 @@ function Simulation:start()
 	util.debug("")
 
 	if not client.state.running then
-		util.info("client not running, simulation will stop after first tick")
+		util.info("headless mode (no window): simulation will run tests, step once, then stop")
 	end
 
 	self:broadcast("onStart")
@@ -220,7 +220,10 @@ function Simulation:runTests()
 	util.info("complete, testSuitesCount=%d, testTimeSeconds=%.2f",
 				  testSuitesCount, testTimeSeconds)
 end
-function Simulation:run()
+function Simulation:run(...)
+	self.args = {...}
+	util.debug("arguments: %s", util.toComparable(self.args))
+
 	local startTimeSeconds = os.clock()
 	local logLevelBackup = util.logLevel
 	util.logLevel = client.state.logLevel

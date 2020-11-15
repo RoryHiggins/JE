@@ -51,4 +51,4 @@ end
 
 local simulation = Simulation.new()
 simulation:addSystem(MinimalGame)
-simulation:run()
+simulation:run(...)

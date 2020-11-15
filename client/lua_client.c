@@ -11,8 +11,8 @@
 #define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
 
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeLuaClientBindings"
-#define JE_LUA_CLIENT_WINDOW_KEY "jeLuaClientWindow"
-#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLuaClient_##BINDING_NAME}
+#define JE_LUA_CLIENT_WINDOW_KEY "jeLuaWindow"
+#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLua_##BINDING_NAME}
 
 #if JE_LOG_LEVEL > JE_LOG_LEVEL_DEBUG
 #define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_WARN
@@ -46,7 +46,7 @@ size_t lua_objlen(lua_State *lua, int i) {
 }
 #endif
 
-const char* jeLuaClient_getError(lua_State* lua) {
+const char* jeLua_getError(lua_State* lua) {
 	const char* error = lua_tostring(lua, JE_LUA_STACK_TOP);
 
 	if (error == NULL) {
@@ -55,17 +55,17 @@ const char* jeLuaClient_getError(lua_State* lua) {
 
 	return error;
 }
-float jeLuaClient_getNumberField(lua_State* lua, int tableIndex, const char* field) {
+float jeLua_getNumberField(lua_State* lua, int tableIndex, const char* field) {
 	lua_getfield(lua, tableIndex, field);
 
 	return luaL_checknumber(lua, JE_LUA_STACK_TOP);
 }
-float jeLuaClient_getOptionalNumberField(lua_State* lua, int tableIndex, const char* field, float defaultValue) {
+float jeLua_getOptionalNumberField(lua_State* lua, int tableIndex, const char* field, float defaultValue) {
 	lua_getfield(lua, tableIndex, field);
 
 	return luaL_optnumber(lua, JE_LUA_STACK_TOP, defaultValue);
 }
-const char* jeLuaClient_getStringField(lua_State* lua, int tableIndex, const char* field, int *optOutSize) {
+const char* jeLua_getStringField(lua_State* lua, int tableIndex, const char* field, int *optOutSize) {
 	lua_getfield(lua, tableIndex, field);
 
 	const char* result = luaL_checkstring(lua, JE_LUA_STACK_TOP);
@@ -76,7 +76,7 @@ const char* jeLuaClient_getStringField(lua_State* lua, int tableIndex, const cha
 	return result;
 }
 
-struct jeWindow* jeLuaClient_getWindow(lua_State* lua) {
+struct jeWindow* jeLua_getWindow(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	bool ok = true;
@@ -102,7 +102,7 @@ struct jeWindow* jeLuaClient_getWindow(lua_State* lua) {
 
 	return window;
 }
-void jeLuaClient_addWindow(lua_State* lua, struct jeWindow* window) {
+void jeLua_addWindow(lua_State* lua, struct jeWindow* window) {
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
 	int stackPos = lua_gettop(lua);
@@ -112,12 +112,12 @@ void jeLuaClient_addWindow(lua_State* lua, struct jeWindow* window) {
 
 	lua_settop(lua, stackPos);
 }
-void jeLuaClient_updateStates(lua_State* lua) {
+void jeLua_updateStates(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	int stackPos = lua_gettop(lua);
 	int stateStackPos = 0;
-	struct jeWindow* window = jeLuaClient_getWindow(lua);
+	struct jeWindow* window = jeLua_getWindow(lua);
 
 	lua_settop(lua, 0);
 	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
@@ -174,7 +174,7 @@ void jeLuaClient_updateStates(lua_State* lua) {
 }
 
 /*Lua-client bindings.  Note: return value = num responses pushed to lua stack*/
-int jeLuaClient_readData(lua_State* lua) {
+int jeLua_readData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	bool ok = true;
@@ -218,7 +218,7 @@ int jeLuaClient_readData(lua_State* lua) {
 
 	return numResponses;
 }
-int jeLuaClient_writeData(lua_State* lua) {
+int jeLua_writeData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	bool ok = true;
@@ -265,7 +265,7 @@ int jeLuaClient_writeData(lua_State* lua) {
 
 	return numResponses;
 }
-void jeLuaClient_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int vertexCount) {
+void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int vertexCount) {
 	JE_TRACE("lua=%p, vertices=%p, vertexCount=%d", lua, vertices, vertexCount);
 
 	static const int renderableIndex = 1;
@@ -276,37 +276,37 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int
 	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
 	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
 
-	vertices[0].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x", 0.0f);
-	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y", 0.0f);
-	vertices[0].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
-	vertices[0].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
-	vertices[0].z = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "z1", 0.0f);
-	vertices[0].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0f);
-	vertices[0].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0f);
+	vertices[0].x = jeLua_getOptionalNumberField(lua, renderableIndex, "x", 0.0f);
+	vertices[0].y = jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0f);
+	vertices[0].x = jeLua_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
+	vertices[0].y = jeLua_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
+	vertices[0].z = jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0f);
+	vertices[0].u = jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0f);
+	vertices[0].v = jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0f);
 
-	vertices[0].r = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "r", 1.0f);
-	vertices[0].g = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "g", 1.0f);
-	vertices[0].b = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "b", 1.0f);
-	vertices[0].a = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "a", 1.0f);
-	vertices[0].r = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
-	vertices[0].g = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
-	vertices[0].b = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
-	vertices[0].a = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
+	vertices[0].r = jeLua_getOptionalNumberField(lua, defaultsIndex, "r", 1.0f);
+	vertices[0].g = jeLua_getOptionalNumberField(lua, defaultsIndex, "g", 1.0f);
+	vertices[0].b = jeLua_getOptionalNumberField(lua, defaultsIndex, "b", 1.0f);
+	vertices[0].a = jeLua_getOptionalNumberField(lua, defaultsIndex, "a", 1.0f);
+	vertices[0].r = jeLua_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
+	vertices[0].g = jeLua_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
+	vertices[0].b = jeLua_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
+	vertices[0].a = jeLua_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
 
 	if (vertexCount >= 2) {
-		vertices[1].x = vertices[0].x + jeLuaClient_getOptionalNumberField(lua, renderableIndex, "w", 0.0f);
-		vertices[1].y = vertices[0].y + jeLuaClient_getOptionalNumberField(lua, renderableIndex, "h", 0.0f);
-		vertices[1].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
-		vertices[1].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
-		vertices[1].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0f);
-		vertices[1].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0f);
+		vertices[1].x = vertices[0].x + jeLua_getOptionalNumberField(lua, renderableIndex, "w", 0.0f);
+		vertices[1].y = vertices[0].y + jeLua_getOptionalNumberField(lua, renderableIndex, "h", 0.0f);
+		vertices[1].x = jeLua_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
+		vertices[1].y = jeLua_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
+		vertices[1].u = jeLua_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0f);
+		vertices[1].v = jeLua_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0f);
 	}
 
 	if (vertexCount >= 3) {
-		vertices[2].x = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "x3", 0.0f);
-		vertices[2].y = jeLuaClient_getOptionalNumberField(lua, renderableIndex, "y3", 0.0f);
-		vertices[2].u = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0f);
-		vertices[2].v = jeLuaClient_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0f);
+		vertices[2].x = jeLua_getOptionalNumberField(lua, renderableIndex, "x3", 0.0f);
+		vertices[2].y = jeLua_getOptionalNumberField(lua, renderableIndex, "y3", 0.0f);
+		vertices[2].u = jeLua_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0f);
+		vertices[2].v = jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0f);
 	}
 
 	for (int i = 0; i < vertexCount; i++) {
@@ -317,14 +317,14 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int
 		vertices[i].a = vertices[0].a;
 	}
 
-	float cameraX1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x", 0.0f);
-	float cameraY1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y", 0.0f);
-	float cameraX2 = cameraX1 + jeLuaClient_getOptionalNumberField(lua, cameraIndex, "w", 0.0f);
-	float cameraY2 = cameraY1 + jeLuaClient_getOptionalNumberField(lua, cameraIndex, "h", 0.0f);
-	cameraX1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
-	cameraY1 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
-	cameraX2 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
-	cameraY2 = jeLuaClient_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
+	float cameraX1 = jeLua_getOptionalNumberField(lua, cameraIndex, "x", 0.0f);
+	float cameraY1 = jeLua_getOptionalNumberField(lua, cameraIndex, "y", 0.0f);
+	float cameraX2 = cameraX1 + jeLua_getOptionalNumberField(lua, cameraIndex, "w", 0.0f);
+	float cameraY2 = cameraY1 + jeLua_getOptionalNumberField(lua, cameraIndex, "h", 0.0f);
+	cameraX1 = jeLua_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
+	cameraY1 = jeLua_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
+	cameraX2 = jeLua_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
+	cameraY2 = jeLua_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
 
 	float cameraOffsetX = -cameraX1 - (float)floor((cameraX2 - cameraX1) / 2.0f);
 	float cameraOffsetY = -cameraY1 - (float)floor((cameraY2 - cameraY1) / 2.0f);
@@ -333,8 +333,8 @@ void jeLuaClient_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int
 		vertices[i].y += cameraOffsetY;
 	}
 }
-void jeLuaClient_drawPrimitiveImpl(lua_State* lua, int primitiveType) {
-	struct jeWindow* window = jeLuaClient_getWindow(lua);
+void jeLua_drawPrimitiveImpl(lua_State* lua, int primitiveType) {
+	struct jeWindow* window = jeLua_getWindow(lua);
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
@@ -342,33 +342,33 @@ void jeLuaClient_drawPrimitiveImpl(lua_State* lua, int primitiveType) {
 	memset(&vertices, 0, sizeof(vertices));
 
 	int vertexCount = jePrimitiveType_getVertexCount(primitiveType);
-	jeLuaClient_getPrimitiveImpl(lua, vertices, vertexCount);
+	jeLua_getPrimitiveImpl(lua, vertices, vertexCount);
 
 	JE_TRACE("lua=%p, primitiveType=%d, vertexCount=%d, vertices={%s}",
 			 lua, primitiveType, vertexCount, jeVertex_arrayToDebugString(vertices, vertexCount));
 	jeWindow_pushPrimitive(window, vertices, primitiveType);
 }
-int jeLuaClient_drawPoint(lua_State* lua) {
+int jeLua_drawPoint(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
-	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_POINTS);
+	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_POINTS);
 	return 0;
 }
-int jeLuaClient_drawLine(lua_State* lua) {
+int jeLua_drawLine(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
-	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_LINES);
+	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_LINES);
 	return 0;
 }
-int jeLuaClient_drawTriangle(lua_State* lua) {
+int jeLua_drawTriangle(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
-	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
+	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
 	return 0;
 }
-int jeLuaClient_drawSprite(lua_State* lua) {
+int jeLua_drawSprite(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
-	jeLuaClient_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_SPRITES);
+	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_SPRITES);
 	return 0;
 }
-int jeLuaClient_drawText(lua_State* lua) {
+int jeLua_drawText(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	static const int renderableIndex = 1;
@@ -377,20 +377,20 @@ int jeLuaClient_drawText(lua_State* lua) {
 	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
 	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
 
-	int charW = jeLuaClient_getNumberField(lua, defaultsIndex, "charW");
-	int charH = jeLuaClient_getNumberField(lua, defaultsIndex, "charH");
+	int charW = jeLua_getNumberField(lua, defaultsIndex, "charW");
+	int charH = jeLua_getNumberField(lua, defaultsIndex, "charH");
 
-	const char* charFirst = jeLuaClient_getStringField(lua, defaultsIndex, "charFirst", NULL);
-	const char* charLast = jeLuaClient_getStringField(lua, defaultsIndex, "charLast", NULL);
-	int charColumns = jeLuaClient_getNumberField(lua, defaultsIndex, "charColumns");
+	const char* charFirst = jeLua_getStringField(lua, defaultsIndex, "charFirst", NULL);
+	const char* charLast = jeLua_getStringField(lua, defaultsIndex, "charLast", NULL);
+	int charColumns = jeLua_getNumberField(lua, defaultsIndex, "charColumns");
 
 	int textLength = 0;
-	const char* text = jeLuaClient_getStringField(lua, renderableIndex, "text", &textLength);
+	const char* text = jeLua_getStringField(lua, renderableIndex, "text", &textLength);
 
 	struct jeVertex textBoundsVertices[2];
 	memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
-	jeLuaClient_getPrimitiveImpl(lua, textBoundsVertices, 1);
+	jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
 	textBoundsVertices[1] = textBoundsVertices[0];
 
 	JE_TRACE("lua=%p, text=%s, textBoundsVertices=%s", lua, text, jeVertex_arrayToDebugString(textBoundsVertices, 2));
@@ -422,20 +422,20 @@ int jeLuaClient_drawText(lua_State* lua) {
 		charVertices[1].v += charH;
 
 		JE_TRACE("lua=%p, charVertices={%s}", lua, jeVertex_arrayToDebugString(charVertices, 2));
-		jeWindow_pushPrimitive(jeLuaClient_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
+		jeWindow_pushPrimitive(jeLua_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
 	}
 
 	return 0;
 }
-int jeLuaClient_drawReset(lua_State* lua) {
-	struct jeWindow* window = jeLuaClient_getWindow(lua);
+int jeLua_drawReset(lua_State* lua) {
+	struct jeWindow* window = jeLua_getWindow(lua);
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
 	jeWindow_resetPrimitives(window);
 
 	return 0;
 }
-int jeLuaClient_runTests(lua_State* lua) {
+int jeLua_runTests(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	int logLevelbackup = jeLoggerLevel_override;
@@ -458,20 +458,20 @@ int jeLuaClient_runTests(lua_State* lua) {
 	lua_pushnumber(lua, numTestSuites);
 	return 1;
 }
-int jeLuaClient_step(lua_State* lua) {
-	struct jeWindow* window = jeLuaClient_getWindow(lua);
+int jeLua_step(lua_State* lua) {
+	struct jeWindow* window = jeLua_getWindow(lua);
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
 	bool ok = jeWindow_step(window);
 
-	jeLuaClient_updateStates(lua);
+	jeLua_updateStates(lua);
 
 	lua_pushboolean(lua, ok);
 	return 1;
 }
 
-bool jeLuaClient_addBindings(lua_State* lua) {
+bool jeLua_addBindings(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	static const luaL_Reg clientBindings[] = {
@@ -512,14 +512,14 @@ bool jeLuaClient_addBindings(lua_State* lua) {
 		lua_createtable(lua, /*numArrayElems*/ 0, /*numNonArrayElems*/ 16);
 		lua_setfield(lua, JE_LUA_STACK_TOP - 1, "state");
 
-		jeLuaClient_updateStates(lua);
+		jeLua_updateStates(lua);
 
 		lua_settop(lua, 0);
 	}
 
 	return ok;
 }
-bool jeLuaClient_run(struct jeWindow* window, const char* filename) {
+bool jeLua_run(struct jeWindow* window, const char* filename, int argc, char** argv) {
 	bool ok = true;
 	int luaResponse = 0;
 	lua_State* lua = NULL;
@@ -537,23 +537,33 @@ bool jeLuaClient_run(struct jeWindow* window, const char* filename) {
 	if (ok) {
 		luaL_openlibs(lua);
 
-		jeLuaClient_addWindow(lua, window);
+		jeLua_addWindow(lua, window);
 	}
 
-	ok = ok && jeLuaClient_addBindings(lua);
+	ok = ok && jeLua_addBindings(lua);
 
 	if (ok) {
 		luaResponse = luaL_loadfile(lua, filename);
 		if (luaResponse != 0) {
-			JE_ERROR("luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLuaClient_getError(lua));
+			JE_ERROR("luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
 			ok = false;
 		}
 	}
 
 	if (ok) {
-		luaResponse = lua_pcall(lua, /*numArgs*/ 0, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
-		if (luaResponse != 0) {
-			JE_ERROR("lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLuaClient_getError(lua));
+		// push string arguments to the lua stack
+		for (int i = 0; i < argc; i++) {
+			JE_TRACE("arg[%d] = \"%s\"", i, argv[i]);
+			lua_pushstring(lua, argv[i]);
+		}
+		JE_TRACE("%d command-line arguments", argc);
+	}
+
+	if (ok) {
+		// THIS WILL BLOCK UNTIL THE CALLED LUA SCRIPT ENDS!
+		luaResponse = lua_pcall(lua, /*numArgs*/ argc, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
+		if (luaResponse != LUA_OK) {
+			JE_ERROR("lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
 			ok = false;
 		}
 	}

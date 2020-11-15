@@ -13,7 +13,7 @@
 
 int main(int argc, char** argv) {
 	struct jeClient client;
-	bool ok = jeClient_run_cli(&client, argc, argv);
+	bool ok = jeClient_run(&client, argc, argv);
 
 	return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
