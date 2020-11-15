@@ -1,7 +1,6 @@
 local client = require("engine/client")
 local Sprite = require("engine/systems/sprite")
 
-
 local Shape = {}
 Shape.SYSTEM_NAME = "Shape"
 function Shape:drawPoint(renderable, camera)

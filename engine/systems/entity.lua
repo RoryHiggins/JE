@@ -1,4 +1,5 @@
-local util = require("engine/util")
+local log = require("engine/util/log")
+local util = require("engine/util/util")
 
 local FLOAT_EPSILON = 1.19e-07
 local utilRectCollides = util.rectCollides
@@ -320,13 +321,13 @@ function Entity:onRunTests()
 
 	local world = self.simulation.world
 	if world.entities == nil then
-		util.error("entities object was not created during World.create()")
+		log.error("entities object was not created during World.create()")
 	end
 	if world.tagEntities == nil then
-		util.error("tagEntities object was not created during World.create()")
+		log.error("tagEntities object was not created during World.create()")
 	end
 	if world.chunkEntities == nil then
-		util.error("chunkEntities object was not created during World.create()")
+		log.error("chunkEntities object was not created during World.create()")
 	end
 
 	local entity = self:create()

@@ -1,8 +1,8 @@
-local util = require("engine/util")
+local log = require("engine/util/log")
+local util = require("engine/util/util")
 local client = require("engine/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
-
 
 local Sprite = {}
 Sprite.SYSTEM_NAME = "sprite"
@@ -24,7 +24,7 @@ function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 		sprites[spriteId] = sprite
 	end
 
-	util.debug("sprite=%s", util.toComparable(sprite))
+	log.debug("sprite=%s", util.toComparable(sprite))
 
 	return sprite
 end

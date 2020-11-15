@@ -1,4 +1,4 @@
-local util = require("engine/util")
+local log = require("engine/util/log")
 local Input = require("engine/systems/input")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
@@ -12,7 +12,7 @@ local Player = require("games/game/entities/player")
 local Game = {}
 Game.SYSTEM_NAME = "game"
 function Game:testWorldInit()
-	util.info("")
+	log.info("")
 
 	local levelW = 256
 	local levelH = 256
@@ -90,7 +90,7 @@ function Game:testWorldInit()
 			16 + math.floor(math.random(levelW - 16)),
 			16 + math.floor(math.random(levelH - 16)))
 	end
-	util.debug("spriteObjectCount=%d", #self.entitySys:findAll("spriteObject"))
+	log.debug("spriteObjectCount=%d", #self.entitySys:findAll("spriteObject"))
 end
 function Game:onInit(simulation)
 	self.simulation = simulation

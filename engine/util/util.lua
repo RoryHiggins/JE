@@ -1,38 +1,7 @@
 local json = require("engine/lib/json/json")
 
 local util = {}
-util.LOG_LEVEL_TRACE = 0
-util.LOG_LEVEL_DEBUG = 1
-util.LOG_LEVEL_LOG = 2
-util.LOG_LEVEL_WARN = 3
-util.LOG_LEVEL_ERR = 4
-util.LOG_LEVEL_NONE = 5
-util.testLogLevel = util.LOG_LEVEL_WARN
-util.logLevel = util.LOG_LEVEL_LOG
-local function logImpl(level, format, ...)
-	if util.logLevel > level then
-		return
-	end
 
-	local callee_info = debug.getinfo(3, "Sln")
-	print(string.format(format, callee_info.short_src, callee_info.currentline, callee_info.name, ...))
-	io.flush()
-end
-function util.trace(format, ...)
-	logImpl(util.LOG_LEVEL_TRACE, "[trace %s:%d] %s() "..format, ...)
-end
-function util.debug(format, ...)
-	logImpl(util.LOG_LEVEL_DEBUG, "[debug %s:%d] %s() "..format, ...)
-end
-function util.info(format, ...)
-	logImpl(util.LOG_LEVEL_LOG, "[info  %s:%d] %s() "..format, ...)
-end
-function util.warn(format, ...)
-	logImpl(util.LOG_LEVEL_WARN, "[WARN  %s:%d] %s() "..format, ...)
-end
-function util.error(format, ...)
-	logImpl(util.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format, ...)
-end
 function util.noop()
 end
 
@@ -192,7 +161,7 @@ end
 function util.writeDataUncompressed(filename, dataStr)
 	local file, errMsg = io.open(filename, "w")
 	if file == nil then
-		util.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
+		log.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return false
 	end
 
@@ -204,7 +173,7 @@ end
 function util.readDataUncompressed(filename)
 	local file, errMsg = io.open(filename, "r")
 	if file == nil then
-		util.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
+		log.error("io.open() failed, filename=%s, error=%s", filename, errMsg)
 		return
 	end
 

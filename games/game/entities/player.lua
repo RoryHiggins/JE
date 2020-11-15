@@ -1,4 +1,4 @@
-local util = require("engine/util")
+local util = require("engine/util/util")
 local Input = require("engine/systems/input")
 local Entity = require("engine/systems/entity")
 local Sprite = require("engine/systems/sprite")

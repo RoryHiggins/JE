@@ -1,4 +1,4 @@
-local util = require("engine/util")
+local util = require("engine/util/util")
 
 local headlessClientMetatable = {}
 function headlessClientMetatable.__index()

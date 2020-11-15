@@ -1,4 +1,4 @@
-local util = require("engine/util")
+local util = require("engine/util/util")
 local Entity = require("engine/systems/entity")
 
 local Template = {}
