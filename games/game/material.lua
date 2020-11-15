@@ -1,4 +1,4 @@
-local Entity = require("engine/entity")
+local Entity = require("engine/systems/entity")
 
 local Material = {}
 Material.SYSTEM_NAME = "material"

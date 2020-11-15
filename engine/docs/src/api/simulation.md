@@ -40,7 +40,7 @@ Systems are uniquely keyed by system.SYSTEM_NAME. If a system with that key does
 **Examples**
 
 ```lua
-local Entity = require("engine/entity")
+local Entity = require("engine/systems/entity")
 
 local PhysicsSys = {}
 

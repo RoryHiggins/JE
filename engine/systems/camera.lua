@@ -1,4 +1,4 @@
-local Entity = require("engine/entity")
+local Entity = require("engine/systems/entity")
 
 local Camera = {}
 Camera.SYSTEM_NAME = "camera"

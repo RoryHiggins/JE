@@ -1,6 +1,6 @@
 local util = require("engine/util")
-local Entity = require("engine/entity")
-local Template = require("engine/template")
+local Entity = require("engine/systems/entity")
+local Template = require("engine/systems/template")
 local Material = require("games/game/material")
 
 local Physics = {}

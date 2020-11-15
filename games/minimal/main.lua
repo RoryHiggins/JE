@@ -1,7 +1,7 @@
 local Simulation = require("engine/simulation")
-local Entity = require("engine/entity")
-local Template = require("engine/template")
-local Sprite = require("engine/sprite")
+local Entity = require("engine/systems/entity")
+local Template = require("engine/systems/template")
+local Sprite = require("engine/systems/sprite")
 
 local MinimalGame = {}
 MinimalGame.SYSTEM_NAME = "minimalGame"

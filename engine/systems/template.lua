@@ -1,5 +1,5 @@
 local util = require("engine/util")
-local Entity = require("engine/entity")
+local Entity = require("engine/systems/entity")
 
 local Template = {}
 Template.SYSTEM_NAME = "template"

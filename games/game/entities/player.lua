@@ -1,8 +1,8 @@
 local util = require("engine/util")
-local Input = require("engine/input")
-local Entity = require("engine/entity")
-local Sprite = require("engine/sprite")
-local Template = require("engine/template")
+local Input = require("engine/systems/input")
+local Entity = require("engine/systems/entity")
+local Sprite = require("engine/systems/sprite")
+local Template = require("engine/systems/template")
 local Physics = require("games/game/physics")
 
 local Player = {}
