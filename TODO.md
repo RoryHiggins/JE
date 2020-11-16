@@ -1,9 +1,23 @@
 
-Simulation-side quitting
-------------------------
-Replace started/created with a state machine
+Integer tag indexing
+--------------------
+Lua tag index
+	string tag name to numeric tag id
 
-Rename "created" to initialized in simulation and systems
+Decoupled entity querying
+-------------------------
+Lua EntityQuery object
+	tag id (readonly)
+	exclude tag id (readonly)
+	create(tag, excludeTag)
+	setTag(tag?)
+	setExcludeTag(tag?)
+	find()
+	findBounded()
+	API for querying with bounds
+
+Move EntityQuery to util/entity_query.lua
+
 
 Reindexing
 ----------
@@ -12,14 +26,17 @@ entitySys:onEntityReindex
 	entitySys:reindexBounds
 	entitySys:reindexTags
 
-
-
 Client indexing
 ---------------
 
 IN ADDITION TO simulation indexing (does not replace it)
 
-Client entity id allocation
+
+C client entity table
+
+C querying
+	default bounds is int min to int max
+	decide bounds first vs tags first based on number of chunks
 
 
 Static initialization phase

@@ -1,6 +1,7 @@
 local json = require("engine/lib/json/json")
 
 local util = {}
+util.SYSTEM_NAME = "util"
 
 function util.noop()
 end
@@ -49,7 +50,6 @@ function util.arrayConcat(a, b)
 		a[#a + 1] = b[i]
 	end
 end
-
 function util.getKeys(input)
 	local keys = {}
 
@@ -128,7 +128,17 @@ function util.getValues(input)
 	for _, value in pairs(input) do
 		values[#values + 1] = value
 	end
+
+	return values
+end
+function util.sorted(values)
+	values = util.deepcopy(values)
 	table.sort(values, function (a, b) return util.toComparable(a) < util.toComparable(b) end)
+
+	return values
+end
+function util.createSet(values)
+	values = util.sorted(values)
 
 	local duplicateIndices = {}
 
@@ -149,8 +159,12 @@ function util.getValues(input)
 	return values
 end
 function util.setEquality(a, b)
-	return util.toComparable(util.getValues(a)) == util.toComparable(util.getValues(b))
+	local setA = util.createSet(util.getValues(a))
+	local setB = util.createSet(util.getValues(b))
+
+	return util.toComparable(setA) == util.toComparable(setB)
 end
+
 function util.rectCollides(ax, ay, aw, ah, bx, by, bw, bh)
 	return ((ax < (bx + bw)) and ((ax + aw) > bx)
 	        and (ay < (by + bh)) and ((ay + ah) > by)
@@ -198,7 +212,9 @@ function util.onRunTests()
 	assert(util.toComparable({["a"] = 1, ["b"] = 2}) ~= util.toComparable({["a"] = 2, ["b"] = 2}))
 	assert(util.toComparable(_G) == util.toComparable(_G))
 	assert(util.toComparable(util.getValues({1, 2, 3})) == util.toComparable({1, 2, 3}))
-	assert(util.toComparable(util.getValues({["a"] = 1, ["b"] = 2, ["c"] = 3})) == util.toComparable({1, 2, 3}))
+	assert(util.toComparable(util.sorted({3, 2, 1})) == util.toComparable({1, 2, 3}))
+	assert(util.toComparable(util.sorted(util.getValues({["a"] = 1, ["b"] = 2, ["c"] = 3}))) == util.toComparable({1, 2, 3}))
+	assert(util.toComparable(util.createSet({1, 2, 3, 3})) == util.toComparable({1, 2, 3}))
 	assert(util.setEquality({}, {}))
 	assert(util.setEquality({1, 2}, {2, 1, 1}))
 	assert(util.setEquality({1, 2, ["a"] = "b", ["c"] = {["d"] = 1}}, {1, 2, ["a"] = "b", ["c"] = {["d"] = 1}}))

@@ -1,3 +1,4 @@
+local log = require("engine/util/log")
 local util = require("engine/util/util")
 
 local headlessClientMetatable = {}
@@ -11,9 +12,9 @@ headlessClient.state = {
 	["width"] = 0,
 	["height"] = 0,
 	["fps"] = 0,
-	["logLevel"] = util.logLevel,
+	["logLevel"] = log.logLevel,
 	["testsEnabled"] = true,
-	["testsLogLevel"] = util.testLogLevel,
+	["testsLogLevel"] = log.testsLogLevel,
 	["inputLeft"] = false,
 	["inputRight"] = false,
 	["inputUp"] = false,
@@ -32,6 +33,7 @@ end
 
 -- injected by the c client in main.c:jeGame_registerLuaClientBindings()
 local client = jeLuaClientBindings or headlessClient  -- luacheck: globals jeLuaClientBindings
+client.SYSTEM_NAME = "client"
 function client.onRunTests()
 	headlessClient.writeData("clientTestFile", "")
 	assert(headlessClient.readData("clientTestFile") == "")

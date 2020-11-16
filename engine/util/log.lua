@@ -1,11 +1,11 @@
 local log = {}
-log.LOG_LEVEL_TRACE = 0
+log.LOG_LEVEL_TRACE = 0  -- logs for debugging that are happening very frequently (e.g. each step)
 log.LOG_LEVEL_DEBUG = 1
 log.LOG_LEVEL_LOG = 2
 log.LOG_LEVEL_WARN = 3
 log.LOG_LEVEL_ERR = 4
 log.LOG_LEVEL_NONE = 5
-log.testLogLevel = log.LOG_LEVEL_WARN
+log.testsLogLevel = log.LOG_LEVEL_WARN
 log.logLevel = log.LOG_LEVEL_LOG
 local function logImpl(level, format, ...)
 	if log.logLevel > level then

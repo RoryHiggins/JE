@@ -3,6 +3,8 @@ local util = require("engine/util/util")
 local client = require("engine/client")
 
 local Simulation = {}
+Simulation.__index = Simulation
+Simulation.SYSTEM_NAME = "simulation"
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
 function Simulation:broadcast(event, ...)
@@ -94,8 +96,6 @@ function Simulation:init()
 
 	-- clear anything drawn by previous simulation
 	client.drawReset()
-
-	self:clientStep()
 
 	self:broadcast("onInit", self)
 	self:worldInit({})
@@ -251,10 +251,10 @@ end
 
 function Simulation.new()
 	local simulation = {
-		["systems"] = {},
-		["systemsOrder"] = {},
-		["world"] = {},
+		["systems"] = nil,  -- populated below as it is self-referential
+		["systemsOrder"] = nil,  -- populated below as it is self-referential
 		["static"] = {},
+		["world"] = {},
 		["running"] = false,
 		["screen"] = {
 			["x1"] = 0,
@@ -264,18 +264,18 @@ function Simulation.new()
 		},
 		["fps"] = 0,
 	}
+	simulation.systems = {
+		["simulation"] = nil,
+		["util"] = util,
+		["client"] = client,
+	}
+	simulation.systemsOrder = {
+		simulation,
+		util,
+		client,
+	}
 
-	Simulation.__index = Simulation
 	setmetatable(simulation, Simulation)
-
-	Simulation.SYSTEM_NAME = "simulation"
-	simulation.systems.simulation = simulation
-
-	util.SYSTEM_NAME = "util"
-	simulation.systems.util = util
-
-	client.SYSTEM_NAME = "client"
-	simulation.systems.client = client
 
 	return simulation
 end
