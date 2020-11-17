@@ -8,7 +8,7 @@ local Physics = require("games/game/physics")
 local Player = {}
 Player.SYSTEM_NAME = "player"
 function Player:tickEntity(entity)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
 
@@ -20,8 +20,8 @@ function Player:tickEntity(entity)
 		- util.boolToNumber(self.inputSys:get("up")))
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
-	local moveDirX = inputDirX * math.abs(util.sign(static.physicsGravityY))
-	local moveDirY = inputDirY * math.abs(util.sign(static.physicsGravityX))
+	local moveDirX = inputDirX * math.abs(util.sign(constants.physicsGravityY))
+	local moveDirY = inputDirY * math.abs(util.sign(constants.physicsGravityX))
 
 	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
 	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
@@ -48,18 +48,18 @@ function Player:tickEntity(entity)
 
 	local onGround = self.entitySys:findRelative(
 		entity,
-		util.sign(static.physicsGravityX),
-		util.sign(static.physicsGravityY),
+		util.sign(constants.physicsGravityX),
+		util.sign(constants.physicsGravityY),
 		"solid"
 	)
 	local tryingToJump = (
 		(self.inputSys:get("a"))
-		or ((util.sign(static.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(static.physicsGravityX)))
-		or ((util.sign(static.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(static.physicsGravityY)))
+		or ((util.sign(constants.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(constants.physicsGravityX)))
+		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(constants.physicsGravityY)))
 	)
 
-	local fallingX = (static.physicsGravityX ~= 0) and (entity.speedX * util.sign(static.physicsGravityX) >= 0)
-	local fallingY = (static.physicsGravityY ~= 0) and (entity.speedY * util.sign(static.physicsGravityY) >= 0)
+	local fallingX = (constants.physicsGravityX ~= 0) and (entity.speedX * util.sign(constants.physicsGravityX) >= 0)
+	local fallingY = (constants.physicsGravityY ~= 0) and (entity.speedY * util.sign(constants.physicsGravityY) >= 0)
 	local falling = fallingX or fallingY
 	if not tryingToJump or onGround or falling then
 		entity.playerJumpFramesCur = 0
@@ -67,20 +67,20 @@ function Player:tickEntity(entity)
 
 	if tryingToJump then
 		if onGround then
-			if static.physicsGravityX ~= 0 then
+			if constants.physicsGravityX ~= 0 then
 				self.physicsSys:stopX(entity)
 			end
-			if static.physicsGravityY ~= 0 then
+			if constants.physicsGravityY ~= 0 then
 				self.physicsSys:stopY(entity)
 			end
 			local jumpForce = entity.playerJumpForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (util.sign(static.physicsGravityX) * jumpForce)
-			entity.forceY = entity.forceY - (util.sign(static.physicsGravityY) * jumpForce)
+			entity.forceX = entity.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
+			entity.forceY = entity.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
 			entity.playerJumpFramesCur = entity.playerJumpFrames
 		elseif entity.playerJumpFramesCur > 0 then
 			local jumpFrameForce = entity.playerJumpFrameForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (util.sign(static.physicsGravityX) * jumpFrameForce)
-			entity.forceY = entity.forceY - (util.sign(static.physicsGravityY) * jumpFrameForce)
+			entity.forceX = entity.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
+			entity.forceY = entity.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
 			entity.playerJumpFramesCur = entity.playerJumpFramesCur - 1
 		end
 	end

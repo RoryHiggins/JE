@@ -4,7 +4,7 @@ local Entity = require("engine/systems/entity")
 local Template = {}
 Template.SYSTEM_NAME = "template"
 function Template:add(templateId, template)
-	local templates = self.simulation.static.templates
+	local templates = self.simulation.constants.templates
 	local currentTemplate = templates[templateId]
 	if currentTemplate == nil then
 		templates[templateId] = template
@@ -12,7 +12,7 @@ function Template:add(templateId, template)
 	return template
 end
 function Template:get(templateId)
-	return self.simulation.static.templates[templateId]
+	return self.simulation.constants.templates[templateId]
 end
 function Template:apply(entity, template)
 	local entitySys = self.entitySys
@@ -70,10 +70,10 @@ function Template:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 
-	self.simulation.static.templates = {}
+	self.simulation.constants.templates = {}
 end
 function Template:onRunTests()
-	assert(self.simulation.static.templates ~= nil)
+	assert(self.simulation.constants.templates ~= nil)
 
 	local template = self:add("yee", {
 		["properties"] = {

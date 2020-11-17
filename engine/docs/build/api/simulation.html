@@ -93,6 +93,9 @@
 <li><a href="#simulationdumpfilename">Simulation:dump(filename)</a></li>
 <li><a href="#simulationsavefilename">Simulation:save(filename)</a></li>
 <li><a href="#simulationloadfilename">Simulation:load(filename)</a></li>
+<li><a href="#simulationconstants">Simulation:constants</a></li>
+<li><a href="#simulationinput">Simulation:input</a></li>
+<li><a href="#simulationstate">Simulation:state</a></li>
 </ul>
 </li>
 </ul>
@@ -209,18 +212,7 @@ and saves this as JSON to the given filename.</p>
 
 <h2 id="simulationsavefilename">Simulation:save(filename)</h2>
 <p>Saves simulation state as gzipped JSON to the given filename.  Only state in simulation.state is saved.</p>
-<p>There are some major restrictions simulation.state must adhere to, in order to support saving:</p>
-<ul>
-<li>no table recursion, i.e. a table cannot contain itself, directly or indirectly</li>
-<li>primitive types only, i.e. must only be composed of tables, strings, numbers, bool, and nil</li>
-<li>no sparse arrays (nils in tables containing only number keys)</li>
-<li>cannot mix string keys and number keys in tables</li>
-</ul>
-<p>There are also some restrictions which simulation.state should adhere to, else information will be lost:</p>
-<ul>
-<li>no metatables - tables will not include their metatable nor metatable members when the save is loaded</li>
-<li>only store one reference to a table - each reference will be its own table when the save is loaded</li>
-</ul>
+<p>In order to support saving, simulation.state must be <a href="../abstractions/serializable.html">Serializable</a>.</p>
 <p><strong>Arguments</strong></p>
 <ul>
 <li>"filename" - string filename where save should be written to</li>
@@ -247,5 +239,23 @@ and saves this as JSON to the given filename.</p>
 <p><strong>Examples</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="n">simulation</span><span class="p">:</span><span class="nb">load</span><span class="p">(</span><span class="s2">&quot;save.dat&quot;</span><span class="p">)</span>
 </code></pre></div>
+
+
+<h2 id="simulationconstants">Simulation:constants</h2>
+<p>Constants defining the behavior of the simulation.  Populated during the onInit event.  Note when modifying constants:</p>
+<ul>
+<li>Should only be modified during onInit.</li>
+<li>Should be deterministically initialized: each init() event should produce an identical constants object</li>
+<li>Should be <a href="../abstractions/serializable.html">Serializable</a>.</li>
+</ul>
+<h2 id="simulationinput">Simulation:input</h2>
+<p>Input from the client for the current simulation step (screen, fps, keyboard/controller input status, random seed, etc).
+Non deterministic.  Should not be modified by game code.</p>
+<h2 id="simulationstate">Simulation:state</h2>
+<p>Current simulation state (including the world).  Note when modifying state:</p>
+<ul>
+<li>Should be Serializable <a href="../abstractions/serializable.html">Serializable</a>.  Must be serializable if save()/load() is used</li>
+<li>Should be deterministically updated when provided the same simulation.constants and the same simulation.input for each step event</li>
+</ul>
     </body>
     </html>

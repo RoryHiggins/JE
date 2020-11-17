@@ -5,7 +5,7 @@ local Camera = require("engine/systems/camera")
 local Text = {}
 Text.SYSTEM_NAME = "text"
 function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColumns)
-	local fonts = self.simulation.static.fonts
+	local fonts = self.simulation.constants.fonts
 	local font = fonts[fontId]
 	if font == nil then
 		font = {
@@ -31,7 +31,7 @@ function Text:addFont(fontId, u, v, charW, charH, charFirst, charLast, charColum
 	return font
 end
 function Text:getFont(fontId)
-	return self.simulation.static.fonts[fontId]
+	return self.simulation.constants.fonts[fontId]
 end
 function Text.draw(_, renderable, font, camera)
 	client.drawText(renderable, font, camera)
@@ -51,10 +51,10 @@ function Text:onInit(simulation)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.cameraSys = self.simulation:addSystem(Camera)
 
-	self.simulation.static.fonts = {}
+	self.simulation.constants.fonts = {}
 end
 function Text:onCameraDraw(camera)
-	local fonts = self.simulation.static.fonts
+	local fonts = self.simulation.constants.fonts
 
 	for _, entity in ipairs(self.entitySys:findAll("text")) do
 		client.drawText(entity, fonts[entity.fontId], camera)

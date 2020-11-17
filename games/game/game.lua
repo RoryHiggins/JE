@@ -122,9 +122,9 @@ function Game:onDraw()
 		["x"] = 0,
 		["y"] = 0,
 		["z"] = -1,
-		["text"] = "fps="..tostring(self.simulation.fps)
+		["text"] = "fps="..tostring(self.simulation.input.fps)
 	}
-	self.textSys:draw(fps, self.font, self.simulation.screen)
+	self.textSys:draw(fps, self.font, self.simulation.input.screen)
 
 	--[[local testTriangle = {
 		["x1"] = 16,
@@ -140,7 +140,7 @@ function Game:onDraw()
 		["b"] = 0,
 		["a"] = 1,
 	}
-	self.shapeSys:drawTriangle(testTriangle, self.simulation.screen)
+	self.shapeSys:drawTriangle(testTriangle, self.simulation.input.screen)
 
 	local testLine = {
 		["x"] = 8,
@@ -154,7 +154,7 @@ function Game:onDraw()
 		["b"] = 0,
 		["a"] = 1,
 	}
-	self.shapeSys:drawLine(testLine, self.simulation.screen)
+	self.shapeSys:drawLine(testLine, self.simulation.input.screen)
 
 	local testPoint = {
 		["x"] = 8,
@@ -166,7 +166,7 @@ function Game:onDraw()
 		["b"] = 1,
 		["a"] = 1,
 	}
-	self.shapeSys:drawPoint(testPoint, self.simulation.screen)--]]
+	self.shapeSys:drawPoint(testPoint, self.simulation.input.screen)--]]
 end
 
 return Game

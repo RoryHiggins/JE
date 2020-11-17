@@ -6,7 +6,7 @@ function Material:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 
-	self.simulation.static.materials = {
+	self.simulation.constants.materials = {
 		"air",
 		"solid",
 		"ice",
@@ -16,7 +16,7 @@ function Material:onInit(simulation)
 end
 function Material:onEntityTag(entity, tag, tagId)
 	if tagId ~= nil then
-		local materials = self.simulation.static.materials
+		local materials = self.simulation.constants.materials
 		local materialsCount = #materials
 		for i = 1, materialsCount do
 			if tag == materials[i] then
@@ -27,7 +27,7 @@ function Material:onEntityTag(entity, tag, tagId)
 	end
 end
 function Material:onRunTests()
-	assert(self.simulation.static.materials ~= nil)
+	assert(self.simulation.constants.materials ~= nil)
 end
 
 return Material

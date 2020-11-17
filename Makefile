@@ -46,7 +46,7 @@ run_debugger: engine_client
 profile: gmon.out
 	gprof -b engine_client* gmon.out > profile.txt
 docs:
-	$(PYTHON) -m pip install -r scripts/requirements.txt
+	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
 	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
 release:
 	rm -rf release

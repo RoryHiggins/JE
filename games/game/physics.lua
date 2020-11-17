@@ -6,10 +6,10 @@ local Material = require("games/game/material")
 local Physics = {}
 Physics.SYSTEM_NAME = "physics"
 function Physics:getMaterialPhysics(entity)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
-	local gravitySignX = util.sign(static.physicsGravityX)
-	local gravitySignY = util.sign(static.physicsGravityY)
+	local gravitySignX = util.sign(constants.physicsGravityX)
+	local gravitySignY = util.sign(constants.physicsGravityY)
 	local materialEntity = self.entitySys:findBounded(
 		entity.x + math.min(0, gravitySignX),
 		entity.y + math.min(0, gravitySignY),
@@ -19,12 +19,12 @@ function Physics:getMaterialPhysics(entity)
 		entity.id
 	)
 
-	local materialsPhysics = static.physicsMaterials
+	local materialsPhysics = constants.physicsMaterials
 	local materialPhysics = materialsPhysics.air
 	if materialEntity then
 		local entityTags = materialEntity.tags
 
-		local materials = static.materials
+		local materials = constants.materials
 		local materialsCount = #materials
 		for i = 1, materialsCount do
 			local material = materials[i]
@@ -40,15 +40,15 @@ end
 function Physics:getCarryablesRecursive(entity, outCarryables, recursionDepth)
 	outCarryables = outCarryables or {}
 
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	recursionDepth = recursionDepth or 0
-	if (recursionDepth > static.physicsMaxRecursionDepth) then
+	if (recursionDepth > constants.physicsMaxRecursionDepth) then
 		return outCarryables
 	end
 
 	local candidates = self.entitySys:findAllRelative(
-		entity, -util.sign(static.physicsGravityX), -util.sign(static.physicsGravityY), "physicsCarryable")
+		entity, -util.sign(constants.physicsGravityX), -util.sign(constants.physicsGravityY), "physicsCarryable")
 	local candidatesCount = #candidates
 
 	for i = 1, candidatesCount do
@@ -73,10 +73,10 @@ function Physics.stopY(_, entity)
 	entity.overflowY = 0
 end
 function Physics:tryPushX(entity, signX, recursionDepth)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	recursionDepth = recursionDepth or 0
-	if (recursionDepth > static.physicsMaxRecursionDepth) then
+	if (recursionDepth > constants.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -95,10 +95,10 @@ function Physics:tryPushX(entity, signX, recursionDepth)
 	return true
 end
 function Physics:tryPushY(entity, signY, recursionDepth)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	recursionDepth = recursionDepth or 0
-	if (recursionDepth > static.physicsMaxRecursionDepth) then
+	if (recursionDepth > constants.physicsMaxRecursionDepth) then
 		return false
 	end
 
@@ -117,15 +117,15 @@ function Physics:tryPushY(entity, signY, recursionDepth)
 	return true
 end
 function Physics:tryMoveX(entity, moveX, recursionDepth, innerMove)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	recursionDepth = recursionDepth or 0
-	if (recursionDepth > static.physicsMaxRecursionDepth) then
+	if (recursionDepth > constants.physicsMaxRecursionDepth) then
 		return false
 	end
 
 	local signX = util.sign(moveX)
-	local absMoveX = math.min(static.physicsMaxSpeed, math.abs(moveX))
+	local absMoveX = math.min(constants.physicsMaxSpeed, math.abs(moveX))
 	local moveSuccessful = true
 
 	local curMoveX = 0
@@ -135,7 +135,7 @@ function Physics:tryMoveX(entity, moveX, recursionDepth, innerMove)
 		local obstacle = self.entitySys:findRelative(entity, nextMoveX, 0, "solid")
 		while obstacle and entity.physicsCanPush and self:tryPushX(obstacle, signX, recursionDepth + 1) do
 			recursionDepth = recursionDepth + 1
-			entity.forceX = entity.forceX - (signX * static.physicsPushCounterforce)
+			entity.forceX = entity.forceX - (signX * constants.physicsPushCounterforce)
 			obstacle = self.entitySys:findRelative(entity, nextMoveX, 0, "solid")
 			recursionDepth = recursionDepth + 1
 		end
@@ -150,7 +150,7 @@ function Physics:tryMoveX(entity, moveX, recursionDepth, innerMove)
 
 	self.entitySys:setBounds(entity, entity.x + curMoveX, entity.y, entity.w, entity.h)
 
-	if curMoveX ~= 0 and entity.physicsCanCarry and not innerMove and static.physicsGravityY ~= 0 then
+	if curMoveX ~= 0 and entity.physicsCanCarry and not innerMove and constants.physicsGravityY ~= 0 then
 		for _, carryable in pairs(self:getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
 			self:tryMoveX(carryable, curMoveX, recursionDepth + 1, true)
 		end
@@ -159,15 +159,15 @@ function Physics:tryMoveX(entity, moveX, recursionDepth, innerMove)
 	return moveSuccessful
 end
 function Physics:tryMoveY(entity, moveY, recursionDepth, innerMove)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	recursionDepth = recursionDepth or 0
-	if (recursionDepth > static.physicsMaxRecursionDepth) then
+	if (recursionDepth > constants.physicsMaxRecursionDepth) then
 		return false
 	end
 
 	local signY = util.sign(moveY)
-	local absMoveY = math.min(static.physicsMaxSpeed, math.abs(moveY))
+	local absMoveY = math.min(constants.physicsMaxSpeed, math.abs(moveY))
 	local moveSuccessful = true
 
 	local curMoveY = 0
@@ -177,7 +177,7 @@ function Physics:tryMoveY(entity, moveY, recursionDepth, innerMove)
 		local obstacle = self.entitySys:findRelative(entity, 0, nextMoveY, "solid")
 		while obstacle and entity.physicsCanPush and self:tryPushY(obstacle, signY, recursionDepth + 1) do
 			recursionDepth = recursionDepth + 1
-			entity.forceY = entity.forceY - (signY * static.physicsPushCounterforce)
+			entity.forceY = entity.forceY - (signY * constants.physicsPushCounterforce)
 			obstacle = self.entitySys:findRelative(entity, 0, nextMoveY, "solid")
 		end
 		if obstacle then
@@ -189,7 +189,7 @@ function Physics:tryMoveY(entity, moveY, recursionDepth, innerMove)
 		curMoveY = nextMoveY
 	end
 
-	if curMoveY ~= 0 and entity.physicsCanCarry and not innerMove and static.physicsGravityX ~= 0 then
+	if curMoveY ~= 0 and entity.physicsCanCarry and not innerMove and constants.physicsGravityX ~= 0 then
 		for _, carryable in pairs(self:getCarryablesRecursive(entity, {}, recursionDepth + 1)) do
 			self:tryMoveY(carryable, curMoveY, recursionDepth + 1, true)
 		end
@@ -200,7 +200,7 @@ function Physics:tryMoveY(entity, moveY, recursionDepth, innerMove)
 	return moveSuccessful
 end
 function Physics:tickForces(entity)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	-- apply force to speed
 	entity.speedX = entity.speedX + entity.forceX
@@ -212,8 +212,8 @@ function Physics:tickForces(entity)
 	local materialPhysics = self:getMaterialPhysics(entity)
 
 	-- apply gravity to force
-	entity.forceX = entity.forceX + static.physicsGravityX
-	entity.forceY = entity.forceY + static.physicsGravityY
+	entity.forceX = entity.forceX + constants.physicsGravityX
+	entity.forceY = entity.forceY + constants.physicsGravityY
 
 	-- apply "friction" to speed
 	local speedSignX = util.sign(entity.speedX)
@@ -228,11 +228,11 @@ function Physics:tickForces(entity)
 	end
 end
 function Physics:tickMovement(entity)
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	-- clamp speed to max speed
-	entity.speedX = math.max(-static.physicsMaxSpeed, math.min(static.physicsMaxSpeed, entity.speedX))
-	entity.speedY = math.max(-static.physicsMaxSpeed, math.min(static.physicsMaxSpeed, entity.speedY))
+	entity.speedX = math.max(-constants.physicsMaxSpeed, math.min(constants.physicsMaxSpeed, entity.speedX))
+	entity.speedY = math.max(-constants.physicsMaxSpeed, math.min(constants.physicsMaxSpeed, entity.speedY))
 
 	-- compute amount to move (integer values).  the fractional movement component is accumulated for subsequent ticks
 	local moveX, overflowX = math.modf(entity.speedX)
@@ -273,24 +273,24 @@ function Physics:onInit(simulation)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.materialSys = self.simulation:addSystem(Material)
 
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
-	static.physicsGravityX = 0
-	static.physicsGravityY = 0.5
-	static.physicsMaxSpeed = 8
-	static.physicsMaxRecursionDepth = 100
-	static.physicsPushCounterforce = 0.1
+	constants.physicsGravityX = 0
+	constants.physicsGravityY = 0.5
+	constants.physicsMaxSpeed = 8
+	constants.physicsMaxRecursionDepth = 100
+	constants.physicsPushCounterforce = 0.1
 
 	local defaultMaterialPhysics = {
 		["friction"] = 0.3,
 		["moveForceStrength"] = 1,
 		["jumpForceStrength"] = 1,
 	}
-	static.physicsMaterials = {}
-	for _, materialName in ipairs(self.simulation.static.materials) do
-		static.physicsMaterials[materialName] = util.tableExtend({["id"] = materialName}, defaultMaterialPhysics)
+	constants.physicsMaterials = {}
+	for _, materialName in ipairs(self.simulation.constants.materials) do
+		constants.physicsMaterials[materialName] = util.tableExtend({["id"] = materialName}, defaultMaterialPhysics)
 	end
-	local airPhysics = static.physicsMaterials.air
+	local airPhysics = constants.physicsMaterials.air
 	airPhysics.friction = 0.1
 	airPhysics.moveForceStrength = 0.5
 end
@@ -317,12 +317,12 @@ end
 function Physics:onRunTests()
 	self.simulation:worldInit()
 
-	local static = self.simulation.static
+	local constants = self.simulation.constants
 
 	local gridSize = 8
 
-	local gravitySignX = util.sign(static.physicsGravityX)
-	local gravitySignY = util.sign(static.physicsGravityY)
+	local gravitySignX = util.sign(constants.physicsGravityX)
+	local gravitySignY = util.sign(constants.physicsGravityY)
 
 	local gridDownX = gridSize * gravitySignX
 	local gridDownY = gridSize * gravitySignY
@@ -359,11 +359,11 @@ function Physics:onRunTests()
 
 	-- simulate being in the air
 	local entity = self.templateSys:instantiate(physicsTemplate, 0, 0)
-	assert(self:getMaterialPhysics(entity) == static.physicsMaterials["air"])
+	assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["air"])
 
 	-- simulate being on the ground
 	self.templateSys:instantiate(wallTemplate, gridDownX, gridDownY)
-	assert(self:getMaterialPhysics(entity) == static.physicsMaterials["solid"])
+	assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["solid"])
 
 	-- simulate idle frames
 	assert(entity.x == 0)
@@ -380,8 +380,8 @@ function Physics:onRunTests()
 
 	-- simulate falling off a ledge
 	for _ = 1, 100 do
-		entity.forceX = entity.forceX + (static.physicsGravityY)
-		entity.forceY = entity.forceY + (static.physicsGravityX)
+		entity.forceX = entity.forceX + (constants.physicsGravityY)
+		entity.forceY = entity.forceY + (constants.physicsGravityX)
 		self:onStep()
 	end
 	assert(util.sign(entity.x) ~= 0)

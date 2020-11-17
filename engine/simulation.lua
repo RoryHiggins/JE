@@ -8,7 +8,7 @@ Simulation.SYSTEM_NAME = "simulation"
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
 function Simulation:broadcast(event, ...)
-	for _, system in ipairs(self.systemsOrder) do
+	for _, system in ipairs(self.private.systemsOrder) do
 		local eventHandler = system[event]
 		if eventHandler then
 			eventHandler(system, ...)
@@ -28,19 +28,19 @@ function Simulation:addSystem(system)
 		return {}
 	end
 
-	local systemInstance = self.systems[systemName]
+	local systemInstance = self.private.systems[systemName]
 	if systemInstance == nil then
 		log.debug("instantiating system, systemName=%s", systemName)
 
 		system.__index = system
 		systemInstance = setmetatable({}, system)
-		self.systems[systemName] = systemInstance
+		self.private.systems[systemName] = systemInstance
 
 		if systemInstance.onInit then
 			systemInstance:onInit(self)
 		end
 
-		self.systemsOrder[#self.systemsOrder + 1] = systemInstance
+		self.private.systemsOrder[#self.private.systemsOrder + 1] = systemInstance
 	end
 
 	return systemInstance
@@ -49,23 +49,26 @@ function Simulation:clientStep()
 	log.trace("")
 
 	if not client.state.running then
-		self.running = false
+		self.private.running = false
 	end
 
 	-- only update the client if the game is running
-	if self.running then
+	if self.private.running then
 		client.step()
 	end
 
-	self.screen = {
+	self.input.screen = {
 		["x1"] = 0,
 		["y1"] = 0,
 		["x2"] = client.state.width,
 		["y2"] = client.state.height,
 	}
 
-	self.fps = client.state.fps
-	log.trace("clientStep complete, fps=%d", self.fps)
+	self.input.fps = client.state.fps
+
+	self:broadcast("onClientStep")
+
+	log.trace("clientStep complete, fps=%d", self.input.fps)
 end
 function Simulation:draw()
 	log.trace("")
@@ -84,7 +87,7 @@ end
 function Simulation:worldInit()
 	log.debug("")
 
-	self.world = {}
+	self.state.world = {}
 	self:broadcast("onWorldInit")
 end
 function Simulation:init()
@@ -92,7 +95,10 @@ function Simulation:init()
 
 	math.randomseed(0)
 
-	self.static.saveVersion = 1
+	self.private.running = false
+
+	self.constants = {}
+	self.constants.saveVersion = 1
 
 	-- clear anything drawn by previous simulation
 	client.drawReset()
@@ -107,21 +113,25 @@ function Simulation:start()
 		log.info("headless mode (no window): simulation will run tests, step once, then stop")
 	end
 
-	self:broadcast("onStart")
-	self.running = true
+	if not self.private.running then
+		self:broadcast("onStart")
+		self.private.running = true
+	end
 end
 function Simulation:stop()
 	log.debug("")
 
-	self:broadcast("onStop")
-	self.running = false
+	if self.private.running then
+		self:broadcast("onStop")
+		self.private.running = false
+	end
 end
 function Simulation:save(filename)
 	log.debug("filename=%s", filename)
 
 	local save = {
-		["saveVersion"] = self.static.saveVersion,
-		["world"] = self.world,
+		["saveVersion"] = self.constants.saveVersion,
+		["world"] = self.state.world,
 	}
 
 	if not client.writeData(filename, util.json.encode(save)) then
@@ -141,17 +151,17 @@ function Simulation:load(filename)
 
 	local loadedSave = util.json.decode(loadedSaveStr)
 
-	if loadedSave.saveVersion and (loadedSave.saveVersion > self.static.saveVersion) then
+	if loadedSave.saveVersion and (loadedSave.saveVersion > self.constants.saveVersion) then
 		log.error("save version is too new, saveVersion=%d, save.saveVersion=%d",
-				   self.static.saveVersion, loadedSave.saveVersion)
+				   self.constants.saveVersion, loadedSave.saveVersion)
 		return false
 	end
-	if loadedSave.saveVersion and (loadedSave.saveVersion < self.static.saveVersion) then
+	if loadedSave.saveVersion and (loadedSave.saveVersion < self.constants.saveVersion) then
 		log.info("save version is older, saveVersion=%d, save.saveVersion=%d",
-				   self.static.saveVersion, loadedSave.saveVersion)
+				   self.constants.saveVersion, loadedSave.saveVersion)
 	end
 
-	self.world = loadedSave.world
+	self.state.world = loadedSave.world
 
 	return true
 end
@@ -159,9 +169,9 @@ function Simulation:dump(filename)
 	log.debug("filename=%s", filename)
 
 	local dump = {
-		["world"] = self.world,
-		["static"] = self.static,
-		["systems"] = util.getKeys(self.systems),
+		["world"] = self.state.world,
+		["constants"] = self.constants,
+		["systems"] = util.getKeys(self.private.systems),
 	}
 	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
 		log.error("client.writeData() failed")
@@ -173,14 +183,14 @@ end
 function Simulation:onRunTests()
 	self:init()
 
-	local gameBeforeSave = util.toComparable(self.world)
+	local gameBeforeSave = util.toComparable(self.state.world)
 	assert(self:dump("test_dump.sav"))
 	assert(self:save("test_save.sav"))
 	assert(self:load("test_save.sav"))
 	os.remove("test_dump.sav")
 	os.remove("test_save.sav")
 
-	local gameAfterLoad = util.toComparable(self.world)
+	local gameAfterLoad = util.toComparable(self.state.world)
 	if gameBeforeSave ~= gameAfterLoad then
 		log.error("Mismatched state before save and after load: before=%s, after=%s",
 				   gameBeforeSave, gameAfterLoad)
@@ -201,7 +211,7 @@ function Simulation:runTests()
 
 	local testSuitesCount = 0
 
-	for _, system in pairs(self.systems) do
+	for _, system in pairs(self.private.systems) do
 		if system.onRunTests and system.SYSTEM_NAME ~= "simulation" then
 			log.info("running tests for %s", system.SYSTEM_NAME)
 
@@ -233,7 +243,7 @@ function Simulation:run(...)
 
 	self:start()
 
-	while self.running do
+	while self.private.running do
 		self:step()
 	end
 
@@ -251,29 +261,47 @@ end
 
 function Simulation.new()
 	local simulation = {
-		["systems"] = nil,  -- populated below as it is self-referential
-		["systemsOrder"] = nil,  -- populated below as it is self-referential
-		["static"] = {},
-		["world"] = {},
-		["running"] = false,
-		["screen"] = {
-			["x1"] = 0,
-			["y1"] = 0,
-			["x2"] = 0,
-			["y2"] = 0,
+		-- State internal to the Simulation instance
+		["private"] = {
+			-- whether the game is currently running
+			["running"] = false,
+
+			["systems"] = {
+				["simulation"] = nil,  -- recursive reference cannot be resolved inside table initializer
+				["util"] = util,
+				["client"] = client,
+			},
+
+			["systemsOrder"] = {
+				nil,  -- recursive reference cannot be resolved inside table initializer
+				util,
+				client,
+			},
 		},
-		["fps"] = 0,
+
+		-- Constants defining the behavior of the simulation
+		["constants"] = {},
+
+		-- Input from the client to the simulation step (screen, fps, keyboard/controller input status, random seed, etc)
+		-- Should be the only entirely non-deterministic state that can influence simulation.state
+		["input"] = {
+			["screen"] = {
+				["x1"] = 0,
+				["y1"] = 0,
+				["x2"] = 0,
+				["y2"] = 0,
+			},
+			["fps"] = 0,
+		},
+
+		-- Current simulation state
+		["state"] = {
+			["world"] = {},
+		},
 	}
-	simulation.systems = {
-		["simulation"] = nil,
-		["util"] = util,
-		["client"] = client,
-	}
-	simulation.systemsOrder = {
-		simulation,
-		util,
-		client,
-	}
+	-- must assign recursive references after initializer
+	simulation.private.systems.simulation = simulation
+	simulation.private.systemsOrder[1] = simulation
 
 	setmetatable(simulation, Simulation)
 

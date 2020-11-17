@@ -7,7 +7,7 @@ local Camera = require("engine/systems/camera")
 local Sprite = {}
 Sprite.SYSTEM_NAME = "sprite"
 function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
-	local sprites = self.simulation.static.sprites
+	local sprites = self.simulation.constants.sprites
 	local sprite = sprites[spriteId]
 	if sprite == nil then
 		sprite = {
@@ -32,10 +32,10 @@ function Sprite.draw(_, renderable, sprite, camera)
 	client.drawSprite(renderable, sprite, camera)
 end
 function Sprite:get(spriteId)
-	return self.simulation.static.sprites[spriteId]
+	return self.simulation.constants.sprites[spriteId]
 end
 function Sprite:getUntextured()
-	return self.simulation.static.untexturedSprite
+	return self.simulation.constants.untexturedSprite
 end
 function Sprite:attach(entity, sprite)
 	entity.spriteId = sprite.spriteId
@@ -51,12 +51,12 @@ function Sprite:onInit(simulation)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.cameraSys = self.simulation:addSystem(Camera)
 
-	self.simulation.static.sprites = {}
+	self.simulation.constants.sprites = {}
 
-	self.simulation.static.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
+	self.simulation.constants.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
 end
 function Sprite:onCameraDraw(camera)
-	local sprites = self.simulation.static.sprites
+	local sprites = self.simulation.constants.sprites
 
 	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
 		client.drawSprite(entity, sprites[entity.spriteId], camera)

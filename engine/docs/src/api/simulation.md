@@ -20,6 +20,33 @@ simulation:run()
 ```
 
 
+## Simulation:run()
+Runs the simulation loop until completion.  Triggers the following events:
+
+- onInitialize for each 
+
+When run from the client, this ends when the client window is closed or ESC is pressed.
+
+When run headless (from a lua interpreter) the simulation will initialize, start, step once, and then stop.
+
+**Arguments**
+
+**Returns**
+
+**Examples**
+
+```lua
+local simulation = Simulation.new()
+simulation:addSystem(MyGame)
+simulation:run()
+```
+
+
+## Simulation:stop()
+Stop the simulation if it is currently running.  Can be called mid-simulation to exit early.  Triggers onStop event.  Always called at the end of simulation.run()
+
+
+
 ## Simulation:addSystem(system)
 Adds the specified system to the simulation, if not already present.  Returns an instance of that system.
 
@@ -60,26 +87,6 @@ function PhysicsSys:onStep()
 		self.entitySys:movePos(entity, 0, 1)  -- add 1 to y every frame; not the most exciting gravity physics
 	end
 end
-```
-
-
-## Simulation:run()
-Runs the simulation loop until completion.
-
-When run from the client, this ends when the client window is closed or ESC is pressed.
-
-When run headless (from a lua interpreter) the simulation will start, step once, and then stop.
-
-**Arguments**
-
-**Returns**
-
-**Examples**
-
-```lua
-local simulation = Simulation.new()
-simulation:addSystem(MyGame)
-simulation:run()
 ```
 
 
@@ -134,17 +141,7 @@ simulation:dump("simulation_dump.json")
 ## Simulation:save(filename)
 Saves simulation state as gzipped JSON to the given filename.  Only state in simulation.state is saved.
 
-There are some major restrictions simulation.state must adhere to, in order to support saving:
-
-- no table recursion, i.e. a table cannot contain itself, directly or indirectly
-- primitive types only, i.e. must only be composed of tables, strings, numbers, bool, and nil
-- no sparse arrays (nils in tables containing only number keys)
-- cannot mix string keys and number keys in tables
-
-There are also some restrictions which simulation.state should adhere to, else information will be lost:
-
-- no metatables - tables will not include their metatable nor metatable members when the save is loaded
-- only store one reference to a table - each reference will be its own table when the save is loaded
+In order to support saving, simulation.state must be [Serializable](../abstractions/serializable.html).
 
 **Arguments**
 
@@ -177,3 +174,21 @@ Loads simulation state as gzipped JSON from the given filename.  If successful, 
 ```lua
 simulation:load("save.dat")
 ```
+
+
+## Simulation:constants
+Constants defining the behavior of the simulation.  Populated during the onInit event.  Note when modifying constants:
+
+- Should only be modified during onInit.
+- Should be deterministically initialized: each init() event should produce an identical constants object
+- Should be [Serializable](../abstractions/serializable.html).
+
+## Simulation:input
+Input from the client for the current simulation step (screen, fps, keyboard/controller input status, random seed, etc).
+Non deterministic.  Should not be modified by game code.
+
+## Simulation:state
+Current simulation state (including the world).  Note when modifying state:
+
+ - Should be Serializable [Serializable](../abstractions/serializable.html).  Must be serializable if save()/load() is used
+ - Should be deterministically updated when provided the same simulation.constants and the same simulation.input for each step event
