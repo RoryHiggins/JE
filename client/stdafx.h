@@ -5,42 +5,13 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <errno.h>
 #include <time.h>
-#include <ctype.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-/*
- * C and C++ have different default linkage.
- * Lua(jit) headers don't explicitly state linkage of symbols,
- * but libs are (normally) built with C, so we need to do their job for them.
- */
-#if defined(__cplusplus)
-extern "C" {
-#endif
-#include <luajit-2.1/lua.h>
-#include <luajit-2.1/lualib.h>
-#include <luajit-2.1/lauxlib.h>
-
-/* Only used for version checking via LUAJIT_VERSION_NUM */
-#include <luajit-2.1/luajit.h>
-#if defined(__cplusplus)
-} /*extern "C"*/
-#endif
-
-#include <zlib.h>
-#include <png.h>
-
-#define GLEW_STATIC
-#define GL_GLEXT_PROTOTYPES 1
-#define GL3_PROTOTYPES 1
-#include <GL/glew.h>
-#include <GL/glu.h>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
 
 #include "debug.h"
 #include "include/j25.h"

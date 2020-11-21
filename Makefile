@@ -32,10 +32,16 @@ endif
 CFLAGS_TRACE := $(CFLAGS_DEBUG)
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
-engine_client: Makefile client/stdafx.h.gch client/*.h client/*.c
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o engine_client
-client/stdafx.h.gch: Makefile client/stdafx.h client/include/*.h
-	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o client/stdafx.h.gch
+COMPILE_OBJECT := $(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET)
+
+engine_client: Makefile client/stdafx.h.gch client/drivers.o client/*.*
+	$(COMPILE_OBJECT) client/drivers.o client/main.c $(LFLAGS_$(TARGET)) -o engine_client
+client/stdafx.h.gch: Makefile client/stdafx.h client/include/*.*
+	$(COMPILE_OBJECT) -c client/stdafx.h -o client/stdafx.h.gch
+client/drivers.o: Makefile client/drivers/stdafx.h.gch client/drivers/*.*
+	$(COMPILE_OBJECT) -c client/drivers/drivers.c -o client/drivers.o
+client/drivers/stdafx.h.gch: Makefile client/stdafx.h client/drivers/stdafx.h
+	$(COMPILE_OBJECT) -c client/drivers/stdafx.h -o client/drivers/stdafx.h.gch
 
 run: engine_client
 	./engine_client -game $(GAME)
@@ -55,7 +61,7 @@ docs:
 release:
 	rm -rf release
 	mkdir release
-	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE client/main.c $(LFLAGS_RELEASE) -o release/engine_client
+	$(CC) $(CFLAGS_RELEASE) -D JE_BUILD_RELEASE client/drivers/drivers.c client/main.c $(LFLAGS_RELEASE) -o release/engine_client
 
 	mkdir release/client
 	cp -r client/data -- release/client
@@ -65,9 +71,9 @@ release:
 	mkdir release/games
 	cp -r $(GAME) -- release/games
 
-	tar -czvf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
+	tar -czf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
 clean:
-	rm -f engine_client game_dump.sav game_save.sav client/stdafx.h.gch gmon.out profile.txt
+	rm -f client/drivers/stdafx.h.gch client/drivers.o client/stdafx.h.gch engine_client game_dump.sav game_save.sav gmon.out profile.txt
 	rm -rf release engine/docs/build
 
 .PHONY: run run_debugger run_headless profile check_syntax docs release clean
