@@ -32,9 +32,9 @@ endif
 CFLAGS_TRACE := $(CFLAGS_DEBUG)
 LFLAGS_TRACE := $(LFLAGS_DEBUG)
 
-engine_client: Makefile client/stdafx.h.gch client/*.c client/*.h
+engine_client: Makefile client/stdafx.h.gch client/*.h client/*.c
 	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/main.c $(LFLAGS_$(TARGET)) -o engine_client
-client/stdafx.h.gch: Makefile client/stdafx.h
+client/stdafx.h.gch: Makefile client/stdafx.h client/include/*.h
 	$(CC) $(CFLAGS_$(TARGET)) -D JE_BUILD_$(TARGET) client/stdafx.h -o client/stdafx.h.gch
 
 run: engine_client
@@ -45,6 +45,10 @@ run_debugger: engine_client
 	gdb --args ./engine_client -game $(GAME)
 profile: gmon.out
 	gprof -b engine_client* gmon.out > profile.txt
+check_syntax:
+	# The public headers should maintain C89 compatibility
+	$(CC) -std=c89 -Wall -Wextra -pedantic -Werror=vla -fsyntax-only client/include/j25.h
+	$(CC) -std=c99 -Wall -Wextra -pedantic -Werror=vla -fsyntax-only client/main.c
 docs:
 	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
 	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/build
@@ -66,4 +70,4 @@ clean:
 	rm -f engine_client game_dump.sav game_save.sav client/stdafx.h.gch gmon.out profile.txt
 	rm -rf release engine/docs/build
 
-.PHONY: run run_debugger run_headless profile docs release clean
+.PHONY: run run_debugger run_headless profile check_syntax docs release clean

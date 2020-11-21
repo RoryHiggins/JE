@@ -1,8 +1,5 @@
-#include "stdafx.h"
-#include "debug.h"
-#include "client.h"
-
 /*Unity build*/
+#include "stdafx.h"
 #include "debug.c"
 #include "container.c"
 #include "image.c"
@@ -13,7 +10,7 @@
 
 int main(int argc, char** argv) {
 	struct jeClient client;
-	bool ok = jeClient_run(&client, argc, argv);
+	jeBool ok = jeClient_run(&client, argc, argv);
 
 	return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

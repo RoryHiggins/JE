@@ -1,7 +1,4 @@
 #include "stdafx.h"
-#include "rendering.h"
-#include "debug.h"
-#include "container.h"
 
 #define JE_VERTEX_DEBUG_STRING_BUFFER_SIZE 128
 #define JE_VERTEX_ARRAY_DEBUG_STRING_MAX_VERTICES 16
@@ -235,7 +232,7 @@ void jeVertexBuffer_destroy(struct jeVertexArray* vertexBuffer) {
 
 	jeArray_destroy(&vertexBuffer->vertices);
 }
-bool jeVertexBuffer_create(struct jeVertexArray* vertexBuffer) {
+jeBool jeVertexBuffer_create(struct jeVertexArray* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
 	return jeArray_create(&vertexBuffer->vertices, sizeof(struct jeVertex));
@@ -243,7 +240,7 @@ bool jeVertexBuffer_create(struct jeVertexArray* vertexBuffer) {
 void jeVertexBuffer_reset(struct jeVertexArray* vertexBuffer) {
 	jeArray_setCount(&vertexBuffer->vertices, 0);
 }
-bool jeVertexBuffer_sort(struct jeVertexArray* vertexBuffer, int primitiveType) {
+jeBool jeVertexBuffer_sort(struct jeVertexArray* vertexBuffer, int primitiveType) {
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	int vertexCount = vertexBuffer->vertices.count;
 	int primitiveCount = vertexCount / primitiveVertexCount;
@@ -251,7 +248,7 @@ bool jeVertexBuffer_sort(struct jeVertexArray* vertexBuffer, int primitiveType) 
 
 	JE_TRACE("vertexBuffer=%p, vertexCount=%d, primitiveCount=%d", vertexBuffer, vertexCount, primitiveCount);
 
-	bool ok = true;
+	jeBool ok = true;
 
 	struct jeArray unsortedPrimitivesBuffer;
 	ok = ok && jeArray_create(&unsortedPrimitivesBuffer, sizeof(struct jeVertex));
@@ -342,7 +339,7 @@ void jeVertexBuffer_pushPrimitive(struct jeVertexArray* vertexBuffer, const stru
 	}
 }
 
-void jeRenderingRunTests() {
+void jeRendering_runTests() {
 	JE_DEBUG("");
 
 	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];

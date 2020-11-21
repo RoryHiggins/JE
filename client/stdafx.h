@@ -1,4 +1,4 @@
-/*Precompiled header*/
+/* Precompiled header */
 #if !defined(JE_STDAFX_H)
 #define JE_STDAFX_H
 
@@ -17,7 +17,7 @@
  * Lua(jit) headers don't explicitly state linkage of symbols,
  * but libs are (normally) built with C, so we need to do their job for them.
  */
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 #include <luajit-2.1/lua.h>
@@ -26,7 +26,7 @@ extern "C" {
 
 /* Only used for version checking via LUAJIT_VERSION_NUM */
 #include <luajit-2.1/luajit.h>
-#ifdef __cplusplus
+#if defined(__cplusplus)
 } /*extern "C"*/
 #endif
 
@@ -42,10 +42,7 @@ extern "C" {
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
-/**
- * Casts the result to void to inform the compiler that the result is not used
- * Primary use-case is to suppress unused function argument warnings
- */
-#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
+#include "debug.h"
+#include "include/j25.h"
 
 #endif

@@ -1,10 +1,4 @@
 #include "stdafx.h"
-#include "lua_client.h"
-#include "debug.h"
-#include "image.h"
-#include "container.h"
-#include "rendering.h"
-#include "window.h"
 
 /*https://www.lua.org/manual/5.1/manual.html*/
 #define JE_LUA_STACK_TOP -1
@@ -79,7 +73,7 @@ const char* jeLua_getStringField(lua_State* lua, int tableIndex, const char* fie
 struct jeWindow* jeLua_getWindow(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	bool ok = true;
+	jeBool ok = true;
 	struct jeWindow *window = NULL;
 
 	int stackPos = lua_gettop(lua);
@@ -177,7 +171,7 @@ void jeLua_updateStates(lua_State* lua) {
 int jeLua_readData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	bool ok = true;
+	jeBool ok = true;
 	int numResponses = 0;
 
 	gzFile file = NULL;
@@ -221,7 +215,7 @@ int jeLua_readData(lua_State* lua) {
 int jeLua_writeData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	bool ok = true;
+	jeBool ok = true;
 	int numResponses = 0;
 
 	const char* filename = "";
@@ -438,23 +432,23 @@ int jeLua_drawReset(lua_State* lua) {
 int jeLua_runTests(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	int logLevelbackup = jeLoggerLevel_override;
-	jeLoggerLevel_override = JE_TESTS_LOG_LEVEL;
+	int logLevelbackup = jeLogger_getLevel();
+	jeLogger_setLevelOverride(JE_TESTS_LOG_LEVEL);
 
 	int numTestSuites = 0;
-	jeContainerRunTests();
+	jeContainer_runTests();
 	numTestSuites++;
 
-	jeImageRunTests();
+	jeImage_runTests();
 	numTestSuites++;
 
-	jeRenderingRunTests();
+	jeRendering_runTests();
 	numTestSuites++;
 
-	jeWindowRunTests();
+	jeWindow_runTests();
 	numTestSuites++;
 
-	jeLoggerLevel_override = logLevelbackup;
+	jeLogger_setLevelOverride(logLevelbackup);
 	lua_pushnumber(lua, numTestSuites);
 	return 1;
 }
@@ -463,7 +457,7 @@ int jeLua_step(lua_State* lua) {
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
-	bool ok = jeWindow_step(window);
+	jeBool ok = jeWindow_step(window);
 
 	jeLua_updateStates(lua);
 
@@ -471,7 +465,7 @@ int jeLua_step(lua_State* lua) {
 	return 1;
 }
 
-bool jeLua_addBindings(lua_State* lua) {
+jeBool jeLua_addBindings(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	static const luaL_Reg clientBindings[] = {
@@ -488,7 +482,7 @@ bool jeLua_addBindings(lua_State* lua) {
 		{NULL, NULL}  /*sentinel value*/
 	};
 
-	bool ok = true;
+	jeBool ok = true;
 	int createdResult = 0;
 
 	JE_DEBUG("");
@@ -519,8 +513,8 @@ bool jeLua_addBindings(lua_State* lua) {
 
 	return ok;
 }
-bool jeLua_run(struct jeWindow* window, const char* filename, int argc, char** argv) {
-	bool ok = true;
+jeBool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount, char** arguments) {
+	jeBool ok = true;
 	int luaResponse = 0;
 	lua_State* lua = NULL;
 
@@ -552,16 +546,16 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argc, char** a
 
 	if (ok) {
 		// push string arguments to the lua stack
-		for (int i = 0; i < argc; i++) {
-			JE_TRACE("arg[%d] = \"%s\"", i, argv[i]);
-			lua_pushstring(lua, argv[i]);
+		for (int i = 0; i < argumentCount; i++) {
+			JE_TRACE("arg[%d] = \"%s\"", i, arguments[i]);
+			lua_pushstring(lua, arguments[i]);
 		}
-		JE_TRACE("%d command-line arguments", argc);
+		JE_TRACE("%d command-line arguments", argumentCount);
 	}
 
 	if (ok) {
 		// THIS WILL BLOCK UNTIL THE CALLED LUA SCRIPT ENDS!
-		luaResponse = lua_pcall(lua, /*numArgs*/ argc, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
+		luaResponse = lua_pcall(lua, /*numArgs*/ argumentCount, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
 		if (luaResponse != LUA_OK) {
 			JE_ERROR("lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
 			ok = false;

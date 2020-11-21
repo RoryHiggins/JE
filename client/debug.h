@@ -1,13 +1,7 @@
 #if !defined(JE_DEBUG_H)
 #define JE_DEBUG_H
 
-#define JE_LOG_CONTEXT jeLoggerContext_create(__FILE__, __func__, __LINE__)
-
-#define JE_LOG_LABEL_TRACE "trace"
-#define JE_LOG_LABEL_DEBUG "debug"
-#define JE_LOG_LABEL_INFO  "info "
-#define JE_LOG_LABEL_WARN  "WARN "
-#define JE_LOG_LABEL_ERR   "ERROR"
+#include "include/common.h"
 
 #define JE_LOG_LEVEL_TRACE 0
 #define JE_LOG_LEVEL_DEBUG 1
@@ -27,40 +21,27 @@
 #define JE_LOG_LEVEL JE_LOG_LEVEL_NONE
 #endif
 
+#define JE_LOG_CONTEXT jeLoggerContext_create(__FILE__, __func__, __LINE__)
+
 #if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
 #define JE_ERROR(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_ERR, __VA_ARGS__)
+#define JE_WARN(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_WARN, __VA_ARGS__)
+#define JE_ASSERT(EXPR) jeLogger_assert(JE_LOG_CONTEXT, EXPR, #EXPR)
 #else
 #define JE_ERROR(...)
-#endif
-
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_WARN
-#define JE_WARN(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_WARN, __VA_ARGS__)
-#else
 #define JE_WARN(...)
+#define JE_ASSERT(EXPR)
 #endif
 
 #if JE_LOG_LEVEL <= JE_LOG_LEVEL_INFO
 #define JE_INFO(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_INFO, __VA_ARGS__)
-#else
-#define JE_INFO(...)
-#endif
-
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_DEBUG
 #define JE_DEBUG(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#else
-#define JE_DEBUG(...)
-#endif
-
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_TRACE
 #define JE_TRACE(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_TRACE, __VA_ARGS__)
 #else
+#define JE_INFO(...)
+#define JE_DEBUG(...)
 #define JE_TRACE(...)
 #endif
-
-#define JE_ASSERT(EXPR) jeLogger_assert(JE_LOG_CONTEXT, EXPR, #EXPR)
-
-const char* jeLoggerLevel_getLabel(int loggerLevel);
-extern int jeLoggerLevel_override;
 
 struct jeLoggerContext {
 	const char* file;
@@ -69,7 +50,9 @@ struct jeLoggerContext {
 };
 struct jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line);
 
+int jeLogger_getLevel();
+void jeLogger_setLevelOverride(int loggerLevelOverride);
 void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...);
-void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr);
+void jeLogger_assert(struct jeLoggerContext loggerContext, jeBool value, const char* expressionStr);
 
 #endif

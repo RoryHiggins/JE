@@ -1,9 +1,4 @@
 #include "stdafx.h"
-#include "window.h"
-#include "debug.h"
-#include "container.h"
-#include "image.h"
-#include "rendering.h"
 
 #define JE_CONTROLLER_DB_FILENAME "client/data/gamecontrollerdb.txt"
 
@@ -46,12 +41,12 @@
 	"}"
 
 struct jeSDL {
-	bool intialized;
+	jeBool intialized;
 	int entryCount;
 };
 static struct jeSDL jeSDL_sdl = {false, 0};
-bool jeSDL_initReentrant() {
-	bool ok = true;
+jeBool jeSDL_initReentrant() {
+	jeBool ok = true;
 
 	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
 
@@ -83,8 +78,8 @@ void jeSDL_destroyReentrant() {
 }
 
 
-bool jeGl_getOk(struct jeLoggerContext loggerContext) {
-	bool ok = true;
+jeBool jeGl_getOk(struct jeLoggerContext loggerContext) {
+	jeBool ok = true;
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
@@ -98,8 +93,8 @@ bool jeGl_getOk(struct jeLoggerContext loggerContext) {
 
 	return ok;
 }
-bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
-	bool ok = true;
+jeBool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
+	jeBool ok = true;
 	GLint compileStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
 	void* buffer = NULL;
@@ -125,8 +120,8 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
 
 	return ok;
 }
-bool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
-	bool ok = true;
+jeBool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
+	jeBool ok = true;
 	GLint linkStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
 	void* buffer = NULL;
@@ -243,7 +238,7 @@ void jeController_create(struct jeController* controller) {
 }
 
 struct jeWindow {
-	bool open;
+	jeBool open;
 
 	Uint64 frame;
 	Uint32 fpsEstimate;
@@ -269,7 +264,7 @@ static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
 static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
-bool jeWindow_getIsOpen(const struct jeWindow* window) {
+jeBool jeWindow_getIsOpen(const struct jeWindow* window) {
 	JE_TRACE("window=%p, open=%d", window, (int)window->open);
 
 	return window->open;
@@ -294,8 +289,8 @@ int jeWindow_getHeight(const struct jeWindow* window) {
 
 	return height;
 }
-bool jeWindow_clear(struct jeWindow* window) {
-	bool ok = true;
+jeBool jeWindow_clear(struct jeWindow* window) {
+	jeBool ok = true;
 
 	JE_TRACE("window=%p", window);
 
@@ -322,8 +317,8 @@ void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vert
 
 	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
 }
-bool jeWindow_flushPrimitives(struct jeWindow* window) {
-	bool ok = true;
+jeBool jeWindow_flushPrimitives(struct jeWindow* window) {
+	jeBool ok = true;
 
 	int vertexCount = window->vertexBuffer.vertices.count;
 
@@ -355,7 +350,7 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_destroyGL(struct jeWindow* window) {
-	bool canUseContext = (window->window != NULL) && (window->context != NULL);
+	jeBool canUseContext = (window->window != NULL) && (window->context != NULL);
 	canUseContext = canUseContext && (SDL_GL_MakeCurrent(window->window, window->context) == 0);
 
 	JE_DEBUG("window=%p, canUseContext=%d", window, (int)canUseContext);
@@ -408,10 +403,10 @@ void jeWindow_destroyGL(struct jeWindow* window) {
 		window->context = NULL;
 	}
 }
-bool jeWindow_initGL(struct jeWindow* window) {
+jeBool jeWindow_initGL(struct jeWindow* window) {
 	JE_DEBUG("window=%p", window);
 
-	bool ok = true;
+	jeBool ok = true;
 
 	if (ok) {
 		window->context = SDL_GL_CreateContext(window->window);
@@ -591,10 +586,10 @@ void jeWindow_show(struct jeWindow* window) {
 
 	SDL_ShowWindow(window->window);
 }
-bool jeWindow_step(struct jeWindow* window) {
+jeBool jeWindow_step(struct jeWindow* window) {
 	JE_TRACE("window=%p", window);
 
-	bool ok = true;
+	jeBool ok = true;
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
@@ -754,10 +749,10 @@ void jeWindow_destroy(struct jeWindow* window) {
 		free(window);
 	}
 }
-struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
+struct jeWindow* jeWindow_create(jeBool startVisible, const char* optSpritesFilename) {
 	JE_DEBUG("window=%p");
 
-	bool ok = true;
+	jeBool ok = true;
 
 	struct jeWindow* window = (struct jeWindow*)malloc(sizeof(struct jeWindow));
 	memset((void*)window, 0, sizeof(*window));
@@ -840,12 +835,12 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 
 	return window;
 }
-bool jeWindow_getInput(const struct jeWindow* window, int inputId) {
+jeBool jeWindow_getInput(const struct jeWindow* window, int inputId) {
 	static const float axisMaxValue = 32767;
 
 	JE_TRACE("window=%p, inputId=%d", window, inputId);
 
-	bool pressed = false;
+	jeBool pressed = false;
 
 	SDL_Scancode key = window->controller.keys[inputId];
 	SDL_Scancode altKey = window->controller.altKeys[inputId];
@@ -887,7 +882,7 @@ int jeWindow_getFps(const struct jeWindow* window) {
 	return window->fpsEstimate;
 }
 
-void jeWindowRunTests() {
+void jeWindow_runTests() {
 	JE_TRACE("");
 
 	struct jeController controller;

@@ -1,7 +1,4 @@
 #include "stdafx.h"
-#include "image.h"
-#include "debug.h"
-#include "container.h"
 
 void jeImage_destroy(struct jeImage* image) {
 	JE_TRACE("image=%p", image);
@@ -11,10 +8,10 @@ void jeImage_destroy(struct jeImage* image) {
 	image->height = 0;
 	image->width = 0;
 }
-bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor fillColor) {
+jeBool jeImage_create(struct jeImage* image, int width, int height, struct jeColor fillColor) {
 	JE_TRACE("image=%p", image);
 
-	bool ok = true;
+	jeBool ok = true;
 
 	image->height = width;
 	image->width = height;
@@ -31,10 +28,10 @@ bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor
 
 	return ok;
 }
-bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
+jeBool jeImage_createFromFile(struct jeImage* image, const char* filename) {
 	JE_DEBUG("image=%p, filename=%s", image, filename);
 
-	bool ok = true;
+	jeBool ok = true;
 
 	image->height = 0;
 	image->width = 0;
@@ -81,7 +78,7 @@ bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
 	return ok;
 }
 
-void jeImageRunTests() {
+void jeImage_runTests() {
 	JE_DEBUG("");
 
 	struct jeImage image;

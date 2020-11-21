@@ -87,8 +87,9 @@
 <ul>
 <li><a href="#api-reference-simulation">API Reference - Simulation</a><ul>
 <li><a href="#simulationnew">Simulation.new()</a></li>
-<li><a href="#simulationaddsystemsystem">Simulation:addSystem(system)</a></li>
 <li><a href="#simulationrun">Simulation:run()</a></li>
+<li><a href="#simulationstop">Simulation:stop()</a></li>
+<li><a href="#simulationaddsystemsystem">Simulation:addSystem(system)</a></li>
 <li><a href="#simulationbroadcastevent">Simulation:broadcast(event, ...)</a></li>
 <li><a href="#simulationdumpfilename">Simulation:dump(filename)</a></li>
 <li><a href="#simulationsavefilename">Simulation:save(filename)</a></li>
@@ -114,6 +115,24 @@
 </code></pre></div>
 
 
+<h2 id="simulationrun">Simulation:run()</h2>
+<p>Runs the simulation loop until completion.  Triggers the following events:</p>
+<ul>
+<li>onInitialize for each </li>
+</ul>
+<p>When run from the client, this ends when the client window is closed or ESC is pressed.</p>
+<p>When run headless (from a lua interpreter) the simulation will initialize, start, step once, and then stop.</p>
+<p><strong>Arguments</strong></p>
+<p><strong>Returns</strong></p>
+<p><strong>Examples</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kd">local</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">.</span><span class="n">new</span><span class="p">()</span>
+<span class="n">simulation</span><span class="p">:</span><span class="n">addSystem</span><span class="p">(</span><span class="n">MyGame</span><span class="p">)</span>
+<span class="n">simulation</span><span class="p">:</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+
+<h2 id="simulationstop">Simulation:stop()</h2>
+<p>Stop the simulation if it is currently running.  Can be called mid-simulation to exit early.  Triggers onStop event.  Always called at the end of simulation.run()</p>
 <h2 id="simulationaddsystemsystem">Simulation:addSystem(system)</h2>
 <p>Adds the specified system to the simulation, if not already present.  Returns an instance of that system.</p>
 <p>Systems are uniquely keyed by system.SYSTEM_NAME. If a system with that key does not exist, this method will instantiate the system as follows:</p>
@@ -151,19 +170,6 @@
         <span class="n">self</span><span class="p">.</span><span class="n">entitySys</span><span class="p">:</span><span class="n">movePos</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1">-- add 1 to y every frame; not the most exciting gravity physics</span>
     <span class="kr">end</span>
 <span class="kr">end</span>
-</code></pre></div>
-
-
-<h2 id="simulationrun">Simulation:run()</h2>
-<p>Runs the simulation loop until completion.</p>
-<p>When run from the client, this ends when the client window is closed or ESC is pressed.</p>
-<p>When run headless (from a lua interpreter) the simulation will start, step once, and then stop.</p>
-<p><strong>Arguments</strong></p>
-<p><strong>Returns</strong></p>
-<p><strong>Examples</strong></p>
-<div class="codehilite"><pre><span></span><code><span class="kd">local</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">.</span><span class="n">new</span><span class="p">()</span>
-<span class="n">simulation</span><span class="p">:</span><span class="n">addSystem</span><span class="p">(</span><span class="n">MyGame</span><span class="p">)</span>
-<span class="n">simulation</span><span class="p">:</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 
 

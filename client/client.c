@@ -1,32 +1,27 @@
 #include "stdafx.h"
-#include "client.h"
-#include "debug.h"
-#include "container.h"
-#include "window.h"
-#include "lua_client.h"
 
 #if !defined(JE_DEFAULT_GAME_DIR)
 #define JE_DEFAULT_GAME_DIR "games/game"
 #endif
 
-bool jeClient_run(struct jeClient* client, int argc, char** argv) {
-	bool ok = true;
+jeBool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
+	jeBool ok = true;
 
 	client->window = NULL;
 	client->lua = NULL;
 
 	const char* gameDir = JE_DEFAULT_GAME_DIR;
 
-	for (int i = 0; i < argc; i++) {
-		if (strcmp(argv[i], "-game") == 0) {
-			ok = ok && ((i + 1) < argc);
+	for (int i = 0; i < argumentCount; i++) {
+		if (strcmp(arguments[i], "-game") == 0) {
+			ok = ok && ((i + 1) < argumentCount);
 
 			if (ok) {
-				gameDir = argv[i + 1];
+				gameDir = arguments[i + 1];
 			}
 		}
-		if (strcmp(argv[i], "-debug") == 0) {
-			ok = ok && ((i + 1) < argc);
+		if (strcmp(arguments[i], "-debug") == 0) {
+			ok = ok && ((i + 1) < argumentCount);
 		}
 	}
 
@@ -44,7 +39,7 @@ bool jeClient_run(struct jeClient* client, int argc, char** argv) {
 
 	ok = ok && (client->window != NULL);
 
-	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename), argc, argv);
+	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename), argumentCount, arguments);
 
 	jeWindow_destroy(client->window);
 

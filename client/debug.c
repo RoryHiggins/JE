@@ -1,7 +1,15 @@
 #include "stdafx.h"
-#include "debug.h"
 
-int jeLoggerLevel_override = JE_LOG_LEVEL_TRACE;
+void jeErr() {
+	/*dummy function to breakpoint errors*/
+}
+
+
+#define JE_LOG_LABEL_TRACE "trace"
+#define JE_LOG_LABEL_DEBUG "debug"
+#define JE_LOG_LABEL_INFO  "info "
+#define JE_LOG_LABEL_WARN  "WARN "
+#define JE_LOG_LABEL_ERR   "ERROR"
 
 const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	const char* label = "";
@@ -43,11 +51,19 @@ struct jeLoggerContext jeLoggerContext_create(const char* file, const char* func
 	return loggerContext;
 }
 
-void jeErr() {
-	/*dummy function to breakpoint errors*/
+int jeLogger_levelOverride = JE_LOG_LEVEL;
+int jeLogger_getLevel() {
+	return jeLogger_levelOverride;
+}
+void jeLogger_setLevelOverride(int levelOverride) {
+	if (levelOverride < JE_LOG_LEVEL) {
+		JE_ERROR("invalid levelOverride below compiled minimum, levelOverride=%d, JE_LOG_LEVEL=%d", levelOverride, JE_LOG_LEVEL);
+		levelOverride = JE_LOG_LEVEL;
+	}
+	jeLogger_levelOverride = levelOverride;
 }
 void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...) {
-	if (jeLoggerLevel_override <= loggerLevel) {
+	if (jeLogger_levelOverride <= loggerLevel) {
 		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
 			jeErr();
 		}
@@ -64,8 +80,8 @@ void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const c
 		fflush(stdout);
 	}
 }
-void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr) {
-	if ((jeLoggerLevel_override <= JE_LOG_LEVEL_ERR) && (!value)) {
+void jeLogger_assert(struct jeLoggerContext loggerContext, jeBool value, const char* expressionStr) {
+	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeErr();
 		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
