@@ -3,17 +3,16 @@
 #define JE_STDAFX_H
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <ctype.h>
 #include <errno.h>
-#include <time.h>
+#include <ctype.h>
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "debug.h"
-#include "include/j25.h"
+/* For future use in building a DLL */
+#define JE_PUBLIC
 
 #endif

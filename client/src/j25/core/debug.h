@@ -1,8 +1,14 @@
-#if !defined(JE_DEBUG_H)
-#define JE_DEBUG_H
+#if !defined(JE_CORE_DEBUG_H)
+#define JE_CORE_DEBUG_H
 
-#include "include/common.h"
+#include <j25/stdafx.h>
 
+/**
+ * Casts the result to void to inform the compiler that the result is not used
+ * Primary use-case is to suppress unused function argument warnings
+ */
+#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
+ 
 #define JE_LOG_LEVEL_TRACE 0
 #define JE_LOG_LEVEL_DEBUG 1
 #define JE_LOG_LEVEL_INFO  2
@@ -27,10 +33,12 @@
 #define JE_ERROR(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_ERR, __VA_ARGS__)
 #define JE_WARN(...) jeLogger_log(JE_LOG_CONTEXT, JE_LOG_LEVEL_WARN, __VA_ARGS__)
 #define JE_ASSERT(EXPR) jeLogger_assert(JE_LOG_CONTEXT, EXPR, #EXPR)
+#define JE_DEBUGGING 1
 #else
 #define JE_ERROR(...)
 #define JE_WARN(...)
 #define JE_ASSERT(EXPR)
+#define JE_DEBUGGING 0
 #endif
 
 #if JE_LOG_LEVEL <= JE_LOG_LEVEL_INFO
@@ -48,11 +56,11 @@ struct jeLoggerContext {
 	const char* function;
 	int line;
 };
-struct jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line);
+JE_PUBLIC struct jeLoggerContext jeLoggerContext_create(const char* file, const char* function, int line);
 
-int jeLogger_getLevel();
-void jeLogger_setLevelOverride(int loggerLevelOverride);
-void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...);
-void jeLogger_assert(struct jeLoggerContext loggerContext, jeBool value, const char* expressionStr);
+JE_PUBLIC int jeLogger_getLevel();
+JE_PUBLIC void jeLogger_setLevelOverride(int loggerLevelOverride);
+JE_PUBLIC void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const char* formatStr, ...);
+JE_PUBLIC void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr);
 
 #endif

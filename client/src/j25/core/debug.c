@@ -1,15 +1,15 @@
-#include "stdafx.h"
-
-void jeErr() {
-	/*dummy function to breakpoint errors*/
-}
-
+#include <j25/stdafx.h>
+#include <j25/core/debug.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
 #define JE_LOG_LABEL_DEBUG "debug"
 #define JE_LOG_LABEL_INFO  "info "
 #define JE_LOG_LABEL_WARN  "WARN "
 #define JE_LOG_LABEL_ERR   "ERROR"
+
+void jeErr() {
+	/*dummy function to breakpoint errors*/
+}
 
 const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	const char* label = "";
@@ -80,7 +80,7 @@ void jeLogger_log(struct jeLoggerContext loggerContext, int loggerLevel, const c
 		fflush(stdout);
 	}
 }
-void jeLogger_assert(struct jeLoggerContext loggerContext, jeBool value, const char* expressionStr) {
+void jeLogger_assert(struct jeLoggerContext loggerContext, bool value, const char* expressionStr) {
 	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeErr();
 		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);

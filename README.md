@@ -48,11 +48,12 @@ Lua/C game engine for game jams.  Very much WIP, only for personal use.
 
 3. Install dependencies:
 ```
-# some dependencies may come with MSYS2, --needed only installs ones you don't have
 pacman -S --needed \
 	mingw-w64-x86_64-gcc \
-	mingw-w64-x86_64-glew \
 	mingw-w64-x86_64-make \
+	mingw-w64-x86_64-ninja \
+	mingw-w64-x86_64-cmake \
+	mingw-w64-x86_64-glew \
 	mingw-w64-x86_64-luajit \
 	mingw-w64-x86_64-SDL2 \
 	mingw-w64-x86_64-zlib \
@@ -74,7 +75,7 @@ cd JE
 1. Install dependencies.  With apt:
 ```
 sudo apt update
-sudo apt install gcc make libluajit-5.1-dev libsdl2-dev zlib1g-dev libpng-dev python3 python3-pip
+sudo apt install gcc make ninja-build cmake libluajit-5.1-dev libsdl2-dev zlib1g-dev libpng-dev python3 python3-pip
 ```
 
 4. Checkout repository:
@@ -136,9 +137,13 @@ make clean
 
 Tested dependency versions:
 
-GCC 7.4.0, 10.2.0
+GCC 9.3.0, 10.2.0
 
 Make 4.1.0, 4.3.0
+
+Ninja 1.6.0, 1.10.0
+
+CMake 3.16.3, 3.19.1
 
 GLEW 2.0.0, 2.2.0
 

@@ -1,4 +1,34 @@
-#include "stdafx.h"
+#include <j25/stdafx.h>
+#include <j25/client/client.h>
+#include <j25/core/debug.h>
+#include <j25/core/container.h>
+#include <j25/platform/rendering.h>
+#include <j25/platform/window.h>
+
+#include <zlib.h>
+
+/*
+ * C and C++ have different default linkage.
+ * Lua(jit) headers don't explicitly state linkage of symbols,
+ * but libs are (normally) built with C, so we need to do their job for them.
+ */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+#include <luajit-2.1/lua.h>
+#include <luajit-2.1/lualib.h>
+#include <luajit-2.1/lauxlib.h>
+
+/* Only used for version checking via LUAJIT_VERSION_NUM */
+#include <luajit-2.1/luajit.h>
+#if defined(__cplusplus)
+} /*extern "C"*/
+#endif
+
+
+#if !defined(JE_DEFAULT_GAME_DIR)
+#define JE_DEFAULT_GAME_DIR "games/game"
+#endif
 
 /*https://www.lua.org/manual/5.1/manual.html*/
 #define JE_LUA_STACK_TOP -1
@@ -73,7 +103,7 @@ const char* jeLua_getStringField(lua_State* lua, int tableIndex, const char* fie
 struct jeWindow* jeLua_getWindow(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	jeBool ok = true;
+	bool ok = true;
 	struct jeWindow *window = NULL;
 
 	int stackPos = lua_gettop(lua);
@@ -171,7 +201,7 @@ void jeLua_updateStates(lua_State* lua) {
 int jeLua_readData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	jeBool ok = true;
+	bool ok = true;
 	int numResponses = 0;
 
 	gzFile file = NULL;
@@ -215,7 +245,7 @@ int jeLua_readData(lua_State* lua) {
 int jeLua_writeData(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
-	jeBool ok = true;
+	bool ok = true;
 	int numResponses = 0;
 
 	const char* filename = "";
@@ -430,16 +460,15 @@ int jeLua_drawReset(lua_State* lua) {
 	return 0;
 }
 int jeLua_runTests(lua_State* lua) {
+	int numTestSuites = 0;
+
+#if JE_DEBUGGING
 	JE_TRACE("lua=%p", lua);
 
 	int logLevelbackup = jeLogger_getLevel();
 	jeLogger_setLevelOverride(JE_TESTS_LOG_LEVEL);
 
-	int numTestSuites = 0;
 	jeContainer_runTests();
-	numTestSuites++;
-
-	jeImage_runTests();
 	numTestSuites++;
 
 	jeRendering_runTests();
@@ -449,6 +478,8 @@ int jeLua_runTests(lua_State* lua) {
 	numTestSuites++;
 
 	jeLogger_setLevelOverride(logLevelbackup);
+#endif
+
 	lua_pushnumber(lua, numTestSuites);
 	return 1;
 }
@@ -457,7 +488,7 @@ int jeLua_step(lua_State* lua) {
 
 	JE_TRACE("lua=%p, window=%p", lua, window);
 
-	jeBool ok = jeWindow_step(window);
+	bool ok = jeWindow_step(window);
 
 	jeLua_updateStates(lua);
 
@@ -465,7 +496,7 @@ int jeLua_step(lua_State* lua) {
 	return 1;
 }
 
-jeBool jeLua_addBindings(lua_State* lua) {
+bool jeLua_addBindings(lua_State* lua) {
 	JE_TRACE("lua=%p", lua);
 
 	static const luaL_Reg clientBindings[] = {
@@ -482,7 +513,7 @@ jeBool jeLua_addBindings(lua_State* lua) {
 		{NULL, NULL}  /*sentinel value*/
 	};
 
-	jeBool ok = true;
+	bool ok = true;
 	int createdResult = 0;
 
 	JE_DEBUG("");
@@ -513,8 +544,8 @@ jeBool jeLua_addBindings(lua_State* lua) {
 
 	return ok;
 }
-jeBool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount, char** arguments) {
-	jeBool ok = true;
+bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount, char** arguments) {
+	bool ok = true;
 	int luaResponse = 0;
 	lua_State* lua = NULL;
 
@@ -545,7 +576,7 @@ jeBool jeLua_run(struct jeWindow* window, const char* filename, int argumentCoun
 	}
 
 	if (ok) {
-		// push string arguments to the lua stack
+		/*push string arguments to the lua stack*/
 		for (int i = 0; i < argumentCount; i++) {
 			JE_TRACE("arg[%d] = \"%s\"", i, arguments[i]);
 			lua_pushstring(lua, arguments[i]);
@@ -554,7 +585,7 @@ jeBool jeLua_run(struct jeWindow* window, const char* filename, int argumentCoun
 	}
 
 	if (ok) {
-		// THIS WILL BLOCK UNTIL THE CALLED LUA SCRIPT ENDS!
+		/*THIS WILL BLOCK UNTIL THE CALLED LUA SCRIPT ENDS!*/
 		luaResponse = lua_pcall(lua, /*numArgs*/ argumentCount, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
 		if (luaResponse != LUA_OK) {
 			JE_ERROR("lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
@@ -568,4 +599,58 @@ jeBool jeLua_run(struct jeWindow* window, const char* filename, int argumentCoun
 	}
 
 	return ok;
+}
+
+bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
+	bool ok = true;
+
+	client->window = NULL;
+	client->lua = NULL;
+
+	const char* gameDir = JE_DEFAULT_GAME_DIR;
+
+	for (int i = 0; i < argumentCount; i++) {
+		if (strcmp(arguments[i], "-game") == 0) {
+			ok = ok && ((i + 1) < argumentCount);
+
+			if (ok) {
+				gameDir = arguments[i + 1];
+			}
+		}
+		if (strcmp(arguments[i], "-debug") == 0) {
+			ok = ok && ((i + 1) < argumentCount);
+		}
+	}
+
+	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
+
+	struct jeString luaMainFilename;
+	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
+
+	struct jeString spritesFilename;
+	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
+
+	if (ok) {
+		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename));
+	}
+
+	ok = ok && (client->window != NULL);
+
+	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename), argumentCount, arguments);
+
+	jeWindow_destroy(client->window);
+
+	jeString_destroy(&spritesFilename);
+	jeString_destroy(&luaMainFilename);
+
+	return ok;
+}
+
+int main(int argc, char** argv) {
+	bool ok = true;
+	struct jeClient client;
+
+	ok = ok && jeClient_run(&client, argc, argv);
+
+	return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
