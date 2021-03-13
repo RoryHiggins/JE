@@ -1,7 +1,5 @@
 #include <j25/stdafx.h>
 #include <j25/client/client.h>
-#include <j25/core/debug.h>
-#include <j25/core/container.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
 
@@ -27,7 +25,7 @@ extern "C" {
 
 
 #if !defined(JE_DEFAULT_GAME_DIR)
-#define JE_DEFAULT_GAME_DIR "games/game"
+#define JE_DEFAULT_GAME_DIR "apps/game"
 #endif
 
 /*https://www.lua.org/manual/5.1/manual.html*/
@@ -38,10 +36,10 @@ extern "C" {
 #define JE_LUA_CLIENT_WINDOW_KEY "jeLuaWindow"
 #define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLua_##BINDING_NAME}
 
-#if JE_LOG_LEVEL > JE_LOG_LEVEL_DEBUG
-#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_WARN
+#if JE_MAX_LOG_LEVEL > JE_MAX_LOG_LEVEL_DEBUG
+#define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL_WARN
 #else
-#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL
+#define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL
 #endif
 
 #if (LUA_VERSION_NUM < 520) && !(defined(LUAJIT_VERSION_NUM) && (LUAJIT_VERSION_NUM >= 20100))
@@ -161,7 +159,7 @@ void jeLua_updateStates(lua_State* lua) {
 	lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
 	lua_setfield(lua, stateStackPos, "fps");
 
-	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL);
+	lua_pushnumber(lua, (lua_Number)JE_MAX_LOG_LEVEL);
 	lua_setfield(lua, stateStackPos, "logLevel");
 
 	lua_pushboolean(lua, true);
@@ -607,36 +605,36 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 	client->window = NULL;
 	client->lua = NULL;
 
-	const char* gameDir = JE_DEFAULT_GAME_DIR;
+	const char* appDir = JE_DEFAULT_GAME_DIR;
 
 	for (int i = 0; i < argumentCount; i++) {
-		if (strcmp(arguments[i], "-game") == 0) {
+		if (strcmp(arguments[i], "--appdir") == 0) {
 			ok = ok && ((i + 1) < argumentCount);
 
 			if (ok) {
-				gameDir = arguments[i + 1];
+				appDir = arguments[i + 1];
 			}
 		}
-		if (strcmp(arguments[i], "-debug") == 0) {
+		if (strcmp(arguments[i], "--debug") == 0) {
 			ok = ok && ((i + 1) < argumentCount);
 		}
 	}
 
-	JE_DEBUG("client=%p, gameDir=%s", client, gameDir);
+	JE_DEBUG("client=%p, appDir=%s", client, appDir);
 
 	struct jeString luaMainFilename;
-	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", gameDir);
+	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", appDir);
 
 	struct jeString spritesFilename;
-	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", gameDir);
+	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
 
 	if (ok) {
-		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename));
+		client->window = jeWindow_create(/*startVisible*/ true, jeString_getElement(&spritesFilename, 0));
 	}
 
 	ok = ok && (client->window != NULL);
 
-	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename), argumentCount, arguments);
+	ok = ok && jeLua_run(client->window, jeString_getElement(&luaMainFilename, 0), argumentCount, arguments);
 
 	jeWindow_destroy(client->window);
 

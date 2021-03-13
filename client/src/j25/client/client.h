@@ -1,7 +1,7 @@
 #if !defined(JE_CLIENT_CLIENT_H)
 #define JE_CLIENT_CLIENT_H
 
-#include <j25/stdafx.h>
+#include <j25/core/api.h>
 
 struct jeWindow;
 struct lua_State;

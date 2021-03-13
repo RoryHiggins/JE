@@ -14,7 +14,7 @@ import pathlib
 
 import markdown
 
-TEMPLATE_HTML_START = """
+TEMPLATE_HTML_HEADER = """
     <!doctype html>
 
     <html lang="en">
@@ -117,8 +117,8 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--src-dir', type=str, default="../engine/docs/src")
-    arg_parser.add_argument('--build-dir', type=str, default="../engine/docs/build")
+    arg_parser.add_argument('--src-dir', type=str)
+    arg_parser.add_argument('--build-dir', type=str)
 
     args = arg_parser.parse_args()
 
@@ -135,7 +135,7 @@ def main():
             doc_src = doc_src_file.read()
 
         doc_html_body = markdown.markdown(doc_src, extensions=MARKDOWN_EXTENSIONS)
-        doc_html = TEMPLATE_HTML_START + doc_html_body + TEMPLATE_HTML_END
+        doc_html = TEMPLATE_HTML_HEADER + doc_html_body + TEMPLATE_HTML_END
 
         doc_dest_relative_filename = doc_src_filename.relative_to(docs_src_dir).with_suffix(".html")
         doc_dest_filename = docs_build_dir / doc_dest_relative_filename

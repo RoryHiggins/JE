@@ -1,10 +1,33 @@
-TARGET := DEVELOPMENT  # RELEASE, PROFILED, DEVELOPMENT, DEBUG, TRACE
-GAME := games/game
+# Inputs
+# ---
+# Client code build target.  One of:
+# - RELEASE (optimized for runtime performance)
+# - PROFILED (release build with profiler symbols for gprof)
+# - DEVELOPMENT (optimized for developer iteration time: compilation time, runtime, and debugging)
+# - DEBUG (optimized for debugging with gdb)
+# - TRACE (debug build with extremely verbose logging)
+TARGET := DEVELOPMENT
+APP := game
 
+
+# Dependencies
+# ---
+CC := gcc
 CMAKE := cmake
 LUA := luajit
 PYTHON := python3
-CLIENT := build/client_launcher
+
+
+# Outputs
+# ---
+BUILD := build/local/$(TARGET)
+CLIENT := $(BUILD)/j25_client
+
+# Commands
+# ---
+.PHONY: $(CLIENT) release run run_headless run_debugger profile docs clean
+.DEFAULT_GOAL := $(CLIENT)
+
 
 CMAKE_BUILD_TYPE := DEBUG
 ifeq ($(TARGET),RELEASE)
@@ -14,40 +37,34 @@ ifeq ($(TARGET),PROFILED)
 	CMAKE_BUILD_TYPE := RELEASE
 endif
 
-CMAKE_FLAGS := -S . -B build -G"Ninja" -D CMAKE_C_COMPILER=gcc -D CMAKE_UNITY_BUILD=ON
-
 $(CLIENT):
-	$(CMAKE) $(CMAKE_FLAGS) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) 
-	cmake --build build
-
+	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=ON
+	cmake --build $(BUILD)
 release:
-	$(CMAKE) $(CMAKE_FLAGS) -D CMAKE_BUILD_TYPE=RELEASE
-	cmake --build build
-	rm -rf release
-	mkdir release
+	make TARGET=RELEASE APP=$(APP)
 
-	cp -r $(CLIENT) -- release/client_launcher
-	cp -r client/data -- release/client
-	cp -r engine -- release
+	rm -rf build/release
+	mkdir -p build/release/client build/release/engine build/release/apps
 
-	mkdir release/games
-	cp -r $(GAME) -- release/games
+	cp -r build/local/RELEASE/j25_client -- build/release/j25_client
+	cp -r client/data -- build/release/client
+	cp -r engine/{lib,systems,util,*.lua} -- build/release/engine
+	cp -r apps/$(APP) -- build/release/apps
 
-	tar -czf j25_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- release/*
+	rm -rf build/release/{client,engine}/{docs,README.md} build/release/client/src
+
+	tar -czf j25_release_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- build/release/*
 run: $(CLIENT)
-	$(CLIENT) -game $(GAME)
+	$(CLIENT) --app apps/$(APP)
 run_headless:
-	$(LUA) $(GAME)/main.lua
+	$(LUA) apps/$(APP)/main.lua
 run_debugger: $(CLIENT)
-	gdb --args $(CLIENT) -game $(GAME)
+	gdb --args $(CLIENT) --app apps/$(APP)
 profile: gmon.out
 	gprof -b $(CLIENT)* gmon.out > profile.txt
 docs:
 	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
-	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir engine/docs/client/build
+	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir build/docs/engine
 clean:
 	rm -f game_dump.sav game_save.sav gmon.out profile.txt
-	rm -rf build engine/docs/client/build
-
-.PHONY: $(CLIENT) release run run_debugger run_headless profile docs release clean
-.DEFAULT_GOAL := $(CLIENT)
+	rm -rf build j25_release_*.tar.gz

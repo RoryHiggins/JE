@@ -1,7 +1,5 @@
 #include <j25/stdafx.h>
 #include <j25/platform/rendering.h>
-#include <j25/core/debug.h>
-#include <j25/core/container.h>
 
 #include <png.h>
 
@@ -17,42 +15,6 @@ struct jePrimitiveSortKey {
 	int index;
 };
 
-struct jeColor jeColor_getNone() {
-	struct jeColor color = {0x00, 0x00, 0x00, 0x00};
-	return color;
-}
-struct jeColor jeColor_getBlack() {
-	struct jeColor color = {0x00, 0x00, 0x00, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getWhite() {
-	struct jeColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getDarkGray() {
-	struct jeColor color = {0x40, 0x40, 0x40, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getGray() {
-	struct jeColor color = {0x80, 0x80, 0x80, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getLightGray() {
-	struct jeColor color = {0xC0, 0xC0, 0xC0, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getRed() {
-	struct jeColor color = {0xFF, 0x00, 0x00, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getGreen() {
-	struct jeColor color = {0x00, 0xFF, 0x00, 0xFF};
-	return color;
-}
-struct jeColor jeColor_getBlue() {
-	struct jeColor color = {0x00, 0x00, 0xFF, 0xFF};
-	return color;
-}
 
 int jePrimitiveType_getVertexCount(int primitiveType) {
 	JE_TRACE("primitiveType=%d", primitiveType);
@@ -268,15 +230,15 @@ void jeVertex_createSpriteQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QU
 	quadVertices[5].v = spriteVertices[1].v;
 }
 
-void jeVertexBuffer_destroy(struct jeVertexBuffer* vertexBuffer) {
-	JE_TRACE("vertexBuffer=%p", vertexBuffer);
-
-	jeArray_destroy(&vertexBuffer->vertices);
-}
 bool jeVertexBuffer_create(struct jeVertexBuffer* vertexBuffer) {
 	JE_TRACE("vertexBuffer=%p", vertexBuffer);
 
 	return jeArray_create(&vertexBuffer->vertices, sizeof(struct jeVertex));
+}
+void jeVertexBuffer_destroy(struct jeVertexBuffer* vertexBuffer) {
+	JE_TRACE("vertexBuffer=%p", vertexBuffer);
+
+	jeArray_destroy(&vertexBuffer->vertices);
 }
 void jeVertexBuffer_reset(struct jeVertexBuffer* vertexBuffer) {
 	jeArray_setCount(&vertexBuffer->vertices, 0);
@@ -380,14 +342,6 @@ void jeVertexBuffer_pushPrimitive(struct jeVertexBuffer* vertexBuffer, const str
 	}
 }
 
-void jeImage_destroy(struct jeImage* image) {
-	JE_TRACE("image=%p", image);
-
-	jeArray_destroy(&image->buffer);
-
-	image->height = 0;
-	image->width = 0;
-}
 bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor fillColor) {
 	JE_TRACE("image=%p", image);
 
@@ -456,6 +410,14 @@ bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
 	png_image_free(&pngImage);
 
 	return ok;
+}
+void jeImage_destroy(struct jeImage* image) {
+	JE_TRACE("image=%p", image);
+
+	jeArray_destroy(&image->buffer);
+
+	image->height = 0;
+	image->width = 0;
 }
 
 void jeRendering_runTests() {
@@ -528,7 +490,8 @@ void jeRendering_runTests() {
 	jeVertexBuffer_destroy(&vertexBuffer);
 
 	struct jeImage image;
-	JE_ASSERT(jeImage_create(&image, 16, 16, jeColor_getWhite()));
+	const struct jeColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+	JE_ASSERT(jeImage_create(&image, 16, 16, white));
 	jeImage_destroy(&image);
 #endif
 }

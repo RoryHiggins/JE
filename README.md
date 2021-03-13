@@ -98,13 +98,9 @@ make run
 # run the game headless (no client).  client calls are stubbed
 make run_headless
 
-# override the game to run
-make run GAME=games/game
-make run_headless GAME=games/game
-
-# run the built client directly
-./engine_client
-./engine_client games/game
+# override the app to run
+make run GAME=apps/game
+make run_headless GAME=apps/game
 
 # override target and rebuild client with debug logging and gdb-friendly debug symbols
 make -B TARGET=DEBUG
@@ -120,7 +116,7 @@ make -B TARGET=DEBUG
 make run_debugger
 
 # create a fully packaged release.tar.gz which can be delivered standalone
-make release GAME=games/game
+make release GAME=apps/game
 
 # generate a performance profile using gprof.  build with TARGET=PROFILED, run game, then run this command
 make profile

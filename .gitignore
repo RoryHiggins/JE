@@ -1,6 +1,5 @@
 /build/
 /release/
-/old/
 /engine/docs/build/
 
 *.exe

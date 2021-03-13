@@ -1,9 +1,10 @@
-/* Precompiled header */
+/* Precompiled header: cstdlib + j25/core */
 #if !defined(JE_STDAFX_H)
 #define JE_STDAFX_H
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <ctype.h>
@@ -12,7 +13,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* For future use in building a DLL */
-#define JE_PUBLIC
+#include <j25/core/api.h>
+#include <j25/core/debug.h>
+#include <j25/core/container.h>
 
 #endif

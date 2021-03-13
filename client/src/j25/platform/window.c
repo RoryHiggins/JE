@@ -1,6 +1,5 @@
 #include <j25/stdafx.h>
 #include <j25/platform/window.h>
-#include <j25/core/debug.h>
 #include <j25/platform/rendering.h>
 
 #define GLEW_STATIC
@@ -103,8 +102,17 @@ bool jeSDL_initReentrant() {
 	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
 
 	if (!jeSDL_sdl.intialized) {
+		const Uint32 sdl_init_flags = (
+			SDL_INIT_EVENTS
+			| SDL_INIT_TIMER
+			| SDL_INIT_VIDEO
+			| SDL_INIT_JOYSTICK
+			| SDL_INIT_HAPTIC
+			| SDL_INIT_GAMECONTROLLER
+		);
+
 		JE_TRACE("SDL_Init");
-		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		if (SDL_Init(sdl_init_flags) != 0) {
 			JE_ERROR("SDL_Init() failed with error=%s", SDL_GetError());
 			ok = false;
 		}
@@ -130,22 +138,22 @@ void jeSDL_destroyReentrant() {
 }
 
 
-bool jeGl_getOk(struct jeLoggerContext loggerContext) {
+bool jeGl_getOk(struct jeLogger logger) {
 	bool ok = true;
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "OpenGL error, glError=%d, message=%s", glError, gluErrorString(glError));
+#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
+		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%d, message=%s", glError, gluErrorString(glError));
 #endif
 		ok = false;
 	}
 
-	JE_MAYBE_UNUSED(loggerContext);
+	JE_MAYBE_UNUSED(logger);
 
 	return ok;
 }
-bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
+bool jeGl_getShaderOk(GLuint shader, struct jeLogger logger) {
 	bool ok = true;
 	GLint compileStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -159,8 +167,8 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
 
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
 
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)buffer);
+#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
+		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)buffer);
 #endif
 
 		ok = false;
@@ -168,11 +176,11 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLoggerContext loggerContext) {
 
 	free(buffer);
 
-	JE_MAYBE_UNUSED(loggerContext);
+	JE_MAYBE_UNUSED(logger);
 
 	return ok;
 }
-bool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
+bool jeGl_getProgramOk(GLuint program, struct jeLogger logger) {
 	bool ok = true;
 	GLint linkStatus = GL_FALSE;
 	GLsizei msgMaxSize = 0;
@@ -186,8 +194,8 @@ bool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
 
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
 
-#if JE_LOG_LEVEL <= JE_LOG_LEVEL_ERR
-		jeLogger_log(loggerContext, JE_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)buffer);
+#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
+		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)buffer);
 #endif
 
 		ok = false;
@@ -195,7 +203,7 @@ bool jeGl_getProgramOk(GLuint program, struct jeLoggerContext loggerContext) {
 
 	free(buffer);
 
-	JE_MAYBE_UNUSED(loggerContext);
+	JE_MAYBE_UNUSED(logger);
 
 	return ok;
 }
@@ -633,7 +641,7 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			case SDL_KEYUP: {
-				if ((event.key.repeat == 0) || (JE_LOG_LEVEL <= JE_LOG_LEVEL_TRACE)) {
+				if ((event.key.repeat == 0) || (JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("SDL_KEYUP, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 
@@ -651,7 +659,7 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			case SDL_KEYDOWN: {
-				if ((event.key.repeat == 0) || (JE_LOG_LEVEL <= JE_LOG_LEVEL_TRACE)) {
+				if ((event.key.repeat == 0) || (JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("SDL_KEYDOWN, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 				break;
@@ -809,11 +817,14 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 			 * As a fallback, create a gray texture big enough to allow mapping of color.
 			 * Gray is chosen to have it be visible against the white fill color.
 			 */
+			const struct jeColor grey = {0x80, 0x80, 0x80, 0xFF};
+			const struct jeColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+
 			jeImage_destroy(&window->image);
-			jeImage_create(&window->image, 2048, 2048, jeColor_getGray());
+			jeImage_create(&window->image, 2048, 2048, grey);
 
 			/*Topleft texel is used for rendering without texture and must be white*/
-			((struct jeColor*)window->image.buffer.data)[0] = jeColor_getWhite();
+			((struct jeColor*)window->image.buffer.data)[0] = white;
 		}
 	}
 
