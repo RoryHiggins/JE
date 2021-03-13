@@ -1,4 +1,4 @@
-#include <j25/stdafx.h>
+#include <j25/core.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
 #define JE_LOG_LABEL_DEBUG "debug"

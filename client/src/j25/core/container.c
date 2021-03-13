@@ -1,4 +1,4 @@
-#include <j25/stdafx.h>
+#include <j25/core.h>
 
 #define JE_BUFFER_START_CAPACITY 32
 

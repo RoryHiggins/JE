@@ -1,5 +1,4 @@
-#include <j25/stdafx.h>
-#include <j25/client/client.h>
+#include <j25/core.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
 
@@ -41,6 +40,9 @@ extern "C" {
 #else
 #define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL
 #endif
+
+struct jeWindow;
+struct lua_State;
 
 #if (LUA_VERSION_NUM < 520) && !(defined(LUAJIT_VERSION_NUM) && (LUAJIT_VERSION_NUM >= 20100))
 /*Shim adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
@@ -599,6 +601,10 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 	return ok;
 }
 
+struct jeClient {
+	struct jeWindow* window;
+	struct lua_State* lua;
+};
 bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
 	bool ok = true;
 

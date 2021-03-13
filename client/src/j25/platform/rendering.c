@@ -1,4 +1,4 @@
-#include <j25/stdafx.h>
+#include <j25/core.h>
 #include <j25/platform/rendering.h>
 
 #include <png.h>
