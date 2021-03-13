@@ -1,7 +1,11 @@
+#pragma once
+
 #if !defined(JE_CORE_CONTAINER_H)
 #define JE_CORE_CONTAINER_H
 
 #include <j25/core/api.h>
+
+#include <stdbool.h>
 
 struct jeArray {
 	void* data;
@@ -35,6 +39,6 @@ JE_PUBLIC bool jeString_setCount(struct jeString* string, int count);
 JE_PUBLIC bool jeString_push(struct jeString* string, const char* data, int count);
 
 
-void jeContainer_runTests();
+JE_PUBLIC void jeContainer_runTests();
 
 #endif

@@ -1,4 +1,8 @@
-#include <j25/core.h>
+#include <j25/core/debug.h>
+
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
 #define JE_LOG_LABEL_DEBUG "debug"
@@ -40,7 +44,8 @@ const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	return label;
 }
 
-struct jeLogger jeLogger_create(const char* file, const char* function, int line) {
+int jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
+JE_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line) {
 	struct jeLogger logger;
 
 	logger.file = file;
@@ -49,8 +54,6 @@ struct jeLogger jeLogger_create(const char* file, const char* function, int line
 
 	return logger;
 }
-
-int jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
 int jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }

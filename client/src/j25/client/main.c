@@ -1,6 +1,15 @@
-#include <j25/core.h>
+#include <j25/core/debug.h>
+#include <j25/core/container.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #include <zlib.h>
 

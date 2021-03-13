@@ -1,16 +1,16 @@
+#pragma once
+
 #if !defined(JE_CORE_API_H)
 #define JE_CORE_API_H
 
 #include <stdbool.h>
-#include <stdint.h>
 
-/* For future use in building a DLL */
+#if !defined(JE_PUBLIC) && defined(JE_DLL_EXPORT) && defined(JE_DLL)
+#define JE_PUBLIC __declspec(dllexport)
+#elif !defined(JE_PUBLIC) && !defined(JE_DLL_EXPORT) && defined(JE_DLL)
+#define JE_PUBLIC __declspec(dllimport)
+#elif !defined(JE_PUBLIC)
 #define JE_PUBLIC
+#endif
 
-/**
- * Casts the result to void to inform the compiler that the result is not used
- * Primary use-case is to suppress unused function argument warnings
- */
-#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
- 
 #endif

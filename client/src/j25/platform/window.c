@@ -1,6 +1,10 @@
-#include <j25/core.h>
 #include <j25/platform/window.h>
+
+#include <j25/core/debug.h>
+#include <j25/core/container.h>
 #include <j25/platform/rendering.h>
+
+#include <stdbool.h>
 
 #define GLEW_STATIC
 #define GL_GLEXT_PROTOTYPES 1

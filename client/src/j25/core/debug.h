@@ -1,7 +1,17 @@
+#pragma once
+
 #if !defined(JE_CORE_DEBUG_H)
 #define JE_CORE_DEBUG_H
 
 #include <j25/core/api.h>
+
+#include <stdbool.h>
+
+/**
+ * Casts the result to void to inform the compiler that the result is not used
+ * Primary use-case is to suppress unused function argument warnings
+ */
+#define JE_MAYBE_UNUSED(EXPR) ((void)(EXPR))
 
 #define JE_MAX_LOG_LEVEL_TRACE 0
 #define JE_MAX_LOG_LEVEL_DEBUG 1

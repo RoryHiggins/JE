@@ -1,7 +1,11 @@
+#pragma once
+
 #if !defined(JE_PLATFORM_WINDOW_H)
 #define JE_PLATFORM_WINDOW_H
 
 #include <j25/core/api.h>
+
+#include <stdbool.h>
 
 #define JE_INPUT_LEFT 0
 #define JE_INPUT_UP 1

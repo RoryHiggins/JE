@@ -1,4 +1,12 @@
-#include <j25/core.h>
+#include <j25/core/container.h>
+
+#include <j25/core/debug.h>
+
+#include <stdbool.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define JE_BUFFER_START_CAPACITY 32
 
