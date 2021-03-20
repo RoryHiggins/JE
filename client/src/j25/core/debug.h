@@ -69,6 +69,7 @@ JE_API_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const cha
 
 
 char* JE_API_PUBLIC je_temp_buffer_allocate(int size);
+char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(int size, int alignment);
 const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) JE_API_PRINTF(1, 2);
 
 #endif

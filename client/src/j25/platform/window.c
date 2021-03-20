@@ -55,10 +55,12 @@
 		"gl_FragColor = texture2D(srcTexture, uv).rgba * col;" \
 	"}"
 
+
 struct jeSDL {
 	bool intialized;
 	int entryCount;
 };
+
 struct jeController {
 	SDL_GameController* controller;
 
@@ -70,6 +72,7 @@ struct jeController {
 
 	float controllerAxisThreshold;
 };
+
 struct jeWindow {
 	bool open;
 
@@ -93,6 +96,24 @@ struct jeWindow {
 	GLuint vbo;
 	GLuint vao;
 };
+
+bool jeSDL_initReentrant();
+void jeSDL_destroyReentrant();
+
+bool jeGl_getOk(struct jeLogger logger);
+bool jeGl_getShaderOk(GLuint shader, struct jeLogger logger);
+bool jeGl_getProgramOk(GLuint program, struct jeLogger logger);
+
+void jeController_destroy(struct jeController* controller);
+void jeController_create(struct jeController* controller);
+
+bool jeWindow_clear(struct jeWindow* window);
+bool jeWindow_flushPrimitives(struct jeWindow* window);
+void jeWindow_destroyGL(struct jeWindow* window);
+bool jeWindow_initGL(struct jeWindow* window);
+
+
+
 static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);

@@ -17,11 +17,15 @@
 
 #define JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE
 
+
 /* Sort key which preserves both depth and order*/
 struct jePrimitiveSortKey {
 	float z;
 	int index;
 };
+
+const char* jePrimitiveType_getDebugString(const struct jeVertex* vertices, int primitiveType);
+int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB);
 
 
 int jePrimitiveType_getVertexCount(int primitiveType) {

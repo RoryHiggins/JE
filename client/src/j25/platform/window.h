@@ -32,6 +32,8 @@ JE_API_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct 
 JE_API_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
 JE_API_PUBLIC int jeWindow_getFps(const struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, int inputId);
+JE_API_PUBLIC int jeWindow_getWidth(const struct jeWindow* window);
+JE_API_PUBLIC int jeWindow_getHeight(const struct jeWindow* window);
 JE_API_PUBLIC void jeWindow_runTests();
 
 #endif

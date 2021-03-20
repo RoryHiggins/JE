@@ -15,6 +15,13 @@
 #define JE_TEMP_BUFFER_CAPACITY 262144
 
 
+void jeErr();
+
+const char* jeLoggerLevel_getLabel(int loggerLevel);
+
+const char *__asan_default_options();
+
+
 void jeErr() {
 	/* dummy function to breakpoint on an error */
 }
@@ -98,7 +105,7 @@ void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionS
 }
 
 
-char* JE_API_PUBLIC je_temp_buffer_allocate(int size) {
+char* je_temp_buffer_allocate(int size) {
 	static int currentSize = 0;
 	static char buffer[JE_TEMP_BUFFER_CAPACITY] = {0};
 
@@ -116,12 +123,12 @@ char* JE_API_PUBLIC je_temp_buffer_allocate(int size) {
 
 	return pos;
 }
-char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(int size, int alignment) {
+char* je_temp_buffer_allocate_aligned(int size, int alignment) {
 	size_t unaligned = (size_t)je_temp_buffer_allocate(size + alignment);
 
 	return (char*)(((unaligned + alignment - 1) / alignment) * alignment);
 }
-const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) {
+const char* je_temp_buffer_format(const char* format_str, ...) {
 	va_list args;
 	va_start(args, format_str);
 

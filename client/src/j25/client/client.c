@@ -51,11 +51,36 @@ extern "C" {
 #define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL
 #endif
 
+
 struct jeWindow;
 struct lua_State;
 
+const char* jeLua_getError(lua_State* lua);
+float jeLua_getNumberField(lua_State* lua, int tableIndex, const char* field);
+float jeLua_getOptionalNumberField(lua_State* lua, int tableIndex, const char* field, float defaultValue);
+const char* jeLua_getStringField(lua_State* lua, int tableIndex, const char* field, int *optOutSize);
+struct jeWindow* jeLua_getWindow(lua_State* lua);
+void jeLua_addWindow(lua_State* lua, struct jeWindow* window);
+void jeLua_updateStates(lua_State* lua);
+int jeLua_readData(lua_State* lua);
+int jeLua_writeData(lua_State* lua);
+void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, int vertexCount);
+void jeLua_drawPrimitiveImpl(lua_State* lua, int primitiveType);
+int jeLua_drawPoint(lua_State* lua);
+int jeLua_drawLine(lua_State* lua);
+int jeLua_drawTriangle(lua_State* lua);
+int jeLua_drawSprite(lua_State* lua);
+int jeLua_drawText(lua_State* lua);
+int jeLua_drawReset(lua_State* lua);
+int jeLua_runTests(lua_State* lua);
+int jeLua_step(lua_State* lua);
+bool jeLua_addBindings(lua_State* lua);
+bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount, char** arguments);
+
+
 #if (LUA_VERSION_NUM < 520) && !(defined(LUAJIT_VERSION_NUM) && (LUAJIT_VERSION_NUM >= 20100))
 /*Shim adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
+void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount);
 void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount) {
 	luaL_checkstack(lua, functionsCount+1, "too many upvalues");
 
@@ -75,6 +100,7 @@ void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsC
 #endif
 
 #if LUA_VERSION_NUM >= 520
+size_t lua_objlen(lua_State *lua, int i);
 size_t lua_objlen(lua_State *lua, int i) {
 	return lua_rawlen(lua, i);
 }
