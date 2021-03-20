@@ -89,7 +89,7 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 		const char* label = jeLoggerLevel_getLabel(loggerLevel);
 		fprintf(stdout, "[%s %s:%u] %s() ", label, logger.file, logger.line, logger.function);
 
-		va_list args;
+		va_list args = {0};
 		va_start(args, formatStr);
 		vfprintf(stdout, formatStr, args);
 		va_end(args);
@@ -135,13 +135,13 @@ char* je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment) {
 	return (char*)(((unaligned + alignment - 1) / alignment) * alignment);
 }
 const char* je_temp_buffer_format(const char* format_str, ...) {
-	va_list args;
+	va_list args = {0};
 	va_start(args, format_str);
 
-	va_list computeSizeArgs;
+	va_list computeSizeArgs = {0};
 	va_copy(computeSizeArgs, args);
 
-	int computedCount = vsnprintf(/*buffer*/ (void*)NULL, 0, format_str, computeSizeArgs);
+	int computedCount = vsnprintf(/*buffer*/ NULL, 0, format_str, computeSizeArgs);
 	if (computedCount < 0) {
 		computedCount = 0;
 	}

@@ -286,16 +286,16 @@ void jeController_create(struct jeController* controller) {
 	newController.controllerAxis[JE_INPUT_X] = SDL_CONTROLLER_AXIS_INVALID;
 	newController.controllerAxis[JE_INPUT_Y] = SDL_CONTROLLER_AXIS_INVALID;
 
-	newController.controllerAxisDir[JE_INPUT_LEFT] = -1.0f;
-	newController.controllerAxisDir[JE_INPUT_RIGHT] = 1.0f;
-	newController.controllerAxisDir[JE_INPUT_UP] = -1.0f;
-	newController.controllerAxisDir[JE_INPUT_DOWN] = 1.0f;
-	newController.controllerAxisDir[JE_INPUT_A] = 0.0f;
-	newController.controllerAxisDir[JE_INPUT_B] = 0.0f;
-	newController.controllerAxisDir[JE_INPUT_X] = 0.0f;
-	newController.controllerAxisDir[JE_INPUT_Y] = 0.0f;
+	newController.controllerAxisDir[JE_INPUT_LEFT] = -1.0F;
+	newController.controllerAxisDir[JE_INPUT_RIGHT] = 1.0F;
+	newController.controllerAxisDir[JE_INPUT_UP] = -1.0F;
+	newController.controllerAxisDir[JE_INPUT_DOWN] = 1.0F;
+	newController.controllerAxisDir[JE_INPUT_A] = 0.0F;
+	newController.controllerAxisDir[JE_INPUT_B] = 0.0F;
+	newController.controllerAxisDir[JE_INPUT_X] = 0.0F;
+	newController.controllerAxisDir[JE_INPUT_Y] = 0.0F;
 
-	newController.controllerAxisThreshold = 0.1f;
+	newController.controllerAxisThreshold = 0.1F;
 
 	/*Find the first connected game controller and use that*/
 	JE_DEBUG("numJoysticks=%d", SDL_NumJoysticks());
@@ -375,10 +375,10 @@ bool jeWindow_clear(struct jeWindow* window) {
 	}
 
 	if (ok) {
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
 		glClear(GL_DEPTH_BUFFER_BIT);
 	}
 
@@ -613,7 +613,7 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	if (ok) {
 		glGenTextures(1, &window->texture);
 		glBindTexture(GL_TEXTURE_2D, window->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)window->image.width, (GLsizei)window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)window->image.width, (GLsizei)window->image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -635,15 +635,15 @@ bool jeWindow_initGL(struct jeWindow* window) {
 		GLfloat scaleUv[2];
 
 		/*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 to 1.0)*/
-		scaleXyz[0] = 2.0f / JE_WINDOW_MIN_WIDTH;
-		scaleXyz[1] = -2.0f / JE_WINDOW_MIN_HEIGHT;
+		scaleXyz[0] = 2.0F / JE_WINDOW_MIN_WIDTH;
+		scaleXyz[1] = -2.0F / JE_WINDOW_MIN_HEIGHT;
 
 		/*Normalize z to between -1.0 and 1.0.  Supports depths +/- 2^20.  Near the precise uint32_t limit for float32*/
-		scaleXyz[2] = 1.0f / (float)(1 << 20);
+		scaleXyz[2] = 1.0F / (float)(1 << 20);
 
 		/*Converts image coords to normalized texture coords (0.0 to 1.0)*/
-		scaleUv[0] = 1.0f / (float)(window->image.width ? window->image.width : 1);
-		scaleUv[1] = 1.0f / (float)(window->image.height ? window->image.height : 1);
+		scaleUv[0] = 1.0F / (float)(window->image.width ? window->image.width : 1);
+		scaleUv[1] = 1.0F / (float)(window->image.height ? window->image.height : 1);
 
 		GLint scaleXyzLocation = glGetUniformLocation(window->program, "scaleXyz");
 		GLint scaleUvLocation = glGetUniformLocation(window->program, "scaleUv");
@@ -810,9 +810,9 @@ bool jeWindow_step(struct jeWindow* window) {
 		if ((window->frame % JE_WINDOW_FRAME_RATE) == 0) {
 			Uint32 timeMs = SDL_GetTicks();
 
-			float sampleDuration = ((float)timeMs - (float)window->fpsLastSampleTimeMs) / 1000.0f;
+			float sampleDuration = ((float)timeMs - (float)window->fpsLastSampleTimeMs) / 1000.0F;
 			float sampleFrameDuration = sampleDuration / (float)JE_WINDOW_FRAME_RATE;
-			window->fpsEstimate = (uint32_t)(1.0f / sampleFrameDuration);
+			window->fpsEstimate = (uint32_t)(1.0F / sampleFrameDuration);
 			window->fpsLastSampleTimeMs = timeMs;
 		}
 

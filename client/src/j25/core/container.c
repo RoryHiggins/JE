@@ -183,16 +183,16 @@ bool jeString_createFormatted(struct jeString* string, const char* formatStr, ..
 
 	bool ok = jeString_create(string);
 
-	va_list args;
+	va_list args = {0};
 	va_start(args, formatStr);
 
 	/*Copy of variadic arguments for calculating array size*/
-	va_list argsCopy;
+	va_list argsCopy = {0};
 	va_copy(argsCopy, args);
 
 	int formattedStringSize = -1;
 	if (ok) {
-		formattedStringSize = vsnprintf(/*array*/ (void*)NULL, 0, formatStr, argsCopy);
+		formattedStringSize = vsnprintf(/*array*/ NULL, 0, formatStr, argsCopy);
 
 		JE_TRACE("string=%p, formatStr=%s, formattedStringSize=%d", (void*)string, formatStr, formattedStringSize);
 
@@ -217,7 +217,7 @@ bool jeString_createFormatted(struct jeString* string, const char* formatStr, ..
 	ok = ok && (dest != NULL);
 
 	if (ok) {
-		formattedStringSize = vsnprintf(dest, (size_t)(formattedStringSize + 1), formatStr, args);
+		formattedStringSize = vsnprintf(dest, (size_t)formattedStringSize + 1, formatStr, args);
 
 		if (formattedStringSize < 0) {
 			JE_ERROR("vsnprintf() failed with dest=%p, formatStr=%s, formattedStringSize=%d", (void*)dest, formatStr, formattedStringSize);
@@ -225,6 +225,7 @@ bool jeString_createFormatted(struct jeString* string, const char* formatStr, ..
 		}
 	}
 
+	va_end(argsCopy);
 	va_end(args);
 
 	return ok;

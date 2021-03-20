@@ -38,8 +38,8 @@ extern "C" {
 #endif
 
 /*https://www.lua.org/manual/5.1/manual.html*/
-#define JE_LUA_STACK_TOP -1
-#define JE_LUA_DATA_BUFFER_SIZE 8 * 1024 * 1024
+#define JE_LUA_STACK_TOP (-1)
+#define JE_LUA_DATA_BUFFER_SIZE (8 * 1024 * 1024)
 
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeLuaClientBindings"
 #define JE_LUA_CLIENT_WINDOW_KEY "jeLuaWindow"
@@ -351,37 +351,37 @@ void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, uint32_t 
 	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
 	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
 
-	vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x", 0.0f);
-	vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0f);
+	vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x", 0.0F);
+	vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0F);
 	vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
 	vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
-	vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0f);
-	vertices[0].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0f);
-	vertices[0].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0f);
+	vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0F);
+	vertices[0].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0F);
+	vertices[0].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0F);
 
-	vertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "r", 1.0f);
-	vertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "g", 1.0f);
-	vertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "b", 1.0f);
-	vertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "a", 1.0f);
+	vertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "r", 1.0F);
+	vertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "g", 1.0F);
+	vertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "b", 1.0F);
+	vertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "a", 1.0F);
 	vertices[0].r = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
 	vertices[0].g = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
 	vertices[0].b = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
 	vertices[0].a = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
 
 	if (vertexCount >= 2) {
-		vertices[1].x = vertices[0].x + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "w", 0.0f);
-		vertices[1].y = vertices[0].y + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "h", 0.0f);
+		vertices[1].x = vertices[0].x + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "w", 0.0F);
+		vertices[1].y = vertices[0].y + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "h", 0.0F);
 		vertices[1].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
 		vertices[1].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
-		vertices[1].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0f);
-		vertices[1].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0f);
+		vertices[1].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0F);
+		vertices[1].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0F);
 	}
 
 	if (vertexCount >= 3) {
-		vertices[2].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x3", 0.0f);
-		vertices[2].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y3", 0.0f);
-		vertices[2].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0f);
-		vertices[2].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0f);
+		vertices[2].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x3", 0.0F);
+		vertices[2].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y3", 0.0F);
+		vertices[2].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0F);
+		vertices[2].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0F);
 	}
 
 	for (uint32_t i = 0; i < vertexCount; i++) {
@@ -392,17 +392,17 @@ void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, uint32_t 
 		vertices[i].a = vertices[0].a;
 	}
 
-	float cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x", 0.0f);
-	float cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y", 0.0f);
-	float cameraX2 = cameraX1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "w", 0.0f);
-	float cameraY2 = cameraY1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "h", 0.0f);
+	float cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x", 0.0F);
+	float cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y", 0.0F);
+	float cameraX2 = cameraX1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "w", 0.0F);
+	float cameraY2 = cameraY1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "h", 0.0F);
 	cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
 	cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
 	cameraX2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
 	cameraY2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
 
-	float cameraOffsetX = -cameraX1 - (float)floor((float)((cameraX2 - cameraX1) / 2.0f));
-	float cameraOffsetY = -cameraY1 - (float)floor((float)((cameraY2 - cameraY1) / 2.0f));
+	float cameraOffsetX = -cameraX1 - floorf((cameraX2 - cameraX1) / 2.0F);
+	float cameraOffsetY = -cameraY1 - floorf((cameraY2 - cameraY1) / 2.0F);
 	for (uint32_t i = 0; i < vertexCount; i++) {
 		vertices[i].x += cameraOffsetX;
 		vertices[i].y += cameraOffsetY;

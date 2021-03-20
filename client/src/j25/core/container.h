@@ -14,15 +14,15 @@ struct jeArray {
 	uint32_t count;
 	uint32_t capacity;
 };
-JE_API_PUBLIC bool jeArray_create(struct jeArray* buffer, uint32_t stride);
-JE_API_PUBLIC void jeArray_destroy(struct jeArray* buffer);
-JE_API_PUBLIC uint32_t jeArray_getCount(struct jeArray* buffer);
-JE_API_PUBLIC uint32_t jeArray_getCapacity(struct jeArray* buffer);
-JE_API_PUBLIC void* jeArray_get(struct jeArray* buffer, uint32_t index);
-JE_API_PUBLIC bool jeArray_setCapacity(struct jeArray* buffer, uint32_t capacity);
-JE_API_PUBLIC bool jeArray_ensureCapacity(struct jeArray* buffer, uint32_t minCapacity);
-JE_API_PUBLIC bool jeArray_setCount(struct jeArray* buffer, uint32_t count);
-JE_API_PUBLIC bool jeArray_push(struct jeArray* buffer, const void* data, uint32_t count);
+JE_API_PUBLIC bool jeArray_create(struct jeArray* array, uint32_t stride);
+JE_API_PUBLIC void jeArray_destroy(struct jeArray* array);
+JE_API_PUBLIC uint32_t jeArray_getCount(struct jeArray* array);
+JE_API_PUBLIC uint32_t jeArray_getCapacity(struct jeArray* array);
+JE_API_PUBLIC void* jeArray_get(struct jeArray* array, uint32_t index);
+JE_API_PUBLIC bool jeArray_setCapacity(struct jeArray* array, uint32_t capacity);
+JE_API_PUBLIC bool jeArray_ensureCapacity(struct jeArray* array, uint32_t minCapacity);
+JE_API_PUBLIC bool jeArray_setCount(struct jeArray* array, uint32_t count);
+JE_API_PUBLIC bool jeArray_push(struct jeArray* array, const void* data, uint32_t count);
 
 
 struct jeString {
