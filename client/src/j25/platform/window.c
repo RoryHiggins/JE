@@ -731,18 +731,26 @@ bool jeWindow_step(struct jeWindow* window) {
 			window->fpsLastSampleTimeMs = timeMs;
 		}
 
-		static const Uint32 frameTimeMs = 1000 / JE_WINDOW_FRAME_RATE;
-		Uint32 timeToWaitMs = window->nextFrameTimeMs - SDL_GetTicks();
-		if (timeToWaitMs > frameTimeMs) {
-			timeToWaitMs = frameTimeMs;
-			window->nextFrameTimeMs = SDL_GetTicks() + frameTimeMs;
+		static const Uint32 frameDurationMs = 1000 / JE_WINDOW_FRAME_RATE;
+		Uint32 timeMs = SDL_GetTicks();
+		Uint32 waitMs = window->nextFrameTimeMs - timeMs;
+
+		/*guard against waitMs underflow*/
+		if (timeMs > window->nextFrameTimeMs) {
+			waitMs = 0;
+			window->nextFrameTimeMs = timeMs;
 		}
 
-		if (timeToWaitMs > 0) {
-			/*Wait for frame start time*/
-			SDL_Delay(timeToWaitMs);
+		/*guard against waiting more than a full frame duration*/
+		if (waitMs > frameDurationMs) {
+			waitMs = frameDurationMs;
+			window->nextFrameTimeMs = timeMs;
 		}
-		window->nextFrameTimeMs += frameTimeMs;
+
+		if (waitMs > 0) {
+			SDL_Delay(waitMs);
+		}
+		window->nextFrameTimeMs += frameDurationMs;
 	}
 
 	if (!ok) {
