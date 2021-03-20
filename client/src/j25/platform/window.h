@@ -29,7 +29,8 @@ JE_API_PUBLIC struct jeWindow* jeWindow_create(bool startVisible, const char* op
 JE_API_PUBLIC void jeWindow_show(struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_step(struct jeWindow* window);
 JE_API_PUBLIC void jeWindow_resetPrimitives(struct jeWindow* window);
-JE_API_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType);
+JE_API_PUBLIC void
+jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType);
 JE_API_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
 JE_API_PUBLIC uint32_t jeWindow_getFps(const struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId);

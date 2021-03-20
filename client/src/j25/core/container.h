@@ -24,7 +24,6 @@ JE_API_PUBLIC bool jeArray_ensureCapacity(struct jeArray* array, uint32_t minCap
 JE_API_PUBLIC bool jeArray_setCount(struct jeArray* array, uint32_t count);
 JE_API_PUBLIC bool jeArray_push(struct jeArray* array, const void* data, uint32_t count);
 
-
 struct jeString {
 	struct jeArray array;
 };
@@ -38,7 +37,6 @@ JE_API_PUBLIC bool jeString_setCapacity(struct jeString* string, uint32_t capaci
 JE_API_PUBLIC bool jeString_ensureCapacity(struct jeString* string, uint32_t minCapacity);
 JE_API_PUBLIC bool jeString_setCount(struct jeString* string, uint32_t count);
 JE_API_PUBLIC bool jeString_push(struct jeString* string, const char* data, uint32_t count);
-
 
 JE_API_PUBLIC void jeContainer_runTests();
 

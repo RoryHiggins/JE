@@ -1,16 +1,16 @@
 #include <j25/client/client.h>
 
-#include <j25/core/debug.h>
 #include <j25/core/container.h>
+#include <j25/core/debug.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
 
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include <ctype.h>
-#include <math.h>
-#include <errno.h>
 
 #include <zlib.h>
 
@@ -22,16 +22,15 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
+#include <luajit-2.1/lauxlib.h>
 #include <luajit-2.1/lua.h>
 #include <luajit-2.1/lualib.h>
-#include <luajit-2.1/lauxlib.h>
 
 /* Only used for version checking via LUAJIT_VERSION_NUM */
 #include <luajit-2.1/luajit.h>
 #if defined(__cplusplus)
 } /*extern "C"*/
 #endif
-
 
 #if !defined(JE_DEFAULT_GAME_DIR)
 #define JE_DEFAULT_GAME_DIR "apps/game"
@@ -43,7 +42,8 @@ extern "C" {
 
 #define JE_LUA_CLIENT_BINDINGS_KEY "jeLuaClientBindings"
 #define JE_LUA_CLIENT_WINDOW_KEY "jeLuaWindow"
-#define JE_LUA_CLIENT_BINDING(BINDING_NAME) {#BINDING_NAME, jeLua_##BINDING_NAME}
+#define JE_LUA_CLIENT_BINDING(BINDING_NAME) \
+	{ #BINDING_NAME, jeLua_##BINDING_NAME }
 
 #if JE_MAX_LOG_LEVEL > JE_MAX_LOG_LEVEL_DEBUG
 #define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL_WARN
@@ -51,20 +51,19 @@ extern "C" {
 #define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL
 #endif
 
-
 struct jeWindow;
 struct lua_State;
 
 const char* jeLua_getError(lua_State* lua);
 double jeLua_getNumberField(lua_State* lua, uint32_t tableIndex, const char* field);
 double jeLua_getOptionalNumberField(lua_State* lua, uint32_t tableIndex, const char* field, double defaultValue);
-const char* jeLua_getStringField(lua_State* lua, uint32_t tableIndex, const char* field, uint32_t *optOutSize);
+const char* jeLua_getStringField(lua_State* lua, uint32_t tableIndex, const char* field, uint32_t* optOutSize);
 struct jeWindow* jeLua_getWindow(lua_State* lua);
 void jeLua_addWindow(lua_State* lua, struct jeWindow* window);
 void jeLua_updateStates(lua_State* lua);
 int jeLua_readData(lua_State* lua);
 int jeLua_writeData(lua_State* lua);
-void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, uint32_t vertexCount);
+void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t vertexCount);
 void jeLua_drawPrimitiveImpl(lua_State* lua, uint32_t primitiveType);
 int jeLua_drawPoint(lua_State* lua);
 int jeLua_drawLine(lua_State* lua);
@@ -77,14 +76,13 @@ int jeLua_step(lua_State* lua);
 bool jeLua_addBindings(lua_State* lua);
 bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount, char** arguments);
 
-
 #if (LUA_VERSION_NUM < 520) && !(defined(LUAJIT_VERSION_NUM) && (LUAJIT_VERSION_NUM >= 20100))
 /*Shim adapted from https://github.com/keplerproject/lua-compat-5.2/blob/master/c-api/compat-5.2.c#L119*/
-void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount);
-void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsCount) {
-	luaL_checkstack(lua, functionsCount+1, "too many upvalues");
+void luaL_setfuncs(lua_State* lua, const luaL_Reg* functionsIter, int functionsCount);
+void luaL_setfuncs(lua_State* lua, const luaL_Reg* functionsIter, int functionsCount) {
+	luaL_checkstack(lua, functionsCount + 1, "too many upvalues");
 
-	for (; functionsIter->name != NULL; functionsIter++) {  /* fill the table with given functions */
+	for (; functionsIter->name != NULL; functionsIter++) { /* fill the table with given functions */
 		lua_pushstring(lua, functionsIter->name);
 
 		/* copy upvalues to the top */
@@ -92,16 +90,16 @@ void luaL_setfuncs(lua_State *lua, const luaL_Reg *functionsIter, int functionsC
 			lua_pushvalue(lua, -(functionsCount + 1));
 		}
 
-		lua_pushcclosure(lua, functionsIter->func, functionsCount);  /* closure with those upvalues */
+		lua_pushcclosure(lua, functionsIter->func, functionsCount); /* closure with those upvalues */
 		lua_settable(lua, -(functionsCount + 3)); /* table must be below the upvalues, the name and the closure */
 	}
-	lua_pop(lua, functionsCount);  /* remove upvalues */
+	lua_pop(lua, functionsCount); /* remove upvalues */
 }
 #endif
 
 #if LUA_VERSION_NUM >= 520
-size_t lua_objlen(lua_State *lua, int i);
-size_t lua_objlen(lua_State *lua, int i) {
+size_t lua_objlen(lua_State* lua, int i);
+size_t lua_objlen(lua_State* lua, int i) {
 	return lua_rawlen(lua, i);
 }
 #endif
@@ -120,12 +118,13 @@ lua_Number jeLua_getNumberField(lua_State* lua, uint32_t tableIndex, const char*
 
 	return luaL_checknumber(lua, JE_LUA_STACK_TOP);
 }
-lua_Number jeLua_getOptionalNumberField(lua_State* lua, uint32_t tableIndex, const char* field, lua_Number defaultValue) {
+lua_Number
+jeLua_getOptionalNumberField(lua_State* lua, uint32_t tableIndex, const char* field, lua_Number defaultValue) {
 	lua_getfield(lua, (int)tableIndex, field);
 
 	return luaL_optnumber(lua, JE_LUA_STACK_TOP, defaultValue);
 }
-const char* jeLua_getStringField(lua_State* lua, uint32_t tableIndex, const char* field, uint32_t *optOutSize) {
+const char* jeLua_getStringField(lua_State* lua, uint32_t tableIndex, const char* field, uint32_t* optOutSize) {
 	lua_getfield(lua, (int)tableIndex, field);
 
 	const char* result = luaL_checkstring(lua, JE_LUA_STACK_TOP);
@@ -140,7 +139,7 @@ struct jeWindow* jeLua_getWindow(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
 	bool ok = true;
-	struct jeWindow *window = NULL;
+	struct jeWindow* window = NULL;
 
 	int stackPos = lua_gettop(lua);
 
@@ -268,8 +267,7 @@ int jeLua_readData(lua_State* lua) {
 		}
 	}
 
-	if (ok)
-	{
+	if (ok) {
 		/*Exclude null terminator if string exists*/
 		if (dataSize > 0) {
 			dataSize--;
@@ -340,7 +338,7 @@ int jeLua_writeData(lua_State* lua) {
 
 	return numResponses;
 }
-void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex *vertices, uint32_t vertexCount) {
+void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t vertexCount) {
 	JE_TRACE("lua=%p, vertices=%p, vertexCount=%u", (void*)lua, (void*)vertices, vertexCount);
 
 	static const int renderableIndex = 1;
@@ -419,8 +417,12 @@ void jeLua_drawPrimitiveImpl(lua_State* lua, uint32_t primitiveType) {
 	uint32_t vertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	jeLua_getPrimitiveImpl(lua, vertices, vertexCount);
 
-	JE_TRACE("lua=%p, primitiveType=%u, vertexCount=%u, vertices={%s}",
-			 (void*)lua, primitiveType, vertexCount, jeVertex_arrayGetDebugString(vertices, vertexCount));
+	JE_TRACE(
+		"lua=%p, primitiveType=%u, vertexCount=%u, vertices={%s}",
+		(void*)lua,
+		primitiveType,
+		vertexCount,
+		jeVertex_arrayGetDebugString(vertices, vertexCount));
 	jeWindow_pushPrimitive(window, vertices, primitiveType);
 }
 int jeLua_drawPoint(lua_State* lua) {
@@ -468,14 +470,21 @@ int jeLua_drawText(lua_State* lua) {
 	jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
 	textBoundsVertices[1] = textBoundsVertices[0];
 
-	JE_TRACE("lua=%p, text=%s, textBoundsVertices=%s", (void*)lua, text, jeVertex_arrayGetDebugString(textBoundsVertices, 2));
+	JE_TRACE(
+		"lua=%p, text=%s, textBoundsVertices=%s",
+		(void*)lua,
+		text,
+		jeVertex_arrayGetDebugString(textBoundsVertices, 2));
 	for (uint32_t i = 0; i < textLength; i++) {
 		static const char charDefault = ' ';
 
 		char charVal = (char)toupper((uint32_t)text[i]);
 		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
-			JE_WARN("character outside range, char=%u, min=%u, max=%u",
-					(uint32_t)charVal, (uint32_t)charFirst[0], (uint32_t)charLast[0]);
+			JE_WARN(
+				"character outside range, char=%u, min=%u, max=%u",
+				(uint32_t)charVal,
+				(uint32_t)charFirst[0],
+				(uint32_t)charLast[0]);
 			charVal = charDefault;
 		}
 
@@ -561,7 +570,7 @@ bool jeLua_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(drawReset),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),
-		{NULL, NULL}  /*sentinel value*/
+		{NULL, NULL} /*sentinel value*/
 	};
 
 	bool ok = true;
@@ -572,7 +581,8 @@ bool jeLua_addBindings(lua_State* lua) {
 	if (ok) {
 		createdResult = luaL_newmetatable(lua, "jeClientMetatable");
 		if (createdResult != 1) {
-			JE_ERROR("luaL_newmetatable() failed, result=%d, metatableName=%s", createdResult, JE_LUA_CLIENT_BINDINGS_KEY);
+			JE_ERROR(
+				"luaL_newmetatable() failed, result=%d, metatableName=%s", createdResult, JE_LUA_CLIENT_BINDINGS_KEY);
 			ok = false;
 		}
 	}
@@ -621,7 +631,11 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 	if (ok) {
 		luaResponse = luaL_loadfile(lua, filename);
 		if (luaResponse != 0) {
-			JE_ERROR("luaL_loadfile() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
+			JE_ERROR(
+				"luaL_loadfile() failed, filename=%s luaResponse=%d error=%s",
+				filename,
+				luaResponse,
+				jeLua_getError(lua));
 			ok = false;
 		}
 	}
@@ -639,7 +653,8 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 		/*THIS WILL BLOCK UNTIL THE CALLED LUA SCRIPT ENDS!*/
 		luaResponse = lua_pcall(lua, /*numArgs*/ argumentCount, /*numReturnVals*/ LUA_MULTRET, /*errFunc*/ 0);
 		if (luaResponse != LUA_OK) {
-			JE_ERROR("lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
+			JE_ERROR(
+				"lua_pcall() failed, filename=%s luaResponse=%d error=%s", filename, luaResponse, jeLua_getError(lua));
 			ok = false;
 		}
 	}
@@ -651,7 +666,6 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 
 	return ok;
 }
-
 
 bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
 	bool ok = true;

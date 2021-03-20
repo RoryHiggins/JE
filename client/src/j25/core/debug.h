@@ -16,11 +16,11 @@
 
 #define JE_MAX_LOG_LEVEL_TRACE 0
 #define JE_MAX_LOG_LEVEL_DEBUG 1
-#define JE_MAX_LOG_LEVEL_INFO  2
-#define JE_MAX_LOG_LEVEL_WARN  3
-#define JE_MAX_LOG_LEVEL_ERR   4
+#define JE_MAX_LOG_LEVEL_INFO 2
+#define JE_MAX_LOG_LEVEL_WARN 3
+#define JE_MAX_LOG_LEVEL_ERR 4
 #define JE_MAX_LOG_LEVEL_COUNT 5
-#define JE_MAX_LOG_LEVEL_NONE  JE_MAX_LOG_LEVEL_COUNT
+#define JE_MAX_LOG_LEVEL_NONE JE_MAX_LOG_LEVEL_COUNT
 
 #if defined(JE_BUILD_TRACE)
 #define JE_MAX_LOG_LEVEL JE_MAX_LOG_LEVEL_TRACE
@@ -56,7 +56,6 @@
 #define JE_TRACE(...)
 #endif
 
-
 struct jeLogger {
 	const char* file;
 	const char* function;
@@ -65,9 +64,9 @@ struct jeLogger {
 JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line);
 JE_API_PUBLIC uint32_t jeLogger_getLevel();
 JE_API_PUBLIC void jeLogger_setLevelOverride(uint32_t loggerLevelOverride);
-JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
+JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...)
+	JE_API_PRINTF(3, 4);
 JE_API_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
-
 
 char* JE_API_PUBLIC je_temp_buffer_allocate(uint32_t size);
 char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment);

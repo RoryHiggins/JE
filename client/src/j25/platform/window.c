@@ -1,7 +1,7 @@
 #include <j25/platform/window.h>
 
-#include <j25/core/debug.h>
 #include <j25/core/container.h>
+#include <j25/core/debug.h>
 #include <j25/platform/rendering.h>
 
 #include <stdbool.h>
@@ -27,34 +27,34 @@
 /*https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.1.20.pdf*/
 #define JE_WINDOW_VERT_SHADER \
 	"#version 120\n" \
-	\
-	"uniform vec3 scaleXyz;" /*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 to 1.0)*/ \
-	"uniform vec2 scaleUv;" /*Converts image coords to normalized texture coords (0.0 to 1.0)*/ \
-	\
+\
+	"uniform vec3 scaleXyz;" /*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 \
+								to 1.0)*/ \
+	"uniform vec2 scaleUv;"  /*Converts image coords to normalized texture coords (0.0 to 1.0)*/ \
+\
 	"attribute vec4 srcPos;" \
 	"attribute vec4 srcCol;" \
 	"attribute vec2 srcUv;" \
-	\
+\
 	"varying vec4 col;" \
 	"varying vec2 uv;" \
-	\
+\
 	"void main() {" \
-		"gl_Position = vec4(srcPos.xyz * scaleXyz, 1);" \
-		"col = srcCol;" \
-		"uv = srcUv * scaleUv;" \
+	"gl_Position = vec4(srcPos.xyz * scaleXyz, 1);" \
+	"col = srcCol;" \
+	"uv = srcUv * scaleUv;" \
 	"}"
 #define JE_WINDOW_FRAG_SHADER \
 	"#version 120\n" \
-	\
+\
 	"uniform sampler2D srcTexture;" \
-	\
+\
 	"varying vec4 col;" \
 	"varying vec2 uv;" \
-	\
+\
 	"void main() {" \
-		"gl_FragColor = texture2D(srcTexture, uv).rgba * col;" \
+	"gl_FragColor = texture2D(srcTexture, uv).rgba * col;" \
 	"}"
-
 
 struct jeSDL {
 	bool intialized;
@@ -112,8 +112,6 @@ bool jeWindow_flushPrimitives(struct jeWindow* window);
 void jeWindow_destroyGL(struct jeWindow* window);
 bool jeWindow_initGL(struct jeWindow* window);
 
-
-
 static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
@@ -127,14 +125,9 @@ bool jeSDL_initReentrant() {
 	JE_TRACE("intialized=%s, entryCount=%u", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
 
 	if (!jeSDL_sdl.intialized) {
-		const Uint32 sdl_init_flags = (
-			SDL_INIT_EVENTS
-			| SDL_INIT_TIMER
-			| SDL_INIT_VIDEO
-			| SDL_INIT_JOYSTICK
-			| SDL_INIT_HAPTIC
-			| SDL_INIT_GAMECONTROLLER
-		);
+		const Uint32 sdl_init_flags =
+			(SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+			 SDL_INIT_GAMECONTROLLER);
 
 		JE_TRACE("SDL_Init");
 		if (SDL_Init(sdl_init_flags) != 0) {
@@ -162,14 +155,14 @@ void jeSDL_destroyReentrant() {
 	}
 }
 
-
 bool jeGl_getOk(struct jeLogger logger) {
 	bool ok = true;
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
 #if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%u, message=%s", glError, gluErrorString(glError));
+		jeLogger_log(
+			logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%u, message=%s", glError, gluErrorString(glError));
 #endif
 		ok = false;
 	}
@@ -341,7 +334,7 @@ uint32_t jeWindow_getWidth(const struct jeWindow* window) {
 
 	JE_TRACE("window=%p, width=%d", (void*)window, width);
 
-	return (uint32_t) width;
+	return (uint32_t)width;
 }
 uint32_t jeWindow_getHeight(const struct jeWindow* window) {
 	int width = 0;
@@ -443,12 +436,9 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_destroyGL(struct jeWindow* window) {
-	bool hasGLContext = (
-		(window != NULL)
-		&& (window->window != NULL)
-		&& (window->context != NULL)
-		&& (SDL_GL_MakeCurrent(window->window, window->context) == 0)
-	);
+	bool hasGLContext =
+		((window != NULL) && (window->window != NULL) && (window->context != NULL) &&
+		 (SDL_GL_MakeCurrent(window->window, window->context) == 0));
 
 	JE_DEBUG("window=%p, hasGLContext=%u", (void*)window, (uint32_t)hasGLContext);
 
@@ -479,8 +469,11 @@ void jeWindow_destroyGL(struct jeWindow* window) {
 		}
 
 		if (window->program != 0) {
-			JE_TRACE("deleting program, program=%u, vertShader=%u, fragShader=%u",
-					 window->program, window->vertShader, window->fragShader);
+			JE_TRACE(
+				"deleting program, program=%u, vertShader=%u, fragShader=%u",
+				window->program,
+				window->vertShader,
+				window->fragShader);
 
 			glDetachShader(window->program, window->fragShader);
 			glDetachShader(window->program, window->vertShader);
@@ -613,7 +606,16 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	if (ok) {
 		glGenTextures(1, &window->texture);
 		glBindTexture(GL_TEXTURE_2D, window->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)window->image.width, (GLsizei)window->image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0,
+			GL_RGBA,
+			(GLsizei)window->image.width,
+			(GLsizei)window->image.height,
+			0,
+			GL_RGBA,
+			GL_UNSIGNED_BYTE,
+			window->image.buffer.data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -667,8 +669,10 @@ bool jeWindow_initGL(struct jeWindow* window) {
 		glEnableVertexAttribArray(srcUvLocation);
 
 		glVertexAttribPointer(srcPosLocation, 4, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)0);
-		glVertexAttribPointer(srcColLocation, 4, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(4 * sizeof(GLfloat)));
-		glVertexAttribPointer(srcUvLocation, 2, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(8 * sizeof(GLfloat)));
+		glVertexAttribPointer(
+			srcColLocation, 4, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(4 * sizeof(GLfloat)));
+		glVertexAttribPointer(
+			srcUvLocation, 2, GL_FLOAT, GL_FALSE, sizeof(struct jeVertex), (const GLvoid*)(8 * sizeof(GLfloat)));
 
 		if (jeGl_getOk(JE_LOG_CONTEXT) == false) {
 			JE_ERROR("jeGl_getOk() error");
@@ -717,8 +721,7 @@ bool jeWindow_step(struct jeWindow* window) {
 						JE_DEBUG(
 							"resizing window to width=%u, height=%u",
 							jeWindow_getWidth(window),
-							jeWindow_getHeight(window)
-						);
+							jeWindow_getHeight(window));
 						jeWindow_destroyGL(window);
 						if (!jeWindow_initGL(window)) {
 							JE_ERROR("jeWindow_initGL failed");
@@ -772,19 +775,22 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			case SDL_CONTROLLERBUTTONDOWN: {
-				JE_DEBUG("SDL_CONTROLLERBUTTONDOWN, button=%s",
-						 SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
+				JE_DEBUG(
+					"SDL_CONTROLLERBUTTONDOWN, button=%s",
+					SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
 				break;
 			}
 			case SDL_CONTROLLERBUTTONUP: {
-				JE_DEBUG("SDL_CONTROLLERBUTTONUP, button=%s",
-						 SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
+				JE_DEBUG(
+					"SDL_CONTROLLERBUTTONUP, button=%s",
+					SDL_GameControllerGetStringForButton((SDL_GameControllerButton)event.cbutton.button));
 				break;
 			}
 			case SDL_CONTROLLERAXISMOTION: {
-				JE_TRACE("SDL_CONTROLLERAXISMOTION, axis=%s, value=%d",
-						 SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)event.caxis.axis),
-						 (int)event.caxis.value);
+				JE_TRACE(
+					"SDL_CONTROLLERAXISMOTION, axis=%s, value=%d",
+					SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)event.caxis.axis),
+					(int)event.caxis.value);
 				break;
 			}
 			default: {
@@ -906,8 +912,7 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 			SDL_WINDOWPOS_CENTERED,
 			JE_WINDOW_START_WIDTH,
 			JE_WINDOW_START_HEIGHT,
-			(startVisible ? SDL_WINDOW_SHOWN : SDL_WINDOW_HIDDEN) | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
-		);
+			(startVisible ? SDL_WINDOW_SHOWN : SDL_WINDOW_HIDDEN) | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 		if (window->window == NULL) {
 			JE_ERROR("SDL_CreateWindow() failed with error=%s", SDL_GetError());
 			ok = false;
@@ -1006,7 +1011,8 @@ bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId) {
 		}
 
 		if (controllerAxis != SDL_CONTROLLER_AXIS_INVALID) {
-			float axisValue = (float)SDL_GameControllerGetAxis(window->controller.controller, controllerAxis) * controllerAxisDir;
+			float axisValue =
+				(float)SDL_GameControllerGetAxis(window->controller.controller, controllerAxis) * controllerAxisDir;
 			pressed = pressed || (axisValue > axisMinValue);
 		}
 	}

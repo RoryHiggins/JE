@@ -2,11 +2,11 @@
 
 #include <j25/core/debug.h>
 
-#include <stdbool.h>
 #include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define JE_BUFFER_START_CAPACITY 32
 
@@ -220,7 +220,11 @@ bool jeString_createFormatted(struct jeString* string, const char* formatStr, ..
 		formattedStringSize = vsnprintf(dest, (size_t)formattedStringSize + 1, formatStr, args);
 
 		if (formattedStringSize < 0) {
-			JE_ERROR("vsnprintf() failed with dest=%p, formatStr=%s, formattedStringSize=%d", (void*)dest, formatStr, formattedStringSize);
+			JE_ERROR(
+				"vsnprintf() failed with dest=%p, formatStr=%s, formattedStringSize=%d",
+				(void*)dest,
+				formatStr,
+				formattedStringSize);
 			ok = false;
 		}
 	}

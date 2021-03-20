@@ -8,10 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 struct jeWindow;
 struct lua_State;
-
 
 struct jeClient {
 	struct jeWindow* window;

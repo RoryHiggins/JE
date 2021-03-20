@@ -1,32 +1,28 @@
 #include <j25/core/debug.h>
 
-#include <stdbool.h>
 #include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
 #define JE_LOG_LABEL_DEBUG "debug"
-#define JE_LOG_LABEL_INFO  "info "
-#define JE_LOG_LABEL_WARN  "WARN "
-#define JE_LOG_LABEL_ERR   "ERROR"
-
+#define JE_LOG_LABEL_INFO "info "
+#define JE_LOG_LABEL_WARN "WARN "
+#define JE_LOG_LABEL_ERR "ERROR"
 
 #define JE_TEMP_BUFFER_CAPACITY 262144
-
 
 void jeErr();
 
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel);
 
-const char *__asan_default_options();
-
+const char* __asan_default_options();
 
 void jeErr() {
 	/* dummy function to breakpoint on an error */
 }
-
 
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
 	const char* label = "";
@@ -58,7 +54,6 @@ const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
 	return label;
 }
 
-
 struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line) {
 	struct jeLogger logger = {0};
 	logger.file = file;
@@ -68,14 +63,16 @@ struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t
 	return logger;
 }
 
-
 uint32_t jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
 uint32_t jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }
 void jeLogger_setLevelOverride(uint32_t levelOverride) {
 	if (levelOverride < JE_MAX_LOG_LEVEL) {
-		JE_ERROR("invalid levelOverride below compiled minimum, levelOverride=%u, JE_MAX_LOG_LEVEL=%d", levelOverride, JE_MAX_LOG_LEVEL);
+		JE_ERROR(
+			"invalid levelOverride below compiled minimum, levelOverride=%u, JE_MAX_LOG_LEVEL=%d",
+			levelOverride,
+			JE_MAX_LOG_LEVEL);
 		levelOverride = JE_MAX_LOG_LEVEL;
 	}
 	jeLogger_levelOverride = levelOverride;
@@ -104,7 +101,6 @@ void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionS
 		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
 }
-
 
 char* je_temp_buffer_allocate(uint32_t size) {
 	static uint32_t currentSize = 0;
@@ -156,17 +152,14 @@ const char* je_temp_buffer_format(const char* format_str, ...) {
 	return allocation;
 }
 
-
 /* Parameters for AddressSanitizer; https://github.com/google/sanitizers/wiki/AddressSanitizerFlags */
-const char *__asan_default_options() {
-	return (
-		"verbosity=1"
-		":halt_on_error=0"
-		":strict_string_checks=1"
-		":detect_stack_use_after_return=1"
-		":check_initialization_order=1"
-		":strict_init_order=1"
-		":detect_invalid_pointer_pairs=10"
-		":detect_leaks=1"
-	);
+const char* __asan_default_options() {
+	return ("verbosity=1"
+			":halt_on_error=0"
+			":strict_string_checks=1"
+			":detect_stack_use_after_return=1"
+			":check_initialization_order=1"
+			":strict_init_order=1"
+			":detect_invalid_pointer_pairs=10"
+			":detect_leaks=1");
 }
