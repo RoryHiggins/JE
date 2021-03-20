@@ -99,8 +99,8 @@ make run
 make run_headless
 
 # override the app to run
-make run GAME=apps/game
-make run_headless GAME=apps/game
+make run APP=apps/game
+make run_headless APP=apps/game
 
 # override target and rebuild client with debug logging and gdb-friendly debug symbols
 make -B TARGET=DEBUG
@@ -109,14 +109,14 @@ make -B TARGET=DEBUG
 # - RELEASE - all optimizations, no logging, no debug symbols.  for releases
 # - PROFILED - release build with enough extra information to generate a profile with gprof
 # - DEVELOPMENT (default) - optimized for compile-time, minimal logging
-# - DEBUG - optimized for debugging with gdb.  some extra logging enabled
-# - TRACE - debug build with some extremely verbose logging enabled
+# - DEBUG - optimized for debugging.  extra static analysis tools enabled, extra gdb debugging info, and verbose logging
+# - TRACE - debug build with extremely verbose logging enabled
 
 # run game with client running in gdb.  for debugging the client
 make run_debugger
 
 # create a fully packaged release.tar.gz which can be delivered standalone
-make release GAME=apps/game
+make release APP=apps/game
 
 # generate a performance profile using gprof.  build with TARGET=PROFILED, run game, then run this command
 make profile
@@ -126,6 +126,12 @@ make docs
 
 # clean artefacts
 make clean
+
+# apply clang-tidy static analyzer to the client code
+make tidy
+
+# apply clang-format to the client code
+make format
 ```
 
 

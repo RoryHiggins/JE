@@ -65,6 +65,10 @@ profile: gmon.out
 docs:
 	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
 	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir build/docs/engine
+tidy:
+	find ./client -name '*.c' -or -name '*.h' | xargs -I TIDY_INPUT clang-tidy TIDY_INPUT -- -Iclient/include -Iclient/src
+format:
+	find ./client -name '*.c' -or -name '*.h' | xargs clang-format -i -Werror --
 clean:
 	rm -f game_dump.sav game_save.sav gmon.out profile.txt
 	rm -rf build j25_release_*.tar.gz
