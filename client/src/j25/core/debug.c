@@ -27,23 +27,23 @@ void jeErr() {
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
 	const char* label = "";
 	switch (loggerLevel) {
-		case JE_MAX_LOG_LEVEL_TRACE: {
+		case JE_LOG_LEVEL_TRACE: {
 			label = JE_LOG_LABEL_TRACE;
 			break;
 		}
-		case JE_MAX_LOG_LEVEL_DEBUG: {
+		case JE_LOG_LEVEL_DEBUG: {
 			label = JE_LOG_LABEL_DEBUG;
 			break;
 		}
-		case JE_MAX_LOG_LEVEL_INFO: {
+		case JE_LOG_LEVEL_INFO: {
 			label = JE_LOG_LABEL_INFO;
 			break;
 		}
-		case JE_MAX_LOG_LEVEL_WARN: {
+		case JE_LOG_LEVEL_WARN: {
 			label = JE_LOG_LABEL_WARN;
 			break;
 		}
-		case JE_MAX_LOG_LEVEL_ERR: {
+		case JE_LOG_LEVEL_ERR: {
 			label = JE_LOG_LABEL_ERR;
 			break;
 		}
@@ -63,23 +63,23 @@ struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t
 	return logger;
 }
 
-uint32_t jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
+uint32_t jeLogger_levelOverride = JE_LOG_LEVEL_COMPILED;
 uint32_t jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }
 void jeLogger_setLevelOverride(uint32_t levelOverride) {
-	if (levelOverride < JE_MAX_LOG_LEVEL) {
+	if (levelOverride < JE_LOG_LEVEL_COMPILED) {
 		JE_ERROR(
-			"invalid levelOverride below compiled minimum, levelOverride=%u, JE_MAX_LOG_LEVEL=%d",
+			"invalid levelOverride below compiled minimum, levelOverride=%u, JE_LOG_LEVEL_COMPILED=%d",
 			levelOverride,
-			JE_MAX_LOG_LEVEL);
-		levelOverride = JE_MAX_LOG_LEVEL;
+			JE_LOG_LEVEL_COMPILED);
+		levelOverride = JE_LOG_LEVEL_COMPILED;
 	}
 	jeLogger_levelOverride = levelOverride;
 }
 void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...) {
 	if (jeLogger_levelOverride <= loggerLevel) {
-		if (loggerLevel <= JE_MAX_LOG_LEVEL_ERR) {
+		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
 			jeErr();
 		}
 
@@ -96,9 +96,9 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 	}
 }
 void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr) {
-	if ((jeLogger_levelOverride <= JE_MAX_LOG_LEVEL_ERR) && (!value)) {
+	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeErr();
-		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
+		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
 }
 

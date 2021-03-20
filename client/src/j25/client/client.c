@@ -45,10 +45,10 @@ extern "C" {
 #define JE_LUA_CLIENT_BINDING(BINDING_NAME) \
 	{ #BINDING_NAME, jeLua_##BINDING_NAME }
 
-#if JE_MAX_LOG_LEVEL > JE_MAX_LOG_LEVEL_DEBUG
-#define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL_WARN
+#if JE_LOG_LEVEL_COMPILED > JE_LOG_LEVEL_DEBUG
+#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_WARN
 #else
-#define JE_TESTS_LOG_LEVEL JE_MAX_LOG_LEVEL
+#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_COMPILED
 #endif
 
 struct jeWindow;
@@ -196,7 +196,7 @@ void jeLua_updateStates(lua_State* lua) {
 	lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
 	lua_setfield(lua, stateStackPos, "fps");
 
-	lua_pushnumber(lua, (lua_Number)JE_MAX_LOG_LEVEL);
+	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL_COMPILED);
 	lua_setfield(lua, stateStackPos, "logLevel");
 
 	lua_pushboolean(lua, true);

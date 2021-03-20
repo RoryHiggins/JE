@@ -160,9 +160,9 @@ bool jeGl_getOk(struct jeLogger logger) {
 	GLenum glError = GL_NO_ERROR;
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
-#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
+#if JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_ERR
 		jeLogger_log(
-			logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%u, message=%s", glError, gluErrorString(glError));
+			logger, JE_LOG_LEVEL_ERR, "OpenGL error, glError=%u, message=%s", glError, gluErrorString(glError));
 #endif
 		ok = false;
 	}
@@ -185,8 +185,8 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLogger logger) {
 
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
 
-#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)buffer);
+#if JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_ERR
+		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)buffer);
 #endif
 
 		ok = false;
@@ -212,8 +212,8 @@ bool jeGl_getProgramOk(GLuint program, struct jeLogger logger) {
 
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
 
-#if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)buffer);
+#if JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_ERR
+		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)buffer);
 #endif
 
 		ok = false;
@@ -733,7 +733,7 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			case SDL_KEYUP: {
-				if ((event.key.repeat == 0) || (JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_TRACE)) {
+				if ((event.key.repeat == 0) || (JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("SDL_KEYUP, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 
@@ -751,7 +751,7 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			case SDL_KEYDOWN: {
-				if ((event.key.repeat == 0) || (JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_TRACE)) {
+				if ((event.key.repeat == 0) || (JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_TRACE)) {
 					JE_DEBUG("SDL_KEYDOWN, key=%s", SDL_GetKeyName(event.key.keysym.sym));
 				}
 				break;
