@@ -6,6 +6,7 @@
 #include <j25/core/api.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 
 
 struct jeWindow;

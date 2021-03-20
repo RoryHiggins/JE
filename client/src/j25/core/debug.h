@@ -6,6 +6,7 @@
 #include <j25/core/api.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /**
  * Casts the result to void to inform the compiler that the result is not used
@@ -59,17 +60,17 @@
 struct jeLogger {
 	const char* file;
 	const char* function;
-	int line;
+	uint32_t line;
 };
-JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line);
-JE_API_PUBLIC int jeLogger_getLevel();
-JE_API_PUBLIC void jeLogger_setLevelOverride(int loggerLevelOverride);
-JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
+JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line);
+JE_API_PUBLIC uint32_t jeLogger_getLevel();
+JE_API_PUBLIC void jeLogger_setLevelOverride(uint32_t loggerLevelOverride);
+JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
 JE_API_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
 
 
-char* JE_API_PUBLIC je_temp_buffer_allocate(int size);
-char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(int size, int alignment);
+char* JE_API_PUBLIC je_temp_buffer_allocate(uint32_t size);
+char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment);
 const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) JE_API_PRINTF(1, 2);
 
 #endif

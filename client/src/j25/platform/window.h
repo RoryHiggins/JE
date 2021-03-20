@@ -6,6 +6,7 @@
 #include <j25/core/api.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define JE_INPUT_LEFT 0
 #define JE_INPUT_UP 1
@@ -28,12 +29,12 @@ JE_API_PUBLIC struct jeWindow* jeWindow_create(bool startVisible, const char* op
 JE_API_PUBLIC void jeWindow_show(struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_step(struct jeWindow* window);
 JE_API_PUBLIC void jeWindow_resetPrimitives(struct jeWindow* window);
-JE_API_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType);
+JE_API_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType);
 JE_API_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
-JE_API_PUBLIC int jeWindow_getFps(const struct jeWindow* window);
-JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, int inputId);
-JE_API_PUBLIC int jeWindow_getWidth(const struct jeWindow* window);
-JE_API_PUBLIC int jeWindow_getHeight(const struct jeWindow* window);
+JE_API_PUBLIC uint32_t jeWindow_getFps(const struct jeWindow* window);
+JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId);
+JE_API_PUBLIC uint32_t jeWindow_getWidth(const struct jeWindow* window);
+JE_API_PUBLIC uint32_t jeWindow_getHeight(const struct jeWindow* window);
 JE_API_PUBLIC void jeWindow_runTests();
 
 #endif

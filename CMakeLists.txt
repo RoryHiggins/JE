@@ -51,6 +51,22 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 		# unwanted feature warnings
 		je_add_compile_link_options(-Wshadow -Wmissing-declarations -Wpacked -Wredundant-decls)
 
+		# object size warnings (arbitrary 64mb limit)
+		je_add_compile_link_options(-Wlarger-than=67108864 -Walloc-size-larger-than=67108864)
+
+		# stack warnings (arbitrary divisors of 1mb; 1mb = default stack size on windows)
+		je_add_compile_link_options(
+			-fstack-protector -fstack-protector-all -Wstack-protector
+			-Wframe-larger-than=65535 -Wstack-usage=524288)
+
+		# extra warnings
+		je_add_compile_link_options(
+			-fanalyzer
+			-pedantic -Walloc-zero -Warray-bounds=2 -Wcast-align=strict -Wconversion -Wundef
+			-Wformat=2 -Wformat-overflow=2 -Wformat-signedness -Wformat-truncation=2
+			-Wdisabled-optimization -Wfloat-conversion -Wlogical-op -Winline -Wmultichar
+			-Wnull-dereference -Wstringop-overflow=4)
+
 		if(NOT WIN32)
 			je_add_compile_link_options(-fsanitize=address,leak,undefined -fsanitize-recover=address -fsanitize-address-use-after-scope -fstack-protector)
 		endif()

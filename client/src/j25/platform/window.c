@@ -58,7 +58,7 @@
 
 struct jeSDL {
 	bool intialized;
-	int entryCount;
+	uint32_t entryCount;
 };
 
 struct jeController {
@@ -124,7 +124,7 @@ static struct jeSDL jeSDL_sdl = {false, 0};
 bool jeSDL_initReentrant() {
 	bool ok = true;
 
-	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
+	JE_TRACE("intialized=%s, entryCount=%u", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
 
 	if (!jeSDL_sdl.intialized) {
 		const Uint32 sdl_init_flags = (
@@ -149,7 +149,7 @@ bool jeSDL_initReentrant() {
 	return ok;
 }
 void jeSDL_destroyReentrant() {
-	JE_TRACE("intialized=%s, entryCount=%d", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
+	JE_TRACE("intialized=%s, entryCount=%u", jeSDL_sdl.intialized ? "true" : "false", jeSDL_sdl.entryCount);
 
 	jeSDL_sdl.entryCount--;
 
@@ -169,7 +169,7 @@ bool jeGl_getOk(struct jeLogger logger) {
 
 	for (glError = glGetError(); glError != GL_NO_ERROR; glError = glGetError()) {
 #if JE_MAX_LOG_LEVEL <= JE_MAX_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%d, message=%s", glError, gluErrorString(glError));
+		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "OpenGL error, glError=%u, message=%s", glError, gluErrorString(glError));
 #endif
 		ok = false;
 	}
@@ -188,7 +188,7 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLogger logger) {
 
 	if (compileStatus == GL_FALSE) {
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgMaxSize);
-		buffer = malloc(msgMaxSize);
+		buffer = malloc((size_t)msgMaxSize);
 
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)buffer);
 
@@ -215,7 +215,7 @@ bool jeGl_getProgramOk(GLuint program, struct jeLogger logger) {
 
 	if (linkStatus == GL_FALSE) {
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgMaxSize);
-		buffer = malloc(msgMaxSize);
+		buffer = malloc((size_t)msgMaxSize);
 
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)buffer);
 
@@ -242,136 +242,182 @@ void jeController_destroy(struct jeController* controller) {
 	}
 }
 void jeController_create(struct jeController* controller) {
-	int i = 0;
-
 	JE_TRACE("controller=%p", (void*)controller);
 
-	memset((void*)controller, 0, sizeof(*controller));
+	struct jeController newController;
+
+	memset((void*)&newController, 0, sizeof(*controller));
 
 	/*Set default input mappings*/
 
-	controller->keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
-	controller->keys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_RIGHT);
-	controller->keys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_UP);
-	controller->keys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_DOWN);
-	controller->keys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_RETURN);
-	controller->keys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
-	controller->keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_F1);
-	controller->keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_F2);
+	newController.keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
+	newController.keys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_RIGHT);
+	newController.keys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_UP);
+	newController.keys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_DOWN);
+	newController.keys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_RETURN);
+	newController.keys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_BACKSPACE);
+	newController.keys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_F1);
+	newController.keys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_F2);
 
-	controller->altKeys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_a);
-	controller->altKeys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_d);
-	controller->altKeys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_w);
-	controller->altKeys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_s);
-	controller->altKeys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_z);
-	controller->altKeys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_x);
-	controller->altKeys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_c);
-	controller->altKeys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_v);
+	newController.altKeys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_a);
+	newController.altKeys[JE_INPUT_RIGHT] = SDL_GetScancodeFromKey(SDLK_d);
+	newController.altKeys[JE_INPUT_UP] = SDL_GetScancodeFromKey(SDLK_w);
+	newController.altKeys[JE_INPUT_DOWN] = SDL_GetScancodeFromKey(SDLK_s);
+	newController.altKeys[JE_INPUT_A] = SDL_GetScancodeFromKey(SDLK_z);
+	newController.altKeys[JE_INPUT_B] = SDL_GetScancodeFromKey(SDLK_x);
+	newController.altKeys[JE_INPUT_X] = SDL_GetScancodeFromKey(SDLK_c);
+	newController.altKeys[JE_INPUT_Y] = SDL_GetScancodeFromKey(SDLK_v);
 
-	controller->controllerButtons[JE_INPUT_LEFT] = SDL_CONTROLLER_BUTTON_DPAD_LEFT;
-	controller->controllerButtons[JE_INPUT_RIGHT] = SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
-	controller->controllerButtons[JE_INPUT_UP] = SDL_CONTROLLER_BUTTON_DPAD_UP;
-	controller->controllerButtons[JE_INPUT_DOWN] = SDL_CONTROLLER_BUTTON_DPAD_DOWN;
-	controller->controllerButtons[JE_INPUT_A] = SDL_CONTROLLER_BUTTON_A;
-	controller->controllerButtons[JE_INPUT_B] = SDL_CONTROLLER_BUTTON_B;
-	controller->controllerButtons[JE_INPUT_X] = SDL_CONTROLLER_BUTTON_X;
-	controller->controllerButtons[JE_INPUT_Y] = SDL_CONTROLLER_BUTTON_Y;
+	newController.controllerButtons[JE_INPUT_LEFT] = SDL_CONTROLLER_BUTTON_DPAD_LEFT;
+	newController.controllerButtons[JE_INPUT_RIGHT] = SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
+	newController.controllerButtons[JE_INPUT_UP] = SDL_CONTROLLER_BUTTON_DPAD_UP;
+	newController.controllerButtons[JE_INPUT_DOWN] = SDL_CONTROLLER_BUTTON_DPAD_DOWN;
+	newController.controllerButtons[JE_INPUT_A] = SDL_CONTROLLER_BUTTON_A;
+	newController.controllerButtons[JE_INPUT_B] = SDL_CONTROLLER_BUTTON_B;
+	newController.controllerButtons[JE_INPUT_X] = SDL_CONTROLLER_BUTTON_X;
+	newController.controllerButtons[JE_INPUT_Y] = SDL_CONTROLLER_BUTTON_Y;
 
-	controller->controllerAxis[JE_INPUT_LEFT] = SDL_CONTROLLER_AXIS_LEFTX;
-	controller->controllerAxis[JE_INPUT_RIGHT] = SDL_CONTROLLER_AXIS_LEFTX;
-	controller->controllerAxis[JE_INPUT_UP] = SDL_CONTROLLER_AXIS_LEFTY;
-	controller->controllerAxis[JE_INPUT_DOWN] = SDL_CONTROLLER_AXIS_LEFTY;
-	controller->controllerAxis[JE_INPUT_A] = SDL_CONTROLLER_AXIS_INVALID;
-	controller->controllerAxis[JE_INPUT_B] = SDL_CONTROLLER_AXIS_INVALID;
-	controller->controllerAxis[JE_INPUT_X] = SDL_CONTROLLER_AXIS_INVALID;
-	controller->controllerAxis[JE_INPUT_Y] = SDL_CONTROLLER_AXIS_INVALID;
+	newController.controllerAxis[JE_INPUT_LEFT] = SDL_CONTROLLER_AXIS_LEFTX;
+	newController.controllerAxis[JE_INPUT_RIGHT] = SDL_CONTROLLER_AXIS_LEFTX;
+	newController.controllerAxis[JE_INPUT_UP] = SDL_CONTROLLER_AXIS_LEFTY;
+	newController.controllerAxis[JE_INPUT_DOWN] = SDL_CONTROLLER_AXIS_LEFTY;
+	newController.controllerAxis[JE_INPUT_A] = SDL_CONTROLLER_AXIS_INVALID;
+	newController.controllerAxis[JE_INPUT_B] = SDL_CONTROLLER_AXIS_INVALID;
+	newController.controllerAxis[JE_INPUT_X] = SDL_CONTROLLER_AXIS_INVALID;
+	newController.controllerAxis[JE_INPUT_Y] = SDL_CONTROLLER_AXIS_INVALID;
 
-	controller->controllerAxisDir[JE_INPUT_LEFT] = -1.0f;
-	controller->controllerAxisDir[JE_INPUT_RIGHT] = 1.0f;
-	controller->controllerAxisDir[JE_INPUT_UP] = -1.0f;
-	controller->controllerAxisDir[JE_INPUT_DOWN] = 1.0f;
-	controller->controllerAxisDir[JE_INPUT_A] = 0.0f;
-	controller->controllerAxisDir[JE_INPUT_B] = 0.0f;
-	controller->controllerAxisDir[JE_INPUT_X] = 0.0f;
-	controller->controllerAxisDir[JE_INPUT_Y] = 0.0f;
+	newController.controllerAxisDir[JE_INPUT_LEFT] = -1.0f;
+	newController.controllerAxisDir[JE_INPUT_RIGHT] = 1.0f;
+	newController.controllerAxisDir[JE_INPUT_UP] = -1.0f;
+	newController.controllerAxisDir[JE_INPUT_DOWN] = 1.0f;
+	newController.controllerAxisDir[JE_INPUT_A] = 0.0f;
+	newController.controllerAxisDir[JE_INPUT_B] = 0.0f;
+	newController.controllerAxisDir[JE_INPUT_X] = 0.0f;
+	newController.controllerAxisDir[JE_INPUT_Y] = 0.0f;
 
-	controller->controllerAxisThreshold = 0.1;
+	newController.controllerAxisThreshold = 0.1f;
 
 	/*Find the first connected game controller and use that*/
 	JE_DEBUG("numJoysticks=%d", SDL_NumJoysticks());
-	for (i = 0; i < SDL_NumJoysticks(); ++i) {
+	for (int i = 0; i < SDL_NumJoysticks(); ++i) {
 		if (SDL_IsGameController(i)) {
 			JE_DEBUG("index=%d", i);
-			controller->controller = SDL_GameControllerOpen(i);
+			newController.controller = SDL_GameControllerOpen(i);
 			break;
 		}
 	}
-	if (controller->controller == NULL) {
+	if (newController.controller == NULL) {
 		JE_DEBUG("No compatible game controller found");
+	}
+
+	if (controller == NULL) {
+		JE_ERROR("controller=NULL");
+	} else {
+		*controller = newController;
 	}
 }
 
 bool jeWindow_getIsOpen(const struct jeWindow* window) {
-	JE_TRACE("window=%p, open=%d", (void*)window, (int)window->open);
+	bool open = false;
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		open = window->open;
+	}
 
-	return window->open;
+	JE_TRACE("window=%p, open=%u", (void*)window, (uint32_t)open);
+
+	return open;
 }
-int jeWindow_getWidth(const struct jeWindow* window) {
+uint32_t jeWindow_getWidth(const struct jeWindow* window) {
 	int width = 0;
 	int height = 0;
 
-	SDL_GetWindowSize(window->window, &width, &height);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		SDL_GetWindowSize(window->window, &width, &height);
+	}
 
-	JE_TRACE("window=%p, height=%d", (void*)window, width);
+	JE_TRACE("window=%p, width=%d", (void*)window, width);
 
-	return width;
+	return (uint32_t) width;
 }
-int jeWindow_getHeight(const struct jeWindow* window) {
+uint32_t jeWindow_getHeight(const struct jeWindow* window) {
 	int width = 0;
 	int height = 0;
 
-	SDL_GetWindowSize(window->window, &width, &height);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		SDL_GetWindowSize(window->window, &width, &height);
+	}
 
 	JE_TRACE("window=%p, height=%d", (void*)window, height);
 
-	return height;
+	return (uint32_t)height;
 }
 bool jeWindow_clear(struct jeWindow* window) {
 	bool ok = true;
 
 	JE_TRACE("window=%p", (void*)window);
 
-	if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
-		JE_ERROR("SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
 		ok = false;
 	}
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (ok) {
+		if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
+			JE_ERROR("SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
+			ok = false;
+		}
+	}
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	if (ok) {
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_DEPTH_BUFFER_BIT);
+	}
 
 	return ok;
 }
 void jeWindow_resetPrimitives(struct jeWindow* window) {
 	JE_TRACE("window=%p", (void*)window);
 
-	jeVertexBuffer_reset(&window->vertexBuffer);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		jeVertexBuffer_reset(&window->vertexBuffer);
+	}
 }
-void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType) {
-	JE_TRACE("window=%p, primitiveType=%d", (void*)window, primitiveType);
+void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType) {
+	JE_TRACE("window=%p, primitiveType=%u", (void*)window, primitiveType);
 
-	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
+	}
 }
 bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	bool ok = true;
 
-	int vertexCount = window->vertexBuffer.vertices.count;
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
 
-	JE_TRACE("window=%p, vertexCount=%d", (void*)window, vertexCount);
+	uint32_t vertexCount = 0;
+	if (ok) {
+		vertexCount = window->vertexBuffer.vertices.count;
 
-	ok = ok && jeVertexBuffer_sort(&window->vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES);
+		ok = jeVertexBuffer_sort(&window->vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES);
+	}
+
+	JE_TRACE("window=%p, vertexCount=%u", (void*)window, vertexCount);
 
 	if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
 		JE_ERROR("SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
@@ -383,8 +429,8 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 		glBindVertexArray(window->vao);
 
 		const GLvoid* vertexData = (const GLvoid*)window->vertexBuffer.vertices.data;
-		glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(struct jeVertex), vertexData, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(vertexCount * sizeof(struct jeVertex)), vertexData, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertexCount);
 
 		glBindVertexArray(0);
 		glUseProgram(0);
@@ -397,12 +443,16 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_destroyGL(struct jeWindow* window) {
-	bool canUseContext = (window->window != NULL) && (window->context != NULL);
-	canUseContext = canUseContext && (SDL_GL_MakeCurrent(window->window, window->context) == 0);
+	bool hasGLContext = (
+		(window != NULL)
+		&& (window->window != NULL)
+		&& (window->context != NULL)
+		&& (SDL_GL_MakeCurrent(window->window, window->context) == 0)
+	);
 
-	JE_DEBUG("window=%p, canUseContext=%d", (void*)window, (int)canUseContext);
+	JE_DEBUG("window=%p, hasGLContext=%u", (void*)window, (uint32_t)hasGLContext);
 
-	if (canUseContext) {
+	if (hasGLContext) {
 		if (window->vao != 0) {
 			JE_TRACE("deleting vao, vao=%u", window->vao);
 
@@ -443,7 +493,7 @@ void jeWindow_destroyGL(struct jeWindow* window) {
 		}
 	}
 
-	if (window->context != NULL) {
+	if ((window != NULL) && (window->context != NULL)) {
 		JE_TRACE("deleting context, context=%p", (void*)window->context);
 
 		SDL_GL_DeleteContext(window->context);
@@ -454,6 +504,11 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	JE_DEBUG("window=%p", (void*)window);
 
 	bool ok = true;
+
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
 
 	if (ok) {
 		window->context = SDL_GL_CreateContext(window->window);
@@ -495,7 +550,7 @@ bool jeWindow_initGL(struct jeWindow* window) {
 
 		glDisable(GL_CULL_FACE);
 
-		glViewport(0, 0, jeWindow_getWidth(window), jeWindow_getHeight(window));
+		glViewport(0, 0, (GLsizei)jeWindow_getWidth(window), (GLsizei)jeWindow_getHeight(window));
 
 		if (jeGl_getOk(JE_LOG_CONTEXT) == false) {
 			JE_ERROR("jeGl_getOk() error");
@@ -558,7 +613,7 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	if (ok) {
 		glGenTextures(1, &window->texture);
 		glBindTexture(GL_TEXTURE_2D, window->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window->image.width, window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)window->image.width, (GLsizei)window->image.height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, window->image.buffer.data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -583,7 +638,7 @@ bool jeWindow_initGL(struct jeWindow* window) {
 		scaleXyz[0] = 2.0f / JE_WINDOW_MIN_WIDTH;
 		scaleXyz[1] = -2.0f / JE_WINDOW_MIN_HEIGHT;
 
-		/*Normalize z to between -1.0 and 1.0.  Supports depths +/- 2^20.  Near the precise int limit for float32*/
+		/*Normalize z to between -1.0 and 1.0.  Supports depths +/- 2^20.  Near the precise uint32_t limit for float32*/
 		scaleXyz[2] = 1.0f / (float)(1 << 20);
 
 		/*Converts image coords to normalized texture coords (0.0 to 1.0)*/
@@ -603,9 +658,9 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	}
 
 	if (ok) {
-		GLint srcPosLocation = glGetAttribLocation(window->program, "srcPos");
-		GLint srcColLocation = glGetAttribLocation(window->program, "srcCol");
-		GLint srcUvLocation = glGetAttribLocation(window->program, "srcUv");
+		GLuint srcPosLocation = (GLuint)glGetAttribLocation(window->program, "srcPos");
+		GLuint srcColLocation = (GLuint)glGetAttribLocation(window->program, "srcCol");
+		GLuint srcUvLocation = (GLuint)glGetAttribLocation(window->program, "srcUv");
 
 		glEnableVertexAttribArray(srcPosLocation);
 		glEnableVertexAttribArray(srcColLocation);
@@ -631,15 +686,24 @@ bool jeWindow_initGL(struct jeWindow* window) {
 void jeWindow_show(struct jeWindow* window) {
 	JE_TRACE("window=%p", (void*)window);
 
-	SDL_ShowWindow(window->window);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		SDL_ShowWindow(window->window);
+	}
 }
 bool jeWindow_step(struct jeWindow* window) {
 	JE_TRACE("window=%p", (void*)window);
 
 	bool ok = true;
 
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
+
 	SDL_Event event;
-	while (SDL_PollEvent(&event)) {
+	while (ok && SDL_PollEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT: {
 				JE_DEBUG("Quit event received");
@@ -651,7 +715,7 @@ bool jeWindow_step(struct jeWindow* window) {
 					case SDL_WINDOWEVENT_RESIZED:
 					case SDL_WINDOWEVENT_SIZE_CHANGED: {
 						JE_DEBUG(
-							"resizing window to width=%d, height=%d",
+							"resizing window to width=%u, height=%u",
 							jeWindow_getWidth(window),
 							jeWindow_getHeight(window)
 						);
@@ -724,7 +788,7 @@ bool jeWindow_step(struct jeWindow* window) {
 				break;
 			}
 			default: {
-				JE_TRACE("unhandled event, event.type=%d", event.type);
+				JE_TRACE("unhandled event, event.type=%u", event.type);
 				break;
 			}
 		}
@@ -748,7 +812,7 @@ bool jeWindow_step(struct jeWindow* window) {
 
 			float sampleDuration = ((float)timeMs - (float)window->fpsLastSampleTimeMs) / 1000.0f;
 			float sampleFrameDuration = sampleDuration / (float)JE_WINDOW_FRAME_RATE;
-			window->fpsEstimate = (int)(1.0f / sampleFrameDuration);
+			window->fpsEstimate = (uint32_t)(1.0f / sampleFrameDuration);
 			window->fpsLastSampleTimeMs = timeMs;
 		}
 
@@ -774,7 +838,7 @@ bool jeWindow_step(struct jeWindow* window) {
 		window->nextFrameTimeMs += frameDurationMs;
 	}
 
-	if (!ok) {
+	if (!ok && (window != NULL)) {
 		window->open = false;
 	}
 
@@ -810,9 +874,17 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 	bool ok = true;
 
 	struct jeWindow* window = (struct jeWindow*)malloc(sizeof(struct jeWindow));
-	memset((void*)window, 0, sizeof(*window));
 
-	ok = ok && jeSDL_initReentrant();
+	if (window == NULL) {
+		JE_ERROR("malloc() failed");
+		ok = false;
+	}
+
+	if (ok) {
+		memset((void*)window, 0, sizeof(struct jeWindow));
+
+		ok = ok && jeSDL_initReentrant();
+	}
 
 	if (ok) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -893,51 +965,66 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 
 	return window;
 }
-bool jeWindow_getInput(const struct jeWindow* window, int inputId) {
+bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId) {
 	static const float axisMaxValue = 32767;
 
-	JE_TRACE("window=%p, inputId=%d", (void*)window, inputId);
+	JE_TRACE("window=%p, inputId=%u", (void*)window, inputId);
+
+	bool ok = true;
+
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
 
 	bool pressed = false;
 
-	SDL_Scancode key = window->controller.keys[inputId];
-	SDL_Scancode altKey = window->controller.altKeys[inputId];
-	SDL_GameControllerButton controllerButton = SDL_CONTROLLER_BUTTON_INVALID;
-	SDL_GameControllerAxis controllerAxis = SDL_CONTROLLER_AXIS_INVALID;
-	float controllerAxisDir = 0;
-	float axisMinValue = axisMaxValue / window->controller.controllerAxisThreshold;
+	if (ok) {
+		SDL_Scancode key = window->controller.keys[inputId];
+		SDL_Scancode altKey = window->controller.altKeys[inputId];
+		SDL_GameControllerButton controllerButton = SDL_CONTROLLER_BUTTON_INVALID;
+		SDL_GameControllerAxis controllerAxis = SDL_CONTROLLER_AXIS_INVALID;
+		float controllerAxisDir = 0;
+		float axisMinValue = axisMaxValue / window->controller.controllerAxisThreshold;
 
-	if (window->controller.controller != NULL) {
-		controllerButton = window->controller.controllerButtons[inputId];
-		controllerAxis = window->controller.controllerAxis[inputId];
-		controllerAxisDir = window->controller.controllerAxisDir[inputId];
-	}
+		if (window->controller.controller != NULL) {
+			controllerButton = window->controller.controllerButtons[inputId];
+			controllerAxis = window->controller.controllerAxis[inputId];
+			controllerAxisDir = window->controller.controllerAxisDir[inputId];
+		}
 
-	if (key != SDL_SCANCODE_UNKNOWN) {
-		pressed = pressed || window->keyState[key];
-	}
+		if (key != SDL_SCANCODE_UNKNOWN) {
+			pressed = pressed || window->keyState[key];
+		}
 
-	if (altKey != SDL_SCANCODE_UNKNOWN) {
-		pressed = pressed || window->keyState[altKey];
-	}
+		if (altKey != SDL_SCANCODE_UNKNOWN) {
+			pressed = pressed || window->keyState[altKey];
+		}
 
-	if (controllerButton != SDL_CONTROLLER_BUTTON_INVALID) {
-		pressed = pressed || SDL_GameControllerGetButton(window->controller.controller, controllerButton);
-	}
+		if (controllerButton != SDL_CONTROLLER_BUTTON_INVALID) {
+			pressed = pressed || SDL_GameControllerGetButton(window->controller.controller, controllerButton);
+		}
 
-	if (controllerAxis != SDL_CONTROLLER_AXIS_INVALID) {
-		float axisValue = (float)SDL_GameControllerGetAxis(window->controller.controller, controllerAxis) * controllerAxisDir;
-		pressed = pressed || (axisValue > axisMinValue);
+		if (controllerAxis != SDL_CONTROLLER_AXIS_INVALID) {
+			float axisValue = (float)SDL_GameControllerGetAxis(window->controller.controller, controllerAxis) * controllerAxisDir;
+			pressed = pressed || (axisValue > axisMinValue);
+		}
 	}
 
 	return pressed;
 }
-int jeWindow_getFps(const struct jeWindow* window) {
-	JE_TRACE("window=%p, fpsEstimate=%d", (void*)window, window->fpsEstimate);
+uint32_t jeWindow_getFps(const struct jeWindow* window) {
+	uint32_t fpsEstimate = 0;
 
-	JE_MAYBE_UNUSED(window);
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+	} else {
+		fpsEstimate = window->fpsEstimate;
+	}
 
-	return window->fpsEstimate;
+	JE_TRACE("window=%p, fpsEstimate=%u", (void*)window, fpsEstimate);
+
+	return fpsEstimate;
 }
 
 void jeWindow_runTests() {
@@ -956,7 +1043,7 @@ void jeWindow_runTests() {
 	JE_ASSERT(jeWindow_getIsOpen(window));
 	JE_ASSERT(jeWindow_getWidth(window) == JE_WINDOW_START_WIDTH);
 	JE_ASSERT(jeWindow_getHeight(window) == JE_WINDOW_START_HEIGHT);
-	for (int i = 0; i < JE_INPUT_COUNT; i++) {
+	for (uint32_t i = 0; i < JE_INPUT_COUNT; i++) {
 		jeWindow_getInput(window, i);
 	}
 	jeWindow_getFps(window);

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
@@ -17,7 +18,7 @@
 
 void jeErr();
 
-const char* jeLoggerLevel_getLabel(int loggerLevel);
+const char* jeLoggerLevel_getLabel(uint32_t loggerLevel);
 
 const char *__asan_default_options();
 
@@ -27,7 +28,7 @@ void jeErr() {
 }
 
 
-const char* jeLoggerLevel_getLabel(int loggerLevel) {
+const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
 	const char* label = "";
 	switch (loggerLevel) {
 		case JE_MAX_LOG_LEVEL_TRACE: {
@@ -51,14 +52,14 @@ const char* jeLoggerLevel_getLabel(int loggerLevel) {
 			break;
 		}
 		default: {
-			JE_WARN("unknown logger level, loggerLevel=%d", loggerLevel);
+			JE_WARN("unknown logger level, loggerLevel=%u", loggerLevel);
 		}
 	}
 	return label;
 }
 
 
-struct jeLogger jeLogger_create(const char* file, const char* function, int line) {
+struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line) {
 	struct jeLogger logger = {0};
 	logger.file = file;
 	logger.function = function;
@@ -68,25 +69,25 @@ struct jeLogger jeLogger_create(const char* file, const char* function, int line
 }
 
 
-int jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
-int jeLogger_getLevel() {
+uint32_t jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
+uint32_t jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }
-void jeLogger_setLevelOverride(int levelOverride) {
+void jeLogger_setLevelOverride(uint32_t levelOverride) {
 	if (levelOverride < JE_MAX_LOG_LEVEL) {
-		JE_ERROR("invalid levelOverride below compiled minimum, levelOverride=%d, JE_MAX_LOG_LEVEL=%d", levelOverride, JE_MAX_LOG_LEVEL);
+		JE_ERROR("invalid levelOverride below compiled minimum, levelOverride=%u, JE_MAX_LOG_LEVEL=%d", levelOverride, JE_MAX_LOG_LEVEL);
 		levelOverride = JE_MAX_LOG_LEVEL;
 	}
 	jeLogger_levelOverride = levelOverride;
 }
-void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...) {
+void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...) {
 	if (jeLogger_levelOverride <= loggerLevel) {
 		if (loggerLevel <= JE_MAX_LOG_LEVEL_ERR) {
 			jeErr();
 		}
 
 		const char* label = jeLoggerLevel_getLabel(loggerLevel);
-		fprintf(stdout, "[%s %s:%d] %s() ", label, logger.file, logger.line, logger.function);
+		fprintf(stdout, "[%s %s:%u] %s() ", label, logger.file, logger.line, logger.function);
 
 		va_list args;
 		va_start(args, formatStr);
@@ -105,15 +106,15 @@ void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionS
 }
 
 
-char* je_temp_buffer_allocate(int size) {
-	static int currentSize = 0;
+char* je_temp_buffer_allocate(uint32_t size) {
+	static uint32_t currentSize = 0;
 	static char buffer[JE_TEMP_BUFFER_CAPACITY] = {0};
 
 	if ((currentSize + size) > JE_TEMP_BUFFER_CAPACITY) {
 		currentSize = 0;
 	}
 	if (size > JE_TEMP_BUFFER_CAPACITY) {
-		JE_ERROR("requested size above capacity, size=%d", size);
+		JE_ERROR("requested size above capacity, size=%u", size);
 		size = JE_TEMP_BUFFER_CAPACITY;
 	}
 
@@ -123,7 +124,12 @@ char* je_temp_buffer_allocate(int size) {
 
 	return pos;
 }
-char* je_temp_buffer_allocate_aligned(int size, int alignment) {
+char* je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment) {
+	if (alignment == 0) {
+		JE_ERROR("requested 0 alignment");
+		alignment = 1;
+	}
+
 	size_t unaligned = (size_t)je_temp_buffer_allocate(size + alignment);
 
 	return (char*)(((unaligned + alignment - 1) / alignment) * alignment);
@@ -140,7 +146,7 @@ const char* je_temp_buffer_format(const char* format_str, ...) {
 		computedCount = 0;
 	}
 
-	int allocation_count = computedCount + 1;
+	uint32_t allocation_count = (uint32_t)(computedCount + 1);
 	char* allocation = je_temp_buffer_allocate(allocation_count);
 	vsnprintf(allocation, (size_t)allocation_count, format_str, args);
 
