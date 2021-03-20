@@ -58,11 +58,11 @@ int jePrimitiveType_getVertexCount(int primitiveType) {
 
 	return vertexCount;
 }
-const char* jePrimitiveType_toDebugString(const struct jeVertex* vertices, int primitiveType) {
+const char* jePrimitiveType_getDebugString(const struct jeVertex* vertices, int primitiveType) {
 	JE_TRACE("vertices=%p, primitiveType=%d", (void*)vertices, primitiveType);
 
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
-	return jeVertex_arrayToDebugString(vertices, primitiveVertexCount);
+	return jeVertex_arraygetDebugString(vertices, primitiveVertexCount);
 }
 int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
 	const struct jePrimitiveSortKey* sortKeyA = (const struct jePrimitiveSortKey*)rawSortKeyA;
@@ -82,7 +82,7 @@ int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
 	return result;
 }
 
-const char* jeVertex_toDebugString(const struct jeVertex* vertex) {
+const char* jeVertex_getDebugString(const struct jeVertex* vertex) {
 	JE_TRACE("vertex=%p", (void*)vertex);
 
 	static char buffer[JE_VERTEX_DEBUG_STRING_BUFFER_SIZE];
@@ -96,7 +96,7 @@ const char* jeVertex_toDebugString(const struct jeVertex* vertex) {
 
 	return buffer;
 }
-const char* jeVertex_arrayToDebugString(const struct jeVertex* vertices, int vertexCount) {
+const char* jeVertex_arraygetDebugString(const struct jeVertex* vertices, int vertexCount) {
 	JE_TRACE("vertices=%p, vertexCount=%d", (void*)vertices, vertexCount);
 
 	static char buffer[JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE];
@@ -122,7 +122,7 @@ const char* jeVertex_arrayToDebugString(const struct jeVertex* vertices, int ver
 			JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE - bufferOffset,
 			"vertex[%d]={%s}",
 			i,
-			jeVertex_toDebugString(&vertices[i])
+			jeVertex_getDebugString(&vertices[i])
 		);
 	}
 
@@ -316,7 +316,7 @@ bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, int primitiveType)
 	return ok;
 }
 void jeVertexBuffer_pushPrimitive(struct jeVertexBuffer* vertexBuffer, const struct jeVertex* vertices, int primitiveType) {
-	JE_TRACE("vertexBuffer=%p, primitiveType=%d, vertices=%s", (void*)vertexBuffer, primitiveType, jePrimitiveType_toDebugString(vertices, primitiveType));
+	JE_TRACE("vertexBuffer=%p, primitiveType=%d, vertices=%s", (void*)vertexBuffer, primitiveType, jePrimitiveType_getDebugString(vertices, primitiveType));
 
 	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT];
 	switch (primitiveType) {
@@ -433,18 +433,18 @@ void jeRendering_runTests() {
 	JE_DEBUG(" ");
 
 	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
-	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
+	JE_ASSERT(jeVertex_getDebugString(vertices) != NULL);
 	for (int i = 0; i < (int)(sizeof(struct jeVertex) / sizeof(float)); i++) {
 		((float*)vertices)[i] = 1.0f / 3.0f;
 	}
-	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
-	JE_ASSERT(strlen(jeVertex_toDebugString(vertices)) < JE_VERTEX_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(jeVertex_getDebugString(vertices) != NULL);
+	JE_ASSERT(strlen(jeVertex_getDebugString(vertices)) < JE_VERTEX_DEBUG_STRING_BUFFER_SIZE);
 
 	for (int i = 1; i < JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT; i++) {
 		vertices[i] = vertices[0];
 	}
-	JE_ASSERT(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT) != NULL);
-	JE_ASSERT(strlen(jeVertex_arrayToDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT)) < JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(jeVertex_arraygetDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT) != NULL);
+	JE_ASSERT(strlen(jeVertex_arraygetDebugString(vertices, JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT)) < JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE);
 
 	struct jeVertex primitiveVertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	memset((void*)primitiveVertices, 0, sizeof(primitiveVertices));
@@ -457,8 +457,8 @@ void jeRendering_runTests() {
 	JE_ASSERT(jePrimitiveType_getVertexCount(JE_PRIMITIVE_TYPE_SPRITES) > 0);
 	JE_ASSERT(jePrimitiveType_getVertexCount(JE_PRIMITIVE_TYPE_TRIANGLES) > 0);
 	JE_ASSERT(jePrimitiveType_getVertexCount(JE_PRIMITIVE_TYPE_QUADS) > 0);
-	JE_ASSERT(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS) != NULL);
-	JE_ASSERT(strlen(jePrimitiveType_toDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS)) < JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE);
+	JE_ASSERT(jePrimitiveType_getDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS) != NULL);
+	JE_ASSERT(strlen(jePrimitiveType_getDebugString(vertices, JE_PRIMITIVE_TYPE_QUADS)) < JE_PRIMITIVE_TYPE_DEBUG_STRING_BUFFER_SIZE);
 
 	struct jeVertexBuffer vertexBuffer;
 	JE_ASSERT(jeVertexBuffer_create(&vertexBuffer));
@@ -475,23 +475,23 @@ void jeRendering_runTests() {
 	vertices[3].z = 1;
 	jeVertexBuffer_pushPrimitive(&vertexBuffer, vertices, JE_PRIMITIVE_TYPE_QUADS);
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->x == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->z == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT + JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
 
 	JE_ASSERT(jeVertexBuffer_sort(&vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES));
 	JE_ASSERT(vertexBuffer.vertices.count == (JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT * 2));
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->x == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->y == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, 0))->z == 1);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
-	JE_ASSERT(((struct jeVertex*)jeArray_getElement(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->x == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->y == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, 0))->z == 1);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_TRIANGLES_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->x == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->y == 0);
+	JE_ASSERT(((struct jeVertex*)jeArray_get(&vertexBuffer.vertices, JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT))->z == 0);
 
 	jeVertexBuffer_reset(&vertexBuffer);
 	JE_ASSERT(vertexBuffer.vertices.count == 0);

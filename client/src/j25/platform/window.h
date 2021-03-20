@@ -23,15 +23,15 @@
 struct jeVertex;
 struct jeWindow;
 
-JE_PUBLIC void jeWindow_destroy(struct jeWindow* window);
-JE_PUBLIC struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename);
-JE_PUBLIC void jeWindow_show(struct jeWindow* window);
-JE_PUBLIC bool jeWindow_step(struct jeWindow* window);
-JE_PUBLIC void jeWindow_resetPrimitives(struct jeWindow* window);
-JE_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType);
-JE_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
-JE_PUBLIC int jeWindow_getFps(const struct jeWindow* window);
-JE_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, int inputId);
-JE_PUBLIC void jeWindow_runTests();
+JE_API_PUBLIC void jeWindow_destroy(struct jeWindow* window);
+JE_API_PUBLIC struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename);
+JE_API_PUBLIC void jeWindow_show(struct jeWindow* window);
+JE_API_PUBLIC bool jeWindow_step(struct jeWindow* window);
+JE_API_PUBLIC void jeWindow_resetPrimitives(struct jeWindow* window);
+JE_API_PUBLIC void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType);
+JE_API_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
+JE_API_PUBLIC int jeWindow_getFps(const struct jeWindow* window);
+JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, int inputId);
+JE_API_PUBLIC void jeWindow_runTests();
 
 #endif

@@ -379,7 +379,7 @@ void jeLua_drawPrimitiveImpl(lua_State* lua, int primitiveType) {
 	jeLua_getPrimitiveImpl(lua, vertices, vertexCount);
 
 	JE_TRACE("lua=%p, primitiveType=%d, vertexCount=%d, vertices={%s}",
-			 (void*)lua, primitiveType, vertexCount, jeVertex_arrayToDebugString(vertices, vertexCount));
+			 (void*)lua, primitiveType, vertexCount, jeVertex_arraygetDebugString(vertices, vertexCount));
 	jeWindow_pushPrimitive(window, vertices, primitiveType);
 }
 int jeLua_drawPoint(lua_State* lua) {
@@ -427,7 +427,7 @@ int jeLua_drawText(lua_State* lua) {
 	jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
 	textBoundsVertices[1] = textBoundsVertices[0];
 
-	JE_TRACE("lua=%p, text=%s, textBoundsVertices=%s", (void*)lua, text, jeVertex_arrayToDebugString(textBoundsVertices, 2));
+	JE_TRACE("lua=%p, text=%s, textBoundsVertices=%s", (void*)lua, text, jeVertex_arraygetDebugString(textBoundsVertices, 2));
 	for (int i = 0; i < textLength; i++) {
 		static const char charDefault = ' ';
 
@@ -455,7 +455,7 @@ int jeLua_drawText(lua_State* lua) {
 		charVertices[1].u += charW;
 		charVertices[1].v += charH;
 
-		JE_TRACE("lua=%p, charVertices={%s}", (void*)lua, jeVertex_arrayToDebugString(charVertices, 2));
+		JE_TRACE("lua=%p, charVertices={%s}", (void*)lua, jeVertex_arraygetDebugString(charVertices, 2));
 		jeWindow_pushPrimitive(jeLua_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
 	}
 
@@ -642,12 +642,12 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
 
 	if (ok) {
-		client->window = jeWindow_create(/*startVisible*/ true, jeString_getElement(&spritesFilename, 0));
+		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename, 0));
 	}
 
 	ok = ok && (client->window != NULL);
 
-	ok = ok && jeLua_run(client->window, jeString_getElement(&luaMainFilename, 0), argumentCount, arguments);
+	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename, 0), argumentCount, arguments);
 
 	jeWindow_destroy(client->window);
 

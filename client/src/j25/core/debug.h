@@ -55,15 +55,20 @@
 #define JE_TRACE(...)
 #endif
 
+
 struct jeLogger {
 	const char* file;
 	const char* function;
 	int line;
 };
-JE_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line);
-JE_PUBLIC int jeLogger_getLevel();
-JE_PUBLIC void jeLogger_setLevelOverride(int loggerLevelOverride);
-JE_PUBLIC void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
-JE_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
+JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line);
+JE_API_PUBLIC int jeLogger_getLevel();
+JE_API_PUBLIC void jeLogger_setLevelOverride(int loggerLevelOverride);
+JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
+JE_API_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
+
+
+char* JE_API_PUBLIC je_temp_buffer_allocate(int size);
+const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) JE_API_PRINTF(1, 2);
 
 #endif

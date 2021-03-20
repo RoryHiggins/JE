@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdarg.h>
+#include <string.h>
 #include <stdio.h>
 
 #define JE_LOG_LABEL_TRACE "trace"
@@ -9,6 +10,9 @@
 #define JE_LOG_LABEL_INFO  "info "
 #define JE_LOG_LABEL_WARN  "WARN "
 #define JE_LOG_LABEL_ERR   "ERROR"
+
+
+#define JE_TEMP_BUFFER_CAPACITY 262144
 
 
 void jeErr() {
@@ -92,6 +96,53 @@ void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionS
 		jeLogger_log(logger, JE_MAX_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
 }
+
+
+char* JE_API_PUBLIC je_temp_buffer_allocate(int size) {
+	static int currentSize = 0;
+	static char buffer[JE_TEMP_BUFFER_CAPACITY] = {0};
+
+	if ((currentSize + size) > JE_TEMP_BUFFER_CAPACITY) {
+		currentSize = 0;
+	}
+	if (size > JE_TEMP_BUFFER_CAPACITY) {
+		JE_ERROR("requested size above capacity, size=%d", size);
+		size = JE_TEMP_BUFFER_CAPACITY;
+	}
+
+	char* pos = buffer + currentSize;
+	memset((void*)pos, 0, size);
+	currentSize += size;
+
+	return pos;
+}
+char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(int size, int alignment) {
+	size_t unaligned = (size_t)je_temp_buffer_allocate(size + alignment);
+
+	return (char*)(((unaligned + alignment - 1) / alignment) * alignment);
+}
+const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) {
+	va_list args;
+	va_start(args, format_str);
+
+	va_list computeSizeArgs;
+	va_copy(computeSizeArgs, args);
+
+	int computedCount = vsnprintf(/*buffer*/ (void*)NULL, 0, format_str, computeSizeArgs);
+	if (computedCount < 0) {
+		computedCount = 0;
+	}
+
+	int allocation_count = computedCount + 1;
+	char* allocation = je_temp_buffer_allocate(allocation_count);
+	vsnprintf(allocation, (size_t)allocation_count, format_str, args);
+
+	va_end(computeSizeArgs);
+	va_end(args);
+
+	return allocation;
+}
+
 
 /* Parameters for AddressSanitizer; https://github.com/google/sanitizers/wiki/AddressSanitizerFlags */
 const char *__asan_default_options() {
