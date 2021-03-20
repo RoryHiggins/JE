@@ -10,9 +10,11 @@
 #define JE_LOG_LABEL_WARN  "WARN "
 #define JE_LOG_LABEL_ERR   "ERROR"
 
+
 void jeErr() {
-	/*dummy function to breakpoint errors*/
+	/* dummy function to breakpoint on an error */
 }
+
 
 const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	const char* label = "";
@@ -44,16 +46,18 @@ const char* jeLoggerLevel_getLabel(int loggerLevel) {
 	return label;
 }
 
-int jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
-JE_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line) {
-	struct jeLogger logger;
 
+struct jeLogger jeLogger_create(const char* file, const char* function, int line) {
+	struct jeLogger logger = {0};
 	logger.file = file;
 	logger.function = function;
 	logger.line = line;
 
 	return logger;
 }
+
+
+int jeLogger_levelOverride = JE_MAX_LOG_LEVEL;
 int jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }

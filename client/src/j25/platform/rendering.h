@@ -26,13 +26,6 @@
 JE_PUBLIC int jePrimitiveType_getVertexCount(int primitiveType);
 
 
-struct jeColor {
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
-	unsigned char a;
-};
-
 struct jeVertex {
 	float x;
 	float y;
@@ -47,7 +40,7 @@ struct jeVertex {
 	float u;
 	float v;
 };
-JE_PUBLIC const char* jeVertex_toDebugString(const struct jeVertex* vertices);
+JE_PUBLIC const char* jeVertex_toDebugString(const struct jeVertex* vertex);
 JE_PUBLIC const char* jeVertex_arrayToDebugString(const struct jeVertex* vertices, int vertexCount);
 JE_PUBLIC void jeVertex_createPointQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]);
 JE_PUBLIC void jeVertex_createLineQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]);
@@ -64,12 +57,20 @@ JE_PUBLIC bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, int prim
 JE_PUBLIC void jeVertexBuffer_pushPrimitive(struct jeVertexBuffer* vertexBuffer, const struct jeVertex* vertices, int primitiveType);
 
 
+struct jeColorRGBA32 {
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+	unsigned char a;
+};
+
+
 struct jeImage {
 	int width;
 	int height;
 	struct jeArray buffer;
 };
-JE_PUBLIC bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor fillColor);
+JE_PUBLIC bool jeImage_create(struct jeImage* image, int width, int height, struct jeColorRGBA32 fillColor);
 JE_PUBLIC bool jeImage_createFromFile(struct jeImage* image, const char* filename);
 JE_PUBLIC void jeImage_destroy(struct jeImage* image);
 

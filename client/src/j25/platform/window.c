@@ -213,7 +213,7 @@ bool jeGl_getProgramOk(GLuint program, struct jeLogger logger) {
 }
 
 void jeController_destroy(struct jeController* controller) {
-	JE_TRACE("controller=%p", controller);
+	JE_TRACE("controller=%p", (void*)controller);
 
 	if (controller->controller != NULL) {
 		SDL_GameControllerClose(controller->controller);
@@ -223,7 +223,7 @@ void jeController_destroy(struct jeController* controller) {
 void jeController_create(struct jeController* controller) {
 	int i = 0;
 
-	JE_TRACE("controller=%p", controller);
+	JE_TRACE("controller=%p", (void*)controller);
 
 	memset((void*)controller, 0, sizeof(*controller));
 
@@ -286,12 +286,12 @@ void jeController_create(struct jeController* controller) {
 		}
 	}
 	if (controller->controller == NULL) {
-		JE_DEBUG("No compatible game controller found", i);
+		JE_DEBUG("No compatible game controller found");
 	}
 }
 
 bool jeWindow_getIsOpen(const struct jeWindow* window) {
-	JE_TRACE("window=%p, open=%d", window, (int)window->open);
+	JE_TRACE("window=%p, open=%d", (void*)window, (int)window->open);
 
 	return window->open;
 }
@@ -301,7 +301,7 @@ int jeWindow_getWidth(const struct jeWindow* window) {
 
 	SDL_GetWindowSize(window->window, &width, &height);
 
-	JE_TRACE("window=%p, height=%d", window, width);
+	JE_TRACE("window=%p, height=%d", (void*)window, width);
 
 	return width;
 }
@@ -311,14 +311,14 @@ int jeWindow_getHeight(const struct jeWindow* window) {
 
 	SDL_GetWindowSize(window->window, &width, &height);
 
-	JE_TRACE("window=%p, height=%d", window, height);
+	JE_TRACE("window=%p, height=%d", (void*)window, height);
 
 	return height;
 }
 bool jeWindow_clear(struct jeWindow* window) {
 	bool ok = true;
 
-	JE_TRACE("window=%p", window);
+	JE_TRACE("window=%p", (void*)window);
 
 	if (SDL_GL_MakeCurrent(window->window, window->context) != 0) {
 		JE_ERROR("SDL_GL_MakeCurrent() failed with error=%s", SDL_GetError());
@@ -334,12 +334,12 @@ bool jeWindow_clear(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_resetPrimitives(struct jeWindow* window) {
-	JE_TRACE("window=%p", window);
+	JE_TRACE("window=%p", (void*)window);
 
 	jeVertexBuffer_reset(&window->vertexBuffer);
 }
 void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, int primitiveType) {
-	JE_TRACE("window=%p, primitiveType=%d", window, primitiveType);
+	JE_TRACE("window=%p, primitiveType=%d", (void*)window, primitiveType);
 
 	jeVertexBuffer_pushPrimitive(&window->vertexBuffer, vertices, primitiveType);
 }
@@ -348,7 +348,7 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 
 	int vertexCount = window->vertexBuffer.vertices.count;
 
-	JE_TRACE("window=%p, vertexCount=%d", window, vertexCount);
+	JE_TRACE("window=%p, vertexCount=%d", (void*)window, vertexCount);
 
 	ok = ok && jeVertexBuffer_sort(&window->vertexBuffer, JE_PRIMITIVE_TYPE_TRIANGLES);
 
@@ -379,7 +379,7 @@ void jeWindow_destroyGL(struct jeWindow* window) {
 	bool canUseContext = (window->window != NULL) && (window->context != NULL);
 	canUseContext = canUseContext && (SDL_GL_MakeCurrent(window->window, window->context) == 0);
 
-	JE_DEBUG("window=%p, canUseContext=%d", window, (int)canUseContext);
+	JE_DEBUG("window=%p, canUseContext=%d", (void*)window, (int)canUseContext);
 
 	if (canUseContext) {
 		if (window->vao != 0) {
@@ -423,14 +423,14 @@ void jeWindow_destroyGL(struct jeWindow* window) {
 	}
 
 	if (window->context != NULL) {
-		JE_TRACE("deleting context, context=%p", window->context);
+		JE_TRACE("deleting context, context=%p", (void*)window->context);
 
 		SDL_GL_DeleteContext(window->context);
 		window->context = NULL;
 	}
 }
 bool jeWindow_initGL(struct jeWindow* window) {
-	JE_DEBUG("window=%p", window);
+	JE_DEBUG("window=%p", (void*)window);
 
 	bool ok = true;
 
@@ -608,12 +608,12 @@ bool jeWindow_initGL(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_show(struct jeWindow* window) {
-	JE_TRACE("window=%p", window);
+	JE_TRACE("window=%p", (void*)window);
 
 	SDL_ShowWindow(window->window);
 }
 bool jeWindow_step(struct jeWindow* window) {
-	JE_TRACE("window=%p", window);
+	JE_TRACE("window=%p", (void*)window);
 
 	bool ok = true;
 
@@ -752,7 +752,7 @@ bool jeWindow_step(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_destroy(struct jeWindow* window) {
-	JE_DEBUG("window=%p");
+	JE_DEBUG("window=%p", (void*)window);
 
 	if (window != NULL) {
 		window->open = false;
@@ -776,7 +776,7 @@ void jeWindow_destroy(struct jeWindow* window) {
 	}
 }
 struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
-	JE_DEBUG("window=%p");
+	JE_DEBUG(" ");
 
 	bool ok = true;
 
@@ -821,14 +821,14 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 			 * As a fallback, create a gray texture big enough to allow mapping of color.
 			 * Gray is chosen to have it be visible against the white fill color.
 			 */
-			const struct jeColor grey = {0x80, 0x80, 0x80, 0xFF};
-			const struct jeColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+			const struct jeColorRGBA32 grey = {0x80, 0x80, 0x80, 0xFF};
+			const struct jeColorRGBA32 white = {0xFF, 0xFF, 0xFF, 0xFF};
 
 			jeImage_destroy(&window->image);
 			jeImage_create(&window->image, 2048, 2048, grey);
 
 			/*Topleft texel is used for rendering without texture and must be white*/
-			((struct jeColor*)window->image.buffer.data)[0] = white;
+			((struct jeColorRGBA32*)window->image.buffer.data)[0] = white;
 		}
 	}
 
@@ -867,7 +867,7 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 bool jeWindow_getInput(const struct jeWindow* window, int inputId) {
 	static const float axisMaxValue = 32767;
 
-	JE_TRACE("window=%p, inputId=%d", window, inputId);
+	JE_TRACE("window=%p, inputId=%d", (void*)window, inputId);
 
 	bool pressed = false;
 
@@ -904,7 +904,7 @@ bool jeWindow_getInput(const struct jeWindow* window, int inputId) {
 	return pressed;
 }
 int jeWindow_getFps(const struct jeWindow* window) {
-	JE_TRACE("window=%p, fpsEstimate=%d", window, window->fpsEstimate);
+	JE_TRACE("window=%p, fpsEstimate=%d", (void*)window, window->fpsEstimate);
 
 	JE_MAYBE_UNUSED(window);
 
@@ -913,7 +913,7 @@ int jeWindow_getFps(const struct jeWindow* window) {
 
 void jeWindow_runTests() {
 #if JE_DEBUGGING
-	JE_TRACE("");
+	JE_TRACE(" ");
 
 	struct jeController controller;
 	jeController_create(&controller);

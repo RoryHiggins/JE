@@ -59,7 +59,7 @@ int jePrimitiveType_getVertexCount(int primitiveType) {
 	return vertexCount;
 }
 const char* jePrimitiveType_toDebugString(const struct jeVertex* vertices, int primitiveType) {
-	JE_TRACE("vertices=%p, primitiveType=%d", vertices, primitiveType);
+	JE_TRACE("vertices=%p, primitiveType=%d", (void*)vertices, primitiveType);
 
 	int primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	return jeVertex_arrayToDebugString(vertices, primitiveVertexCount);
@@ -83,7 +83,7 @@ int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB) {
 }
 
 const char* jeVertex_toDebugString(const struct jeVertex* vertex) {
-	JE_TRACE("vertex=%p", vertex);
+	JE_TRACE("vertex=%p", (void*)vertex);
 
 	static char buffer[JE_VERTEX_DEBUG_STRING_BUFFER_SIZE];
 	memset((void*)buffer, 0, sizeof(buffer));
@@ -97,7 +97,7 @@ const char* jeVertex_toDebugString(const struct jeVertex* vertex) {
 	return buffer;
 }
 const char* jeVertex_arrayToDebugString(const struct jeVertex* vertices, int vertexCount) {
-	JE_TRACE("vertices=%p, vertexCount=%d", vertices, vertexCount);
+	JE_TRACE("vertices=%p, vertexCount=%d", (void*)vertices, vertexCount);
 
 	static char buffer[JE_VERTEX_ARRAY_DEBUG_STRING_BUFFER_SIZE];
 	memset((void*)buffer, 0, sizeof(buffer));
@@ -151,7 +151,7 @@ void jeVertex_createPointQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUA
 	 *
 	 */
 
-	JE_TRACE("quadVertices=%p, pointVertices=%p", quadVertices, pointVertices);
+	JE_TRACE("quadVertices=%p, pointVertices=%p", (void*)quadVertices, (void*)pointVertices);
 
 	for (int i = 0; i < JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT; i++) {
 		quadVertices[i] = *pointVertices;
@@ -189,7 +189,7 @@ void jeVertex_createLineQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUAD
 	 * NOTE: vertices are not necessarily clockwise, thus not compatible with back-face culling.
 	 */
 
-	JE_TRACE("quadVertices=%p, lineVertices=%p", quadVertices, lineVertices);
+	JE_TRACE("quadVertices=%p, lineVertices=%p", (void*)quadVertices, (void*)lineVertices);
 
 	for (int i = 0; i < JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT; i++) {
 		quadVertices[i] = lineVertices[0];
@@ -215,7 +215,7 @@ void jeVertex_createLineQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUAD
 void jeVertex_createSpriteQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT], const struct jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]) {
 	/* Render sprite as two triangles represented by 6 clockwise vertices */
 
-	JE_TRACE("quadVertices=%p, spriteVertices=%p", quadVertices, spriteVertices);
+	JE_TRACE("quadVertices=%p, spriteVertices=%p", (void*)quadVertices, (void*)spriteVertices);
 
 	for (int i = 0; i < JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT; i++) {
 		quadVertices[i] = spriteVertices[0];
@@ -239,12 +239,12 @@ void jeVertex_createSpriteQuad(struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QU
 }
 
 bool jeVertexBuffer_create(struct jeVertexBuffer* vertexBuffer) {
-	JE_TRACE("vertexBuffer=%p", vertexBuffer);
+	JE_TRACE("vertexBuffer=%p", (void*)vertexBuffer);
 
 	return jeArray_create(&vertexBuffer->vertices, sizeof(struct jeVertex));
 }
 void jeVertexBuffer_destroy(struct jeVertexBuffer* vertexBuffer) {
-	JE_TRACE("vertexBuffer=%p", vertexBuffer);
+	JE_TRACE("vertexBuffer=%p", (void*)vertexBuffer);
 
 	jeArray_destroy(&vertexBuffer->vertices);
 }
@@ -257,7 +257,7 @@ bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, int primitiveType)
 	int primitiveCount = vertexCount / primitiveVertexCount;
 	struct jeVertex *vertices = (struct jeVertex*)vertexBuffer->vertices.data;
 
-	JE_TRACE("vertexBuffer=%p, vertexCount=%d, primitiveCount=%d", vertexBuffer, vertexCount, primitiveCount);
+	JE_TRACE("vertexBuffer=%p, vertexCount=%d, primitiveCount=%d", (void*)vertexBuffer, vertexCount, primitiveCount);
 
 	bool ok = true;
 
@@ -293,12 +293,12 @@ bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, int primitiveType)
 			int destPrimitiveVertexIndex = primitiveVertexCount * i;
 
 			if ((srcPrimitiveVertexIndex + primitiveVertexCount - 1) > vertexCount) {
-				JE_ERROR("src primitive starting index out of bounds, vertexBuffer=%p, index=%d, vertexCount=%d", vertexBuffer, srcPrimitiveVertexIndex, vertexCount);
+				JE_ERROR("src primitive starting index out of bounds, vertexBuffer=%p, index=%d, vertexCount=%d", (void*)vertexBuffer, srcPrimitiveVertexIndex, vertexCount);
 				continue;
 			}
 
 			if ((destPrimitiveVertexIndex + primitiveVertexCount - 1) > vertexCount) {
-				JE_ERROR("dest primitive starting index out of bounds, vertexBuffer=%p, index=%d, vertexCount=%d", vertexBuffer, destPrimitiveVertexIndex, vertexCount);
+				JE_ERROR("dest primitive starting index out of bounds, vertexBuffer=%p, index=%d, vertexCount=%d", (void*)vertexBuffer, destPrimitiveVertexIndex, vertexCount);
 				continue;
 			}
 
@@ -316,7 +316,7 @@ bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, int primitiveType)
 	return ok;
 }
 void jeVertexBuffer_pushPrimitive(struct jeVertexBuffer* vertexBuffer, const struct jeVertex* vertices, int primitiveType) {
-	JE_TRACE("vertexBuffer=%p, primitiveType=%d, vertices=%s", vertexBuffer, primitiveType, jePrimitiveType_toDebugString(vertices, primitiveType));
+	JE_TRACE("vertexBuffer=%p, primitiveType=%d, vertices=%s", (void*)vertexBuffer, primitiveType, jePrimitiveType_toDebugString(vertices, primitiveType));
 
 	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT];
 	switch (primitiveType) {
@@ -350,19 +350,19 @@ void jeVertexBuffer_pushPrimitive(struct jeVertexBuffer* vertexBuffer, const str
 	}
 }
 
-bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor fillColor) {
-	JE_TRACE("image=%p", image);
+bool jeImage_create(struct jeImage* image, int width, int height, struct jeColorRGBA32 fillColor) {
+	JE_TRACE("image=%p", (void*)image);
 
 	bool ok = true;
 
 	image->height = width;
 	image->width = height;
 
-	ok = ok && jeArray_create(&image->buffer, sizeof(struct jeColor));
+	ok = ok && jeArray_create(&image->buffer, sizeof(struct jeColorRGBA32));
 	ok = ok && jeArray_setCount(&image->buffer, width * height);
 
 	if (ok) {
-		struct jeColor* pixels = (struct jeColor*)image->buffer.data;
+		struct jeColorRGBA32* pixels = (struct jeColorRGBA32*)image->buffer.data;
 		for (int i = 0; i < image->buffer.count; i++) {
 			pixels[i] = fillColor;
 		}
@@ -371,14 +371,14 @@ bool jeImage_create(struct jeImage* image, int width, int height, struct jeColor
 	return ok;
 }
 bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
-	JE_DEBUG("image=%p, filename=%s", image, filename);
+	JE_DEBUG("image=%p, filename=%s", (void*)image, filename);
 
 	bool ok = true;
 
 	image->height = 0;
 	image->width = 0;
 
-	jeArray_create(&image->buffer, sizeof(struct jeColor));
+	jeArray_create(&image->buffer, sizeof(struct jeColorRGBA32));
 
 	png_image pngImage;
 	memset((void*)&pngImage, 0, sizeof(pngImage));
@@ -394,7 +394,7 @@ bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
 	if (ok) {
 		pngImage.format = PNG_FORMAT_RGBA;
 
-		ok = ok && jeArray_setCount(&image->buffer, PNG_IMAGE_SIZE(pngImage) / sizeof(struct jeColor));
+		ok = ok && jeArray_setCount(&image->buffer, PNG_IMAGE_SIZE(pngImage) / sizeof(struct jeColorRGBA32));
 	}
 
 	if (ok) {
@@ -420,7 +420,7 @@ bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
 	return ok;
 }
 void jeImage_destroy(struct jeImage* image) {
-	JE_TRACE("image=%p", image);
+	JE_TRACE("image=%p", (void*)image);
 
 	jeArray_destroy(&image->buffer);
 
@@ -430,7 +430,7 @@ void jeImage_destroy(struct jeImage* image) {
 
 void jeRendering_runTests() {
 #if JE_DEBUGGING
-	JE_DEBUG("");
+	JE_DEBUG(" ");
 
 	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	JE_ASSERT(jeVertex_toDebugString(vertices) != NULL);
@@ -498,7 +498,7 @@ void jeRendering_runTests() {
 	jeVertexBuffer_destroy(&vertexBuffer);
 
 	struct jeImage image;
-	const struct jeColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+	const struct jeColorRGBA32 white = {0xFF, 0xFF, 0xFF, 0xFF};
 	JE_ASSERT(jeImage_create(&image, 16, 16, white));
 	jeImage_destroy(&image);
 #endif

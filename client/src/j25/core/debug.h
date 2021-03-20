@@ -63,7 +63,7 @@ struct jeLogger {
 JE_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, int line);
 JE_PUBLIC int jeLogger_getLevel();
 JE_PUBLIC void jeLogger_setLevelOverride(int loggerLevelOverride);
-JE_PUBLIC void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...);
+JE_PUBLIC void jeLogger_log(struct jeLogger logger, int loggerLevel, const char* formatStr, ...)  JE_API_PRINTF(3, 4);
 JE_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
 
 #endif

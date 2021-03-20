@@ -28,7 +28,7 @@ struct jeString {
 	struct jeArray array;
 };
 JE_PUBLIC bool jeString_create(struct jeString* string);
-JE_PUBLIC bool jeString_createFormatted(struct jeString* string, const char* formatStr, ...);
+JE_PUBLIC bool jeString_createFormatted(struct jeString* string, const char* formatStr, ...) JE_API_PRINTF(2, 3);
 JE_PUBLIC void jeString_destroy(struct jeString* string);
 JE_PUBLIC int jeString_getCount(struct jeString* string);
 JE_PUBLIC int jeString_getCapacity(struct jeString* string);

@@ -13,4 +13,10 @@
 #define JE_PUBLIC
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+#define JE_API_PRINTF(FORMAT_ARG, VA_ARG) __attribute__((format(printf, FORMAT_ARG, VA_ARG)))
+#else
+#define JE_API_PRINTF(FORMAT_ARG, VA_ARG)
+#endif
+
 #endif
