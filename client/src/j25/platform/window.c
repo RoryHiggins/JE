@@ -255,9 +255,11 @@ void jeController_create(struct jeController* controller) {
 		ok = false;
 	}
 
-	if (ok) {
+	if (controller != NULL) {
 		memset((void*)controller, 0, sizeof(*controller));
+	}
 
+	if (ok) {
 		/*Set default input mappings*/
 
 		controller->keys[JE_INPUT_LEFT] = SDL_GetScancodeFromKey(SDLK_LEFT);
@@ -992,11 +994,11 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 		ok = false;
 	}
 
-	if (ok) {
+	if (window != NULL) {
 		memset((void*)window, 0, sizeof(struct jeWindow));
-
-		ok = ok && jeSDL_initReentrant();
 	}
+
+	ok = ok && jeSDL_initReentrant();
 
 	if (ok) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);

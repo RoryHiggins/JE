@@ -56,8 +56,8 @@ const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
 
 struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line) {
 	struct jeLogger logger = {0};
-	logger.file = file;
-	logger.function = function;
+	logger.file = (file ? file : "<unknown file>");
+	logger.function = (function ? function : "<unknown function>");
 	logger.line = line;
 
 	return logger;
@@ -78,9 +78,16 @@ void jeLogger_setLevelOverride(uint32_t levelOverride) {
 	}
 #endif
 
+	if (levelOverride > JE_LOG_LEVEL_COUNT) {
+		JE_WARN("levelOverride greater than max, levelOverride=%u, JE_LOG_LEVEL_COUNT=%d", levelOverride, JE_LOG_LEVEL_COUNT);
+		levelOverride = JE_LOG_LEVEL_COUNT;
+	}
+
 	jeLogger_levelOverride = levelOverride;
 }
 void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...) {
+	formatStr = formatStr ? formatStr : "<jeLogger_log null formatStr>";
+
 	if (jeLogger_levelOverride <= loggerLevel) {
 		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
 			jeErr();
@@ -99,6 +106,7 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 	}
 }
 void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr) {
+	expressionStr = expressionStr ? expressionStr : "<jeLogger_assert null expressionStr>";
 	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeErr();
 		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
@@ -133,21 +141,23 @@ char* je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment) {
 
 	return (char*)(((unaligned + alignment - 1) / alignment) * alignment);
 }
-const char* je_temp_buffer_format(const char* format_str, ...) {
+const char* je_temp_buffer_format(const char* formatStr, ...) {
+	formatStr = formatStr ? formatStr : "<je_temp_buffer_format null formatStr>";
+
 	va_list args = {0};
-	va_start(args, format_str);
+	va_start(args, formatStr);
 
 	va_list computeSizeArgs = {0};
 	va_copy(computeSizeArgs, args);
 
-	int computedCount = vsnprintf(/*buffer*/ NULL, 0, format_str, computeSizeArgs);
+	int computedCount = vsnprintf(/*buffer*/ NULL, 0, formatStr, computeSizeArgs);
 	if (computedCount < 0) {
 		computedCount = 0;
 	}
 
 	uint32_t allocation_count = (uint32_t)(computedCount + 1);
 	char* allocation = je_temp_buffer_allocate(allocation_count);
-	vsnprintf(allocation, (size_t)allocation_count, format_str, args);
+	vsnprintf(allocation, (size_t)allocation_count, formatStr, args);
 
 	va_end(computeSizeArgs);
 	va_end(args);

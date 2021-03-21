@@ -30,7 +30,7 @@ bool jePrimitiveType_getValid(uint32_t primitiveType) {
 	if (primitiveType == JE_PRIMITIVE_TYPE_UNKNOWN) {
 		isValid = false;
 	}
-	if (primitiveType >= JE_PRIMITIVE_TYPE_COUNT) {
+	if (primitiveType > JE_PRIMITIVE_TYPE_COUNT) {
 		isValid = false;
 	}
 
@@ -331,6 +331,10 @@ bool jeVertexBuffer_create(struct jeVertexBuffer* vertexBuffer) {
 		ok = false;
 	}
 
+	if (vertexBuffer != NULL) {
+		memset((void*)vertexBuffer, 0, sizeof(struct jeVertexBuffer));
+	}
+
 	if (ok) {
 		ok = jeArray_create(&vertexBuffer->vertices, sizeof(struct jeVertex));
 	}
@@ -528,6 +532,10 @@ bool jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, stru
 	if (image == NULL) {
 		JE_ERROR("image=NULL");
 		ok = false;
+	}
+
+	if (image != NULL) {
+		memset((void*)image, 0, sizeof(struct jeImage));
 	}
 
 	if (ok) {
