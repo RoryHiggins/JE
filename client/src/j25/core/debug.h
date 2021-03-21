@@ -68,8 +68,8 @@ JE_API_PUBLIC void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, co
 	JE_API_PRINTF(3, 4);
 JE_API_PUBLIC void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr);
 
-char* JE_API_PUBLIC je_temp_buffer_allocate(uint32_t size);
-char* JE_API_PUBLIC je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment);
-const char* JE_API_PUBLIC je_temp_buffer_format(const char* format_str, ...) JE_API_PRINTF(1, 2);
+JE_API_PUBLIC char* je_temp_buffer_allocate(uint32_t size);
+JE_API_PUBLIC char* je_temp_buffer_allocate_aligned(uint32_t size, uint32_t alignment);
+JE_API_PUBLIC const char* je_temp_buffer_format(const char* formatStr, ...) JE_API_PRINTF(1, 2);
 
 #endif

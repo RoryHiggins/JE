@@ -79,7 +79,10 @@ void jeLogger_setLevelOverride(uint32_t levelOverride) {
 #endif
 
 	if (levelOverride > JE_LOG_LEVEL_COUNT) {
-		JE_WARN("levelOverride greater than max, levelOverride=%u, JE_LOG_LEVEL_COUNT=%d", levelOverride, JE_LOG_LEVEL_COUNT);
+		JE_WARN(
+			"levelOverride greater than max, levelOverride=%u, JE_LOG_LEVEL_COUNT=%d",
+			levelOverride,
+			JE_LOG_LEVEL_COUNT);
 		levelOverride = JE_LOG_LEVEL_COUNT;
 	}
 

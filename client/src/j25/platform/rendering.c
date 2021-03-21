@@ -122,8 +122,7 @@ const char* jeVertex_getDebugString(const struct jeVertex* vertex) {
 		vertex->b,
 		vertex->a,
 		vertex->u,
-		vertex->v
-	);
+		vertex->v);
 }
 const char* jeVertex_arrayGetDebugString(const struct jeVertex* vertices, uint32_t vertexCount) {
 	JE_TRACE("vertices=%p, vertexCount=%u", (void*)vertices, vertexCount);
@@ -171,9 +170,7 @@ const char* jeVertex_primitiveGetDebugString(const struct jeVertex* vertices, ui
 	uint32_t primitiveVertexCount = jePrimitiveType_getVertexCount(primitiveType);
 	return jeVertex_arrayGetDebugString(vertices, primitiveVertexCount);
 }
-void jeVertex_createPointQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]) {
+void jeVertex_createPointQuad(struct jeVertex* quadVertices, const struct jeVertex* pointVertices) {
 	/* Render point as two triangles represented by 6 vertices.
 	 *
 	 * For visualization below, source indices = A..B, dest indices = 0..5,
@@ -218,9 +215,7 @@ void jeVertex_createPointQuad(
 		quadVertices[5].y += pointWidth;
 	}
 }
-void jeVertex_createLineQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]) {
+void jeVertex_createLineQuad(struct jeVertex* quadVertices, const struct jeVertex* lineVertices) {
 	/* Render line as two triangles represented by 6 vertices.
 	 *
 	 * For visualization below, source indices = A..B, dest indices = 0..5,
@@ -279,9 +274,7 @@ void jeVertex_createLineQuad(
 		quadVertices[5].y += isHorizontalLine;
 	}
 }
-void jeVertex_createSpriteQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]) {
+void jeVertex_createSpriteQuad(struct jeVertex* quadVertices, const struct jeVertex* spriteVertices) {
 	/* Render sprite as two triangles represented by 6 clockwise vertices */
 
 	JE_TRACE("quadVertices=%p, spriteVertices=%p", (void*)quadVertices, (void*)spriteVertices);

@@ -30,9 +30,9 @@
 #define JE_WINDOW_VERT_SHADER \
 	"#version 120\n" \
 \
-	"uniform vec3 scaleXyz;" /*Transforms pos from world coords (+/- windowSize) to normalized device coords (-1.0 \
+	"uniform vec3 scaleXyz;" /*Transforms from world (+/- windowSize) to normalized device coords (-1.0 \
 								to 1.0)*/ \
-	"uniform vec2 scaleUv;"  /*Converts image coords to normalized texture coords (0.0 to 1.0)*/ \
+	"uniform vec2 scaleUv;"  /*Converts to normalized texture coords (0.0 to 1.0)*/ \
 \
 	"attribute vec4 srcPos;" \
 	"attribute vec4 srcCol;" \
@@ -114,12 +114,12 @@ bool jeWindow_flushPrimitives(struct jeWindow* window);
 void jeWindow_destroyGL(struct jeWindow* window);
 bool jeWindow_initGL(struct jeWindow* window);
 
+static struct jeSDL jeSDL_sdl = {false, 0};
+
 static const GLchar* jeWindow_vertShaderPtr = JE_WINDOW_VERT_SHADER;
 static const GLchar* jeWindow_fragShaderPtr = JE_WINDOW_FRAG_SHADER;
 static const GLint jeWindow_vertShaderSize = sizeof(JE_WINDOW_VERT_SHADER);
 static const GLint jeWindow_fragShaderSize = sizeof(JE_WINDOW_FRAG_SHADER);
-
-static struct jeSDL jeSDL_sdl = {false, 0};
 
 static char jeGl_messageBuffer[JE_GL_MESSAGE_BUFFER_CAPACITY];
 
@@ -195,7 +195,8 @@ bool jeGl_getShaderOk(GLuint shader, struct jeLogger logger) {
 		glGetShaderInfoLog(shader, msgMaxSize, NULL, (GLchar*)jeGl_messageBuffer);
 
 #if JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)jeGl_messageBuffer);
+		jeLogger_log(
+			logger, JE_LOG_LEVEL_ERR, "OpenGL shader compilation failed, error=\n%s", (const char*)jeGl_messageBuffer);
 #endif
 
 		ok = false;
@@ -221,7 +222,8 @@ bool jeGl_getProgramOk(GLuint program, struct jeLogger logger) {
 		glGetProgramInfoLog(program, msgMaxSize, NULL, (GLchar*)jeGl_messageBuffer);
 
 #if JE_LOG_LEVEL_COMPILED <= JE_LOG_LEVEL_ERR
-		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)jeGl_messageBuffer);
+		jeLogger_log(
+			logger, JE_LOG_LEVEL_ERR, "OpenGL program linking failed, error=\n%s", (const char*)jeGl_messageBuffer);
 #endif
 
 		ok = false;
@@ -507,12 +509,9 @@ bool jeWindow_flushPrimitives(struct jeWindow* window) {
 	return ok;
 }
 void jeWindow_destroyGL(struct jeWindow* window) {
-	bool hasGLContext = (
-		(window != NULL)
-		&& (window->window != NULL)
-		&& (window->context != NULL)
-		&& (SDL_GL_MakeCurrent(window->window, window->context) == 0)
-	);
+	bool hasGLContext =
+		((window != NULL) && (window->window != NULL) && (window->context != NULL) &&
+		 (SDL_GL_MakeCurrent(window->window, window->context) == 0));
 
 	JE_DEBUG("window=%p, hasGLContext=%u", (void*)window, (uint32_t)hasGLContext);
 

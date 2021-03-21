@@ -24,9 +24,6 @@
 #define JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT 6
 #define JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT 6
 
-JE_API_PUBLIC bool jePrimitiveType_getValid(uint32_t primitiveType);
-JE_API_PUBLIC uint32_t jePrimitiveType_getVertexCount(uint32_t primitiveType);
-
 struct jeVertex {
 	float x;
 	float y;
@@ -41,28 +38,10 @@ struct jeVertex {
 	float u;
 	float v;
 };
-JE_API_PUBLIC const char* jeVertex_getDebugString(const struct jeVertex* vertex);
-JE_API_PUBLIC const char* jeVertex_arrayGetDebugString(const struct jeVertex* vertices, uint32_t vertexCount);
-JE_API_PUBLIC const char* jeVertex_primitiveGetDebugString(const struct jeVertex* vertices, uint32_t primitiveType);
-JE_API_PUBLIC void jeVertex_createPointQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]);
-JE_API_PUBLIC void jeVertex_createLineQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex lineVertices[JE_PRIMITIVE_TYPE_LINES_VERTEX_COUNT]);
-JE_API_PUBLIC void jeVertex_createSpriteQuad(
-	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
-	const struct jeVertex spriteVertices[JE_PRIMITIVE_TYPE_SPRITES_VERTEX_COUNT]);
 
 struct jeVertexBuffer {
 	struct jeArray vertices;
 };
-JE_API_PUBLIC bool jeVertexBuffer_create(struct jeVertexBuffer* vertexBuffer);
-JE_API_PUBLIC void jeVertexBuffer_destroy(struct jeVertexBuffer* vertexBuffer);
-JE_API_PUBLIC void jeVertexBuffer_reset(struct jeVertexBuffer* vertexBuffer);
-JE_API_PUBLIC bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, uint32_t primitiveType);
-JE_API_PUBLIC void jeVertexBuffer_pushPrimitive(
-	struct jeVertexBuffer* vertexBuffer, const struct jeVertex* vertices, uint32_t primitiveType);
 
 struct jeColorRGBA32 {
 	uint8_t r;
@@ -76,6 +55,24 @@ struct jeImage {
 	uint32_t height;
 	struct jeArray buffer;
 };
+
+JE_API_PUBLIC bool jePrimitiveType_getValid(uint32_t primitiveType);
+JE_API_PUBLIC uint32_t jePrimitiveType_getVertexCount(uint32_t primitiveType);
+
+JE_API_PUBLIC const char* jeVertex_getDebugString(const struct jeVertex* vertex);
+JE_API_PUBLIC const char* jeVertex_arrayGetDebugString(const struct jeVertex* vertices, uint32_t vertexCount);
+JE_API_PUBLIC const char* jeVertex_primitiveGetDebugString(const struct jeVertex* vertices, uint32_t primitiveType);
+JE_API_PUBLIC void jeVertex_createPointQuad(struct jeVertex* quadVertices, const struct jeVertex* pointVertices);
+JE_API_PUBLIC void jeVertex_createLineQuad(struct jeVertex* quadVertices, const struct jeVertex* lineVertices);
+JE_API_PUBLIC void jeVertex_createSpriteQuad(struct jeVertex* quadVertices, const struct jeVertex* spriteVertices);
+
+JE_API_PUBLIC bool jeVertexBuffer_create(struct jeVertexBuffer* vertexBuffer);
+JE_API_PUBLIC void jeVertexBuffer_destroy(struct jeVertexBuffer* vertexBuffer);
+JE_API_PUBLIC void jeVertexBuffer_reset(struct jeVertexBuffer* vertexBuffer);
+JE_API_PUBLIC bool jeVertexBuffer_sort(struct jeVertexBuffer* vertexBuffer, uint32_t primitiveType);
+JE_API_PUBLIC void jeVertexBuffer_pushPrimitive(
+	struct jeVertexBuffer* vertexBuffer, const struct jeVertex* vertices, uint32_t primitiveType);
+
 JE_API_PUBLIC bool
 jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, struct jeColorRGBA32 fillColor);
 JE_API_PUBLIC bool jeImage_createFromFile(struct jeImage* image, const char* filename);

@@ -18,7 +18,6 @@
 
 #define JE_CONTAINER_BOUNDS_FAULT_TOLERANCE_BUFFER_SIZE 1024
 
-
 #define JE_BUFFER_START_CAPACITY 32
 
 bool jeArray_create(struct jeArray* array, uint32_t stride) {
