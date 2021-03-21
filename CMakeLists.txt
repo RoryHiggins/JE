@@ -62,11 +62,15 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 
 		# extra warnings
 		je_add_compile_link_options(
-			-fanalyzer
 			-pedantic -Walloc-zero -Warray-bounds=2 -Wcast-align=strict -Wconversion -Wundef
 			-Wformat=2 -Wformat-overflow=2 -Wformat-signedness -Wformat-truncation=2
 			-Wdisabled-optimization -Wfloat-conversion -Wlogical-op -Winline -Wmultichar
 			-Wnull-dereference -Wstringop-overflow=4)
+
+		# enable static analyzer, if available
+		if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.0)
+			je_add_compile_link_options(-fanalyzer)
+		endif()
 
 		if(NOT WIN32)
 			je_add_compile_link_options(-fsanitize=address,leak,undefined -fsanitize-recover=address -fsanitize-address-use-after-scope -fstack-protector)
@@ -100,9 +104,7 @@ endif()
 target_link_libraries(j25 PRIVATE ${JE_SDL2_LIBRARIES} ${JE_OPENGL_LIBRARIES} PNG::PNG m)
 
 add_executable(j25_client)
-target_link_libraries(j25_client PRIVATE j25 ZLIB::ZLIB luajit-5.1)
+target_link_libraries(j25_client PRIVATE j25 ZLIB::ZLIB luajit-5.1 m)
 set_target_properties(j25_client PROPERTIES LINK_DEPENDS_NO_SHARED true)
 
 add_subdirectory("client")
-
-

@@ -600,8 +600,8 @@ bool jeWindow_initGL(struct jeWindow* window) {
 
 	if (ok) {
 		if (SDL_GL_SetSwapInterval(1) < 0) {
-			JE_WARN("SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
-			/*Lack of vsync support is not fatal; we still have a frame timer to limit framerate*/
+			JE_INFO("SDL_GL_SetSwapInterval() failed to enable vsync, error=%s", SDL_GetError());
+			/*Lack of vsync support is not an error.  We still have a frame timer to limit framerate*/
 		}
 	}
 
