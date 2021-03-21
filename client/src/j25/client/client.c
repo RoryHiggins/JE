@@ -2,6 +2,7 @@
 
 #include <j25/core/container.h>
 #include <j25/core/debug.h>
+#include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
 
@@ -45,10 +46,10 @@ extern "C" {
 #define JE_LUA_CLIENT_BINDING(BINDING_NAME) \
 	{ #BINDING_NAME, jeLua_##BINDING_NAME }
 
-#if JE_LOG_LEVEL_COMPILED > JE_LOG_LEVEL_DEBUG
+#if JE_LOG_LEVEL_DEFAULT > JE_LOG_LEVEL_DEBUG
 #define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_WARN
 #else
-#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_COMPILED
+#define JE_TESTS_LOG_LEVEL JE_LOG_LEVEL_DEFAULT
 #endif
 
 struct jeWindow;
@@ -59,7 +60,7 @@ double jeLua_getNumberField(lua_State* lua, uint32_t tableIndex, const char* fie
 double jeLua_getOptionalNumberField(lua_State* lua, uint32_t tableIndex, const char* field, double defaultValue);
 const char* jeLua_getStringField(lua_State* lua, uint32_t tableIndex, const char* field, uint32_t* optOutSize);
 struct jeWindow* jeLua_getWindow(lua_State* lua);
-void jeLua_addWindow(lua_State* lua, struct jeWindow* window);
+bool jeLua_addWindow(lua_State* lua, struct jeWindow* window);
 void jeLua_updateStates(lua_State* lua);
 int jeLua_readData(lua_State* lua);
 int jeLua_writeData(lua_State* lua);
@@ -141,7 +142,15 @@ struct jeWindow* jeLua_getWindow(lua_State* lua) {
 	bool ok = true;
 	struct jeWindow* window = NULL;
 
-	int stackPos = lua_gettop(lua);
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	int stackPos = 0;
+	if (lua != NULL) {
+		stackPos = lua_gettop(lua);
+	}
 
 	if (ok) {
 		lua_getglobal(lua, JE_LUA_CLIENT_WINDOW_KEY);
@@ -157,79 +166,110 @@ struct jeWindow* jeLua_getWindow(lua_State* lua) {
 		JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
 	}
 
-	lua_settop(lua, stackPos);
+	if (lua != NULL) {
+		lua_settop(lua, stackPos);
+	}
 
 	return window;
 }
-void jeLua_addWindow(lua_State* lua, struct jeWindow* window) {
+bool jeLua_addWindow(lua_State* lua, struct jeWindow* window) {
 	JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
 
-	int stackPos = lua_gettop(lua);
+	bool ok = true;
 
-	lua_pushlightuserdata(lua, (void*)window);
-	lua_setglobal(lua, JE_LUA_CLIENT_WINDOW_KEY);
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
 
-	lua_settop(lua, stackPos);
+	if (jeWindow_getIsValid(window) == false) {
+		JE_ERROR("window is not valid");
+		ok = false;
+	}
+
+	if (ok) {
+		int stackPos = lua_gettop(lua);
+
+		lua_pushlightuserdata(lua, (void*)window);
+		lua_setglobal(lua, JE_LUA_CLIENT_WINDOW_KEY);
+
+		lua_settop(lua, stackPos);
+	}
+
+	return ok;
 }
 void jeLua_updateStates(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
-	int stackPos = lua_gettop(lua);
-	int stateStackPos = 0;
+	bool ok = true;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
 	struct jeWindow* window = jeLua_getWindow(lua);
 
-	lua_settop(lua, 0);
-	lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
-	lua_getfield(lua, JE_LUA_STACK_TOP, "state");
+	if (ok) {
+		int stackPos = lua_gettop(lua);
+		int stateStackPos = 0;
 
-	stateStackPos = lua_gettop(lua);
+		lua_settop(lua, 0);
+		lua_getglobal(lua, JE_LUA_CLIENT_BINDINGS_KEY);
+		lua_getfield(lua, JE_LUA_STACK_TOP, "state");
 
-	lua_pushboolean(lua, jeWindow_getIsOpen(window));
-	lua_setfield(lua, stateStackPos, "running");
+		stateStackPos = lua_gettop(lua);
 
-	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_WIDTH);
-	lua_setfield(lua, stateStackPos, "width");
+		lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_WIDTH);
+		lua_setfield(lua, stateStackPos, "width");
 
-	lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_HEIGHT);
-	lua_setfield(lua, stateStackPos, "height");
+		lua_pushnumber(lua, (lua_Number)JE_WINDOW_MIN_HEIGHT);
+		lua_setfield(lua, stateStackPos, "height");
 
-	lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
-	lua_setfield(lua, stateStackPos, "fps");
+		lua_pushnumber(lua, (lua_Number)jeLogger_getLevel());
+		lua_setfield(lua, stateStackPos, "logLevel");
 
-	lua_pushnumber(lua, (lua_Number)JE_LOG_LEVEL_COMPILED);
-	lua_setfield(lua, stateStackPos, "logLevel");
+		lua_pushboolean(lua, true);
+		lua_setfield(lua, stateStackPos, "testsEnabled");
 
-	lua_pushboolean(lua, true);
-	lua_setfield(lua, stateStackPos, "testsEnabled");
+		lua_pushnumber(lua, (lua_Number)JE_TESTS_LOG_LEVEL);
+		lua_setfield(lua, stateStackPos, "testsLogLevel");
 
-	lua_pushnumber(lua, (lua_Number)JE_TESTS_LOG_LEVEL);
-	lua_setfield(lua, stateStackPos, "testsLogLevel");
+		lua_pushboolean(lua, (window != NULL) && jeWindow_getIsOpen(window));
+		lua_setfield(lua, stateStackPos, "running");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
-	lua_setfield(lua, stateStackPos, "inputLeft");
+		if (window != NULL) {
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
-	lua_setfield(lua, stateStackPos, "inputRight");
+			lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
+			lua_setfield(lua, stateStackPos, "fps");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
-	lua_setfield(lua, stateStackPos, "inputUp");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
+			lua_setfield(lua, stateStackPos, "inputLeft");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
-	lua_setfield(lua, stateStackPos, "inputDown");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_RIGHT));
+			lua_setfield(lua, stateStackPos, "inputRight");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
-	lua_setfield(lua, stateStackPos, "inputA");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_UP));
+			lua_setfield(lua, stateStackPos, "inputUp");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
-	lua_setfield(lua, stateStackPos, "inputB");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_DOWN));
+			lua_setfield(lua, stateStackPos, "inputDown");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
-	lua_setfield(lua, stateStackPos, "inputX");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_A));
+			lua_setfield(lua, stateStackPos, "inputA");
 
-	lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
-	lua_setfield(lua, stateStackPos, "inputY");
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_B));
+			lua_setfield(lua, stateStackPos, "inputB");
 
-	lua_settop(lua, stackPos);
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_X));
+			lua_setfield(lua, stateStackPos, "inputX");
+
+			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
+			lua_setfield(lua, stateStackPos, "inputY");
+		}
+
+		lua_settop(lua, stackPos);
+	}
 }
 
 /*Lua-client bindings.  Note: return value = num responses pushed to lua stack*/
@@ -238,6 +278,11 @@ int jeLua_readData(lua_State* lua) {
 
 	bool ok = true;
 	int numResponses = 0;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
 
 	gzFile file = NULL;
 	const char* filename = "";
@@ -292,6 +337,11 @@ int jeLua_writeData(lua_State* lua) {
 	bool ok = true;
 	int numResponses = 0;
 
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
 	const char* filename = "";
 	const char* data = "";
 	size_t dataSize = 0;
@@ -343,69 +393,88 @@ int jeLua_writeData(lua_State* lua) {
 void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t vertexCount) {
 	JE_TRACE("lua=%p, vertices=%p, vertexCount=%u", (void*)lua, (void*)vertices, vertexCount);
 
-	static const int renderableIndex = 1;
-	static const int defaultsIndex = 2;
-	static const int cameraIndex = 3;
+	bool ok = true;
 
-	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
-	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
-	luaL_checktype(lua, cameraIndex, LUA_TTABLE);
-
-	vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x", 0.0F);
-	vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0F);
-	vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
-	vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
-	vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0F);
-	vertices[0].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0F);
-	vertices[0].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0F);
-
-	vertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "r", 1.0F);
-	vertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "g", 1.0F);
-	vertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "b", 1.0F);
-	vertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "a", 1.0F);
-	vertices[0].r = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
-	vertices[0].g = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
-	vertices[0].b = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
-	vertices[0].a = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
-
-	if (vertexCount >= 2) {
-		vertices[1].x = vertices[0].x + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "w", 0.0F);
-		vertices[1].y = vertices[0].y + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "h", 0.0F);
-		vertices[1].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
-		vertices[1].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
-		vertices[1].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0F);
-		vertices[1].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0F);
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
 	}
 
-	if (vertexCount >= 3) {
-		vertices[2].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x3", 0.0F);
-		vertices[2].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y3", 0.0F);
-		vertices[2].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0F);
-		vertices[2].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0F);
+	if (vertices == NULL) {
+		JE_ERROR("vertices=NULL");
+		ok = false;
 	}
 
-	for (uint32_t i = 0; i < vertexCount; i++) {
-		vertices[i].z = vertices[0].z;
-		vertices[i].r = vertices[0].r;
-		vertices[i].g = vertices[0].g;
-		vertices[i].b = vertices[0].b;
-		vertices[i].a = vertices[0].a;
+	if (vertexCount == 0) {
+		JE_ERROR("vertexCount=0");
+		ok = false;
 	}
 
-	float cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x", 0.0F);
-	float cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y", 0.0F);
-	float cameraX2 = cameraX1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "w", 0.0F);
-	float cameraY2 = cameraY1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "h", 0.0F);
-	cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
-	cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
-	cameraX2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
-	cameraY2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
+	if (ok) {
+		static const int renderableIndex = 1;
+		static const int defaultsIndex = 2;
+		static const int cameraIndex = 3;
 
-	float cameraOffsetX = -cameraX1 - floorf((cameraX2 - cameraX1) / 2.0F);
-	float cameraOffsetY = -cameraY1 - floorf((cameraY2 - cameraY1) / 2.0F);
-	for (uint32_t i = 0; i < vertexCount; i++) {
-		vertices[i].x += cameraOffsetX;
-		vertices[i].y += cameraOffsetY;
+		luaL_checktype(lua, renderableIndex, LUA_TTABLE);
+		luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
+		luaL_checktype(lua, cameraIndex, LUA_TTABLE);
+
+		vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x", 0.0F);
+		vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0F);
+		vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
+		vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
+		vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0F);
+		vertices[0].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0F);
+		vertices[0].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0F);
+
+		vertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "r", 1.0F);
+		vertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "g", 1.0F);
+		vertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "b", 1.0F);
+		vertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "a", 1.0F);
+		vertices[0].r = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "r", vertices[0].r);
+		vertices[0].g = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "g", vertices[0].g);
+		vertices[0].b = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "b", vertices[0].b);
+		vertices[0].a = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "a", vertices[0].a);
+
+		if (vertexCount >= 2) {
+			vertices[1].x = vertices[0].x + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "w", 0.0F);
+			vertices[1].y = vertices[0].y + (float)jeLua_getOptionalNumberField(lua, renderableIndex, "h", 0.0F);
+			vertices[1].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x2", vertices[1].x);
+			vertices[1].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y2", vertices[1].y);
+			vertices[1].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u2", 1.0F);
+			vertices[1].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v2", 1.0F);
+		}
+
+		if (vertexCount >= 3) {
+			vertices[2].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x3", 0.0F);
+			vertices[2].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y3", 0.0F);
+			vertices[2].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u3", 1.0F);
+			vertices[2].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0F);
+		}
+
+		for (uint32_t i = 0; i < vertexCount; i++) {
+			vertices[i].z = vertices[0].z;
+			vertices[i].r = vertices[0].r;
+			vertices[i].g = vertices[0].g;
+			vertices[i].b = vertices[0].b;
+			vertices[i].a = vertices[0].a;
+		}
+
+		float cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x", 0.0F);
+		float cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y", 0.0F);
+		float cameraX2 = cameraX1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "w", 0.0F);
+		float cameraY2 = cameraY1 + (float)jeLua_getOptionalNumberField(lua, cameraIndex, "h", 0.0F);
+		cameraX1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x1", cameraX1);
+		cameraY1 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y1", cameraY1);
+		cameraX2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
+		cameraY2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
+
+		float cameraOffsetX = -cameraX1 - floorf((cameraX2 - cameraX1) / 2.0F);
+		float cameraOffsetY = -cameraY1 - floorf((cameraY2 - cameraY1) / 2.0F);
+		for (uint32_t i = 0; i < vertexCount; i++) {
+			vertices[i].x += cameraOffsetX;
+			vertices[i].y += cameraOffsetY;
+		}
 	}
 }
 void jeLua_drawPrimitiveImpl(lua_State* lua, uint32_t primitiveType) {
@@ -413,19 +482,40 @@ void jeLua_drawPrimitiveImpl(lua_State* lua, uint32_t primitiveType) {
 
 	JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
 
+	bool ok = true;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	if (jeWindow_getIsValid(window) == false) {
+		// JE_ERROR("window is not valid");
+		ok = false;
+	}
+
+	if (jePrimitiveType_getValid(primitiveType) == false) {
+		JE_ERROR("not a valid primitiveType, primitiveType=%u", primitiveType);
+		ok = false;
+	}
+
 	struct jeVertex vertices[JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT];
 	memset(&vertices, 0, sizeof(vertices));
 
 	uint32_t vertexCount = jePrimitiveType_getVertexCount(primitiveType);
-	jeLua_getPrimitiveImpl(lua, vertices, vertexCount);
 
-	JE_TRACE(
-		"lua=%p, primitiveType=%u, vertexCount=%u, vertices={%s}",
-		(void*)lua,
-		primitiveType,
-		vertexCount,
-		jeVertex_arrayGetDebugString(vertices, vertexCount));
-	jeWindow_pushPrimitive(window, vertices, primitiveType);
+	if (ok) {
+		jeLua_getPrimitiveImpl(lua, vertices, vertexCount);
+
+		JE_TRACE(
+			"lua=%p, primitiveType=%u, vertexCount=%u, vertices={%s}",
+			(void*)lua,
+			primitiveType,
+			vertexCount,
+			jeVertex_arrayGetDebugString(vertices, vertexCount));
+
+		jeWindow_pushPrimitive(window, vertices, primitiveType);
+	}
 }
 int jeLua_drawPoint(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
@@ -450,65 +540,74 @@ int jeLua_drawSprite(lua_State* lua) {
 int jeLua_drawText(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
-	static const int renderableIndex = 1;
-	static const int defaultsIndex = 2;
+	bool ok = true;
 
-	luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
-	luaL_checktype(lua, renderableIndex, LUA_TTABLE);
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
 
-	uint32_t charW = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charW");
-	uint32_t charH = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charH");
+	if (ok) {
+		static const int renderableIndex = 1;
+		static const int defaultsIndex = 2;
 
-	const char* charFirst = jeLua_getStringField(lua, defaultsIndex, "charFirst", NULL);
-	const char* charLast = jeLua_getStringField(lua, defaultsIndex, "charLast", NULL);
-	uint32_t charColumns = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charColumns");
+		luaL_checktype(lua, defaultsIndex, LUA_TTABLE);
+		luaL_checktype(lua, renderableIndex, LUA_TTABLE);
 
-	uint32_t textLength = 0;
-	const char* text = jeLua_getStringField(lua, renderableIndex, "text", &textLength);
+		uint32_t charW = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charW");
+		uint32_t charH = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charH");
 
-	struct jeVertex textBoundsVertices[2];
-	memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
+		const char* charFirst = jeLua_getStringField(lua, defaultsIndex, "charFirst", NULL);
+		const char* charLast = jeLua_getStringField(lua, defaultsIndex, "charLast", NULL);
+		uint32_t charColumns = (uint32_t)jeLua_getNumberField(lua, defaultsIndex, "charColumns");
 
-	jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
-	textBoundsVertices[1] = textBoundsVertices[0];
+		uint32_t textLength = 0;
+		const char* text = jeLua_getStringField(lua, renderableIndex, "text", &textLength);
 
-	JE_TRACE(
-		"lua=%p, text=%s, textBoundsVertices=%s",
-		(void*)lua,
-		text,
-		jeVertex_arrayGetDebugString(textBoundsVertices, 2));
-	for (uint32_t i = 0; i < textLength; i++) {
-		static const char charDefault = ' ';
+		struct jeVertex textBoundsVertices[2];
+		memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
-		char charVal = (char)toupper((uint32_t)text[i]);
-		if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
-			JE_WARN(
-				"character outside range, char=%u, min=%u, max=%u",
-				(uint32_t)charVal,
-				(uint32_t)charFirst[0],
-				(uint32_t)charLast[0]);
-			charVal = charDefault;
+		jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
+		textBoundsVertices[1] = textBoundsVertices[0];
+
+		JE_TRACE(
+			"lua=%p, text=%s, textBoundsVertices=%s",
+			(void*)lua,
+			text,
+			jeVertex_arrayGetDebugString(textBoundsVertices, 2));
+		for (uint32_t i = 0; i < textLength; i++) {
+			static const char charDefault = ' ';
+
+			char charVal = (char)toupper((uint32_t)text[i]);
+			if ((charVal < charFirst[0]) || (charVal > charLast[0])) {
+				JE_WARN(
+					"character outside range, char=%u, min=%u, max=%u",
+					(uint32_t)charVal,
+					(uint32_t)charFirst[0],
+					(uint32_t)charLast[0]);
+				charVal = charDefault;
+			}
+
+			uint32_t charIndex = (uint32_t)(charVal - charFirst[0]);
+
+			static const uint32_t renderScaleX = 1;
+			static const uint32_t renderScaleY = 1;
+
+			struct jeVertex charVertices[2];
+			memcpy(charVertices, textBoundsVertices, sizeof(charVertices));
+			charVertices[0].x += (float)(charW * renderScaleX * i);
+			charVertices[0].u += (float)(charW * (charIndex % charColumns));
+			charVertices[0].v += (float)(charH * (charIndex / charColumns));
+
+			charVertices[1] = charVertices[0];
+			charVertices[1].x += (float)(charW * renderScaleX);
+			charVertices[1].y += (float)(charH * renderScaleY);
+			charVertices[1].u += (float)charW;
+			charVertices[1].v += (float)charH;
+
+			JE_TRACE("lua=%p, charVertices={%s}", (void*)lua, jeVertex_arrayGetDebugString(charVertices, 2));
+			jeWindow_pushPrimitive(jeLua_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
 		}
-
-		uint32_t charIndex = (uint32_t)(charVal - charFirst[0]);
-
-		static const uint32_t renderScaleX = 1;
-		static const uint32_t renderScaleY = 1;
-
-		struct jeVertex charVertices[2];
-		memcpy(charVertices, textBoundsVertices, sizeof(charVertices));
-		charVertices[0].x += (float)(charW * renderScaleX * i);
-		charVertices[0].u += (float)(charW * (charIndex % charColumns));
-		charVertices[0].v += (float)(charH * (charIndex / charColumns));
-
-		charVertices[1] = charVertices[0];
-		charVertices[1].x += (float)(charW * renderScaleX);
-		charVertices[1].y += (float)(charH * renderScaleY);
-		charVertices[1].u += (float)charW;
-		charVertices[1].v += (float)charH;
-
-		JE_TRACE("lua=%p, charVertices={%s}", (void*)lua, jeVertex_arrayGetDebugString(charVertices, 2));
-		jeWindow_pushPrimitive(jeLua_getWindow(lua), charVertices, JE_PRIMITIVE_TYPE_SPRITES);
 	}
 
 	return 0;
@@ -517,7 +616,21 @@ int jeLua_drawReset(lua_State* lua) {
 	struct jeWindow* window = jeLua_getWindow(lua);
 	JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
 
-	jeWindow_resetPrimitives(window);
+	bool ok = true;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	if (jeWindow_getIsValid(window) == false) {
+		JE_ERROR("window is not valid");
+		ok = false;
+	}
+
+	if (ok) {
+		jeWindow_resetPrimitives(window);
+	}
 
 	return 0;
 }
@@ -531,6 +644,9 @@ int jeLua_runTests(lua_State* lua) {
 	jeLogger_setLevelOverride(JE_TESTS_LOG_LEVEL);
 
 	jeContainer_runTests();
+	numTestSuites++;
+
+	jeImage_runTests();
 	numTestSuites++;
 
 	jeRendering_runTests();
@@ -550,11 +666,26 @@ int jeLua_step(lua_State* lua) {
 
 	JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
 
-	bool ok = jeWindow_step(window);
+	bool ok = true;
 
-	jeLua_updateStates(lua);
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
 
-	lua_pushboolean(lua, ok);
+	if (jeWindow_getIsValid(window) == false) {
+		JE_ERROR("window is not valid");
+		ok = false;
+	}
+
+	ok = ok && jeWindow_step(window);
+
+	if (lua != NULL) {
+		jeLua_updateStates(lua);
+
+		lua_pushboolean(lua, ok);
+	}
+
 	return 1;
 }
 
@@ -577,6 +708,11 @@ bool jeLua_addBindings(lua_State* lua) {
 
 	bool ok = true;
 	int createdResult = 0;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
 
 	JE_DEBUG(" ");
 
@@ -612,6 +748,21 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 	int luaResponse = 0;
 	lua_State* lua = NULL;
 
+	if (jeWindow_getIsValid(window) == false) {
+		JE_ERROR("window is not valid");
+		ok = false;
+	}
+
+	if (filename == NULL) {
+		JE_ERROR("filename=NULL");
+		ok = false;
+	}
+
+	if ((arguments == NULL) && (argumentCount > 0)) {
+		JE_ERROR("arguments=NULL when argumentCount > 0");
+		ok = false;
+	}
+
 	JE_DEBUG("window=%p, filename=%s", (void*)window, filename);
 
 	if (ok) {
@@ -625,7 +776,7 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 	if (ok) {
 		luaL_openlibs(lua);
 
-		jeLua_addWindow(lua, window);
+		ok = jeLua_addWindow(lua, window);
 	}
 
 	ok = ok && jeLua_addBindings(lua);
@@ -672,37 +823,57 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
 	bool ok = true;
 
-	client->window = NULL;
-	client->lua = NULL;
+	JE_DEBUG("client=%p", (void*)client);
+
+	if (client == NULL) {
+		JE_ERROR("client=NULL");
+		ok = false;
+	}
+
+	if ((arguments == NULL) && (argumentCount > 0)) {
+		JE_ERROR("arguments=NULL when argumentCount > 0");
+		ok = false;
+	}
 
 	const char* appDir = JE_DEFAULT_GAME_DIR;
+	if (ok) {
+		memset((void*)client, 0, sizeof(struct jeClient));
 
-	for (int i = 0; i < argumentCount; i++) {
-		if (strcmp(arguments[i], "--appdir") == 0) {
-			ok = ok && ((i + 1) < argumentCount);
+		client->window = NULL;
+		client->lua = NULL;
 
-			if (ok) {
-				appDir = arguments[i + 1];
+		for (int i = 0; i < argumentCount; i++) {
+			if (strcmp(arguments[i], "--appdir") == 0) {
+				ok = ok && ((i + 1) < argumentCount);
+
+				if (ok) {
+					appDir = arguments[i + 1];
+				}
 			}
-		}
-		if (strcmp(arguments[i], "--debug") == 0) {
-			ok = ok && ((i + 1) < argumentCount);
+			if (strcmp(arguments[i], "--debug") == 0) {
+				jeLogger_setLevelOverride(JE_LOG_LEVEL_DEBUG);
+			}
 		}
 	}
 
 	JE_DEBUG("client=%p, appDir=%s", (void*)client, appDir);
 
-	struct jeString luaMainFilename;
-	ok = ok && jeString_createFormatted(&luaMainFilename, "%s/main.lua", appDir);
+	struct jeString luaMainFilename = {0};
+	ok &= jeString_createFormatted(&luaMainFilename, "%s/main.lua", appDir);
 
-	struct jeString spritesFilename;
-	ok = ok && jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
+	struct jeString spritesFilename = {0};
+	ok &= jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
 
 	if (ok) {
 		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename, 0));
 	}
 
-	ok = ok && (client->window != NULL);
+	if (ok) {
+		if (jeWindow_getIsValid(client->window) == false) {
+			JE_ERROR("window is not valid");
+			ok = false;
+		}
+	}
 
 	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename, 0), argumentCount, arguments);
 

@@ -1,4 +1,9 @@
 
+Headless mode
+-------------
+Add an image.h with a headless and real image impl
+
+
 Integer tag indexing
 --------------------
 Lua tag index

@@ -1,7 +1,10 @@
 #include <j25/platform/window.h>
 
+#if !defined(JE_BUILD_HEADLESS)
+
 #include <j25/core/container.h>
 #include <j25/core/debug.h>
+#include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 
 #include <stdbool.h>
@@ -378,6 +381,9 @@ uint32_t jeWindow_getHeight(const struct jeWindow* window) {
 	JE_TRACE("window=%p, height=%d", (void*)window, height);
 
 	return (uint32_t)height;
+}
+bool jeWindow_getIsValid(struct jeWindow* window) {
+	return jeWindow_getIsOpen(window);
 }
 bool jeWindow_clear(struct jeWindow* window) {
 	bool ok = true;
@@ -1194,3 +1200,5 @@ void jeWindow_runTests() {
 	jeSDL_destroyReentrant();
 #endif
 }
+
+#endif

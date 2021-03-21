@@ -63,7 +63,7 @@ struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t
 	return logger;
 }
 
-uint32_t jeLogger_levelOverride = JE_LOG_LEVEL_COMPILED;
+uint32_t jeLogger_levelOverride = JE_LOG_LEVEL_DEFAULT;
 uint32_t jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }

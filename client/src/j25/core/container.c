@@ -506,7 +506,7 @@ void jeContainer_runTests() {
 	}
 
 	{
-		struct jeString string;
+		struct jeString string = {0};
 		JE_ASSERT(jeString_create(&string));
 		JE_ASSERT(jeString_push(&string, "hello", 6));
 		jeString_destroy(&string);

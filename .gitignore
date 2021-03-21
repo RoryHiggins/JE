@@ -3,11 +3,13 @@
 /engine/docs/build/
 
 *.exe
+*.dll
 *.sav
 *.gch
 *.a
 *.obj
 *.o
+*.so
 *.lib
 *.gcda
 j25_*.tar.gz

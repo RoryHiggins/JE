@@ -1,0 +1,43 @@
+cmake -S . -B build/local/DEVELOPMENT -D CMAKE_BUILD_TYPE=DEBUG -D JE_BUILD_TARGET=DEVELOPMENT -D JE_BUILD_HEADLESS=0 -G"Ninja" -D CMAKE_C_COMPILER=gcc -D CMAKE_UNITY_BUILD=0
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/Users/Spaceoff/Dropbox/Projects/J25/build/local/DEVELOPMENT
+cmake --build build/local/DEVELOPMENT
+ninja: no work to do.
+build/local/DEVELOPMENT/j25_client --app apps/game
+[info  .\engine/simulation.lua:230] runTests() complete, testSuitesCount=15, testTimeSeconds=0.24
+[info  .\apps/game/game.lua:15] testWorldInit() 
+[ERROR ../../../client/src/j25/client/client.c:214] jeLua_updateStates() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid
+[ERROR ../../../client/src/j25/client/client.c:495] jeLua_drawPrimitiveImpl() window is not valid

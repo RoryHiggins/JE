@@ -36,6 +36,8 @@ JE_API_PUBLIC uint32_t jeWindow_getFps(const struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId);
 JE_API_PUBLIC uint32_t jeWindow_getWidth(const struct jeWindow* window);
 JE_API_PUBLIC uint32_t jeWindow_getHeight(const struct jeWindow* window);
+JE_API_PUBLIC bool jeWindow_getIsValid(struct jeWindow* window);
+
 JE_API_PUBLIC void jeWindow_runTests();
 
 #endif

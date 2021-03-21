@@ -8,7 +8,8 @@
 # - TRACE (debug build with extremely verbose logging)
 TARGET := DEVELOPMENT
 APP := game
-
+HEADLESS := 0
+UNITY_BUILD := 0
 
 # Dependencies
 # ---
@@ -38,15 +39,16 @@ ifeq ($(TARGET),PROFILED)
 endif
 
 $(CLIENT):
-	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=false
-	cmake --build $(BUILD)
+	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -D JE_BUILD_HEADLESS=$(HEADLESS) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=$(UNITY_BUILD)
+	$(CMAKE) --build $(BUILD)
 release:
-	make TARGET=DEBUG APP=$(APP)
+	make TARGET=RELEASE APP=$(APP)
 
 	rm -rf build/release
 	mkdir build/release
 
-	cp build/local/DEBUG/j25_client -- build/release/j25_client
+	cp build/local/RELEASE/j25_client -- build/release
+	cp build/local/RELEASE/*.dll -- build/release
 
 	mkdir build/release/client
 	cp -r client/data -- build/release/client
