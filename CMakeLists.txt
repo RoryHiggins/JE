@@ -22,10 +22,11 @@ endif()
 
 set(JE_OPENGL_LIBRARIES OpenGL::GL OpenGL::GLU GLEW::glew)
 
-if(CMAKE_BUILD_TYPE STREQUAL "RELEASE")
-	SET(JE_BUILD_TARGET "RELEASE" CACHE STRING "j25 build target")
+SET(JE_BUILD_TARGET "RELEASE" CACHE STRING "j25 build target")
+if(JE_BUILD_TARGET STREQUAL "RELEASE")
+	SET(CMAKE_BUILD_TYPE "RELEASE")
 else()
-	SET(JE_BUILD_TARGET "DEVELOPMENT" CACHE STRING "j25 build target")
+	SET(CMAKE_BUILD_TYPE "DEBUG")
 endif()
 
 set(CMAKE_C_STANDARD 99)
@@ -73,13 +74,16 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	endif()
 
 	if((JE_BUILD_TARGET STREQUAL "PROFILED") OR (JE_BUILD_TARGET STREQUAL "RELEASE"))
-		je_add_compile_link_options(-fno-exceptions -Os -s -ffast-math -flto -fwhole-program -static -static-libstdc++ -static-libgcc)
+		je_add_compile_link_options(-fno-exceptions -Os -ffast-math -flto -fwhole-program -static -static-libstdc++ -static-libgcc)
 	endif()
 
 	if(JE_BUILD_TARGET STREQUAL "PROFILED")
-		je_add_compile_link_options(-pg -fno-inline-functions -fno-omit-frame-pointer)
+		je_add_compile_link_options(-g -pg)
 	endif()
 
+	if(JE_BUILD_TARGET STREQUAL "RELEASE")
+		je_add_compile_link_options(-s)
+	endif()
 endif()
 
 add_library(j25 ${JE_ENGINE_LINK_MODE})

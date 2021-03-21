@@ -263,6 +263,7 @@ int jeLua_readData(lua_State* lua) {
 		if (dataSize < 0) {
 			int errnum = 0;
 			JE_ERROR("gzread() failed with filename=%s, gzerr=%s", filename, gzerror(file, &errnum));
+			JE_MAYBE_UNUSED(errnum);
 			ok = false;
 		}
 	}
@@ -321,6 +322,7 @@ int jeLua_writeData(lua_State* lua) {
 		if (dataSizeWritten < 0) {
 			int errnum = 0;
 			JE_ERROR("gzwrite() failed with filename=%s, gzerr=%s", filename, gzerror(file, &errnum));
+			JE_MAYBE_UNUSED(errnum);
 			ok = false;
 		}
 	}

@@ -68,6 +68,7 @@ uint32_t jeLogger_getLevel() {
 	return jeLogger_levelOverride;
 }
 void jeLogger_setLevelOverride(uint32_t levelOverride) {
+#if JE_LOG_LEVEL_COMPILED > JE_LOG_LEVEL_TRACE
 	if (levelOverride < JE_LOG_LEVEL_COMPILED) {
 		JE_ERROR(
 			"invalid levelOverride below compiled minimum, levelOverride=%u, JE_LOG_LEVEL_COMPILED=%d",
@@ -75,6 +76,8 @@ void jeLogger_setLevelOverride(uint32_t levelOverride) {
 			JE_LOG_LEVEL_COMPILED);
 		levelOverride = JE_LOG_LEVEL_COMPILED;
 	}
+#endif
+
 	jeLogger_levelOverride = levelOverride;
 }
 void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* formatStr, ...) {

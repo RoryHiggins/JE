@@ -43,6 +43,7 @@ struct jeVertex {
 };
 JE_API_PUBLIC const char* jeVertex_getDebugString(const struct jeVertex* vertex);
 JE_API_PUBLIC const char* jeVertex_arrayGetDebugString(const struct jeVertex* vertices, uint32_t vertexCount);
+JE_API_PUBLIC const char* jeVertex_primitiveGetDebugString(const struct jeVertex* vertices, uint32_t primitiveType);
 JE_API_PUBLIC void jeVertex_createPointQuad(
 	struct jeVertex quadVertices[JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT],
 	const struct jeVertex pointVertices[JE_PRIMITIVE_TYPE_POINTS_VERTEX_COUNT]);

@@ -61,7 +61,7 @@ run_headless:
 run_debugger: $(CLIENT)
 	gdb --args $(CLIENT) --app apps/$(APP)
 profile: gmon.out
-	gprof -b $(CLIENT)* gmon.out > profile.txt
+	gprof -b $(CLIENT)* gmon.out > profile.txt && cat profile.txt
 docs:
 	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
 	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir build/docs/engine
