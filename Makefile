@@ -41,19 +41,27 @@ $(CLIENT):
 	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=false
 	cmake --build $(BUILD)
 release:
-	make TARGET=RELEASE APP=$(APP)
+	make TARGET=DEBUG APP=$(APP)
 
 	rm -rf build/release
-	mkdir -p build/release/client build/release/engine build/release/apps
+	mkdir build/release
 
-	cp -r build/local/RELEASE/j25_client -- build/release/j25_client
+	cp build/local/DEBUG/j25_client -- build/release/j25_client
+
+	mkdir build/release/client
 	cp -r client/data -- build/release/client
-	cp -r engine/{lib,systems,util,*.lua} -- build/release/engine
+
+	# cp -r engine -- build/release
+	mkdir build/release/engine
+	cp -r engine/lib -- build/release/engine
+	cp -r engine/systems -- build/release/engine
+	cp -r engine/util -- build/release/engine
+	cp engine/*.lua -- build/release/engine
+
+	mkdir build/release/apps
 	cp -r apps/$(APP) -- build/release/apps
 
-	rm -rf build/release/{client,engine}/{docs,README.md} build/release/client/src
-
-	tar -czf j25_release_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz -- build/release/*
+	tar -C build/release -czf j25_release_`date +"%Y_%m_%d_%H_%M_%S"`.tar.gz .
 run: $(CLIENT)
 	$(CLIENT) --app apps/$(APP)
 run_headless:

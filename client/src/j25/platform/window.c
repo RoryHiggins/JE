@@ -81,7 +81,7 @@ struct jeWindow {
 	Uint64 frame;
 	Uint32 fpsEstimate;
 	Uint32 fpsLastSampleTimeMs;
-	Uint32 nextFrameTimeMs;
+	Uint32 nextFrameStartMs;
 
 	struct jeVertexBuffer vertexBuffer;
 	struct jeImage image;
@@ -928,24 +928,24 @@ bool jeWindow_step(struct jeWindow* window) {
 
 		static const Uint32 frameDurationMs = 1000 / JE_WINDOW_FRAME_RATE;
 		Uint32 timeMs = SDL_GetTicks();
-		Uint32 waitMs = window->nextFrameTimeMs - timeMs;
+		Uint32 waitMs = window->nextFrameStartMs - timeMs;
 
 		/*guard against waitMs underflow*/
-		if (timeMs > window->nextFrameTimeMs) {
+		if (timeMs > window->nextFrameStartMs) {
 			waitMs = 0;
-			window->nextFrameTimeMs = timeMs;
+			window->nextFrameStartMs = timeMs;
 		}
 
 		/*guard against waiting more than a full frame duration*/
 		if (waitMs > frameDurationMs) {
+			window->nextFrameStartMs = timeMs + frameDurationMs;
 			waitMs = frameDurationMs;
-			window->nextFrameTimeMs = timeMs;
 		}
 
 		if (waitMs > 0) {
 			SDL_Delay(waitMs);
 		}
-		window->nextFrameTimeMs += frameDurationMs;
+		window->nextFrameStartMs += frameDurationMs;
 	}
 
 	if (!ok && (window != NULL)) {
@@ -1066,7 +1066,7 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 		window->open = true;
 
 		window->fpsLastSampleTimeMs = SDL_GetTicks();
-		window->nextFrameTimeMs = SDL_GetTicks();
+		window->nextFrameStartMs = SDL_GetTicks();
 	}
 
 	if (!ok && (window != NULL)) {

@@ -78,7 +78,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	endif()
 
 	if((JE_BUILD_TARGET STREQUAL "PROFILED") OR (JE_BUILD_TARGET STREQUAL "RELEASE"))
-		je_add_compile_link_options(-fno-exceptions -Os -ffast-math -flto -fwhole-program -static -static-libstdc++ -static-libgcc)
+		je_add_compile_link_options(-fno-exceptions -Os -ffast-math -flto -fwhole-program -static-libstdc++ -static-libgcc)
 	endif()
 
 	if(JE_BUILD_TARGET STREQUAL "PROFILED")
