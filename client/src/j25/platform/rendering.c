@@ -27,6 +27,18 @@ struct jePrimitiveSortKey {
 const char* jePrimitiveType_getDebugString(const struct jeVertex* vertices, uint32_t primitiveType);
 int jePrimitiveSortKey_less(const void* rawSortKeyA, const void* rawSortKeyB);
 
+bool jePrimitiveType_getValid(uint32_t primitiveType) {
+	bool isValid = true;
+
+	if (primitiveType == JE_PRIMITIVE_TYPE_UNKNOWN) {
+		isValid = false;
+	}
+	if (primitiveType >= JE_PRIMITIVE_TYPE_COUNT) {
+		isValid = false;
+	}
+
+	return isValid;
+}
 uint32_t jePrimitiveType_getVertexCount(uint32_t primitiveType) {
 	JE_TRACE("primitiveType=%u", primitiveType);
 

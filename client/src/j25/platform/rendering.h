@@ -24,6 +24,7 @@
 #define JE_PRIMITIVE_TYPE_QUADS_VERTEX_COUNT 6
 #define JE_PRIMITIVE_TYPE_MAX_VERTEX_COUNT 6
 
+JE_API_PUBLIC bool jePrimitiveType_getValid(uint32_t primitiveType);
 JE_API_PUBLIC uint32_t jePrimitiveType_getVertexCount(uint32_t primitiveType);
 
 struct jeVertex {
