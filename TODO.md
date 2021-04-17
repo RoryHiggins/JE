@@ -1,14 +1,11 @@
 
-Reindexing
-----------
-entity.indexed table, for indexed values of data
-entitySys:onEntityReindex
-	entitySys:reindexBounds
-	entitySys:reindexTags
+Misc Issues
+-----------
 
-Client indexing - IN ADDITION TO simulation indexing (does not replace it)
-- Static entity sprite indexing
-- 
+
+
+Configuration
+-------------
 
 
 Static initialization phase
@@ -20,68 +17,32 @@ game.static created and populated all in one game event
 world.static created and populated all in one world event
 
 
+Client-side rendering state
+---------------------------
+
+
 Render targets
 --------------
 
-Add texture atlas support:
+Client: add support for triggering a viewport draw, with the given viewport
 
-- (re-)allocate and reset an area with a unique key name
-- render texture support, with the caveat that switching render target flushes draw calls
-- make textureId a required field in draw calls, and dynamically compute offsets
-- allow loading unknown texture sizes from a file
-
-```lua
-client.defineTexture({["textureId"] = ..., ["w"] = ..., ["h"] = ...})
-client.defineTexture({["textureId"] = ..., ["filename"] = ...})
-```
-
-Add viewports support, particularly for the GUI.  Planned interface (by example):
+Engine: add support for multiple cameras
+- Expose the current camera 
+ viewports support
 ```lua
 -- clear 
-client.defineTexture({["textureId"] = "camera_1", ["w"] = 160, ["h"] = 120})
-client.drawBegin({["textureId"] = "camera_1", ["r"] = 1, ["g"] = 1, ["b"] = 1, ["a"] = 1})
--- draw the game with all its viewports onto a render target
-self:broadcast("onDraw")
-client.drawEnd()
-
--- then draw the game on the screen (may be a different resolution than the game)
-
--- NEED TO ADD TEXTURE ATLAS SUPPORT FIRST FOR FBO TO BE DRAWABLE!
--- might also want to be smarter on the simulation side (integer scaling, keep aspect ratio)
-client.targetScreen()
-client.drawBegin()
-client.drawSprite({
-	["textureId"] = "game",
-	["x1"] = 0,
-	["y1"] = 0,
-	["x2"] = client.state.w,
-	["y2"] = client.state.h,
-	["u1"] = 0,
-	["v1"] = 0,
-	["u2"] = 160,
-	["v2"] = 120,
-})
-self:broadcast("onDrawScreen")
-client.drawEnd()
+for _, camera in pairs(self.entitySys:findAll("camera"))
+	client.drawBegin()  -- makes drawReset useless
+	self:broadcast("onDraw", camera)
+	client.drawEnd(camera)
+end
 ```
 
-Configuration
--------------
-By default one file for all, but support multiple files with a defined parse order
-Lives in the game/ folder
+Editor
+------
 
-Flow for configuring the client:
-	client.configure(static.client)
-	client.open()
-
-Rename minimal -> minimal_example
-Add minimal_client_example showing the minimum needed to have a
-
-
-Editor thoughts
----------------
-
-GUI at native scale
+gui draw loop (begin, end with gui capera)
+- GUI at native screen resolution, on top of game viewports
 
 Keyboard + mouse focused
 
@@ -144,9 +105,3 @@ Bounding
 - Clamp text within width/height bounds.
 
 Rich text support: font loading, unicode, and kerning.  Bring alcohol.
-
-
-Misc Issues
------------
-
-- Releasing with a specified game does not change the client's default target

@@ -31,9 +31,10 @@ extern "C" {
 } /*extern "C"*/
 #endif
 
-#if !defined(JE_DEFAULT_GAME_DIR)
-#define JE_DEFAULT_GAME_DIR "apps/game"
+#if !defined(JE_DEFAULT_APP)
+#define JE_DEFAULT_APP "game"
 #endif
+#define JE_DEFAULT_APP_DIR "apps/" JE_DEFAULT_APP
 
 /*https://www.lua.org/manual/5.1/manual.html*/
 #define JE_LUA_STACK_TOP (-1)
@@ -833,7 +834,7 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 		ok = false;
 	}
 
-	const char* appDir = JE_DEFAULT_GAME_DIR;
+	const char* appDir = JE_DEFAULT_APP_DIR;
 	if (ok) {
 		memset((void*)client, 0, sizeof(struct jeClient));
 
