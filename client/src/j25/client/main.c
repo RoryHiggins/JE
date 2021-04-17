@@ -1,6 +1,6 @@
+#include <j25/core/common.h>
 #include <j25/client/client.h>
 
-#include <stdbool.h>
 #include <stdlib.h>
 
 int main(int argc, char** argv) {

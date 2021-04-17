@@ -72,9 +72,6 @@ run_debugger: $(CLIENT)
 	gdb --args $(CLIENT) --app apps/$(APP)
 profile: gmon.out
 	gprof -b $(CLIENT)* gmon.out > profile.txt && cat profile.txt
-docs:
-	echo "Note: you may need to install python requirements first, via \"$(PYTHON) -m pip install -r scripts/requirements.txt\""
-	$(PYTHON) scripts/build_docs.py --src-dir engine/docs/src --build-dir build/docs/engine
 tidy:
 	find ./client -name '*.c' -or -name '*.h' | xargs -I TIDY_INPUT clang-tidy TIDY_INPUT -- -Iclient/include -Iclient/src
 format:

@@ -3,7 +3,7 @@
 #if !defined(JE_PLATFORM_WINDOW_H)
 #define JE_PLATFORM_WINDOW_H
 
-#include <j25/core/api.h>
+#include <j25/core/common.h>
 
 #include <stdbool.h>
 #include <stdint.h>

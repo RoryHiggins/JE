@@ -3,10 +3,7 @@
 #if !defined(JE_CORE_CONTAINER_H)
 #define JE_CORE_CONTAINER_H
 
-#include <j25/core/api.h>
-
-#include <stdbool.h>
-#include <stdint.h>
+#include <j25/core/common.h>
 
 struct jeArray {
 	void* data;
@@ -14,6 +11,7 @@ struct jeArray {
 	uint32_t count;
 	uint32_t capacity;
 };
+
 struct jeString {
 	struct jeArray array;
 };

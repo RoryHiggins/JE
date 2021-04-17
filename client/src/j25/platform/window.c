@@ -2,12 +2,10 @@
 
 #if !defined(JE_BUILD_HEADLESS)
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
-
-#include <stdbool.h>
 
 #define GLEW_STATIC
 #define GL_GLEXT_PROTOTYPES 1
@@ -1205,8 +1203,8 @@ void jeWindow_runTests() {
 
 #if defined(JE_BUILD_HEADLESS)
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 #include <j25/platform/rendering.h>
 
 #include <stdbool.h>

@@ -3,7 +3,7 @@
 #if !defined(JE_PLATFORM_RENDERING_H)
 #define JE_PLATFORM_RENDERING_H
 
-#include <j25/core/api.h>
+#include <j25/core/common.h>
 #include <j25/core/container.h>
 
 #include <stdbool.h>

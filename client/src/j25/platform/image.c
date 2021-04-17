@@ -2,10 +2,9 @@
 
 #if !defined(JE_BUILD_HEADLESS)
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 
-#include <stdbool.h>
 #include <string.h>
 
 #include <png.h>
@@ -123,11 +122,10 @@ void jeImage_runTests() {
 
 #endif
 
-
 #if defined(JE_BUILD_HEADLESS)
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 
 #include <stdbool.h>
 

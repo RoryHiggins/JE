@@ -1,7 +1,7 @@
 #include <j25/client/client.h>
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 #include <j25/platform/window.h>
@@ -9,8 +9,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
-#include <stdbool.h>
-#include <stddef.h>
 #include <string.h>
 
 #include <zlib.h>
@@ -877,7 +875,9 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 
 	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename, 0), argumentCount, arguments);
 
-	jeWindow_destroy(client->window);
+	if (client != NULL) {
+		jeWindow_destroy(client->window);
+	}
 
 	jeString_destroy(&spritesFilename);
 	jeString_destroy(&luaMainFilename);

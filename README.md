@@ -121,9 +121,6 @@ make release APP=apps/game
 # generate a performance profile using gprof.  build with TARGET=PROFILED, run game, then run this command
 make profile
 
-# build docs
-make docs
-
 # clean artefacts
 make clean
 

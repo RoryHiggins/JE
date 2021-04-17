@@ -1,12 +1,26 @@
 #pragma once
 
-#if !defined(JE_CORE_DEBUG_H)
-#define JE_CORE_DEBUG_H
-
-#include <j25/core/api.h>
-
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
+
+#if !defined(JE_CORE_API_H)
+#define JE_CORE_API_H
+
+#if !defined(JE_API_PUBLIC) && defined(JE_DLL_EXPORT) && defined(JE_DLL)
+#define JE_API_PUBLIC __declspec(dllexport)
+#elif !defined(JE_API_PUBLIC) && !defined(JE_DLL_EXPORT) && defined(JE_DLL)
+#define JE_API_PUBLIC __declspec(dllimport)
+#elif !defined(JE_API_PUBLIC)
+#define JE_API_PUBLIC
+#endif
+
+#if defined(__clang__) || defined(__GNUC__)
+#define JE_API_PRINTF(FORMAT_ARG, VA_ARG) __attribute__((format(printf, FORMAT_ARG, VA_ARG)))
+#else
+#define JE_API_PRINTF(FORMAT_ARG, VA_ARG)
+#endif
 
 /**
  * Casts the result to void to inform the compiler that the result is not used
@@ -69,6 +83,7 @@ struct jeLogger {
 	const char* function;
 	uint32_t line;
 };
+
 JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line);
 JE_API_PUBLIC uint32_t jeLogger_getLevel();
 JE_API_PUBLIC void jeLogger_setLevelOverride(uint32_t loggerLevelOverride);

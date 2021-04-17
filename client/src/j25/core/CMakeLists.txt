@@ -1,14 +1,19 @@
 target_sources(
 	j25
 	PUBLIC
-	"api.h"
-	"debug.h"
+	"common.h"
 	"container.h"
 )
 
 target_sources(
 	j25
 	PRIVATE
-	"debug.c"
+	"common.c"
 	"container.c"
+)
+
+target_precompile_headers(
+	j25
+	PUBLIC
+	"common.h"
 )

@@ -1,29 +1,4 @@
 
-Headless mode
--------------
-Add an image.h with a headless and real image impl
-
-
-Integer tag indexing
---------------------
-Lua tag index
-	string tag name to numeric tag id
-
-Decoupled entity querying
--------------------------
-Lua EntityQuery object
-	tag id (readonly)
-	exclude tag id (readonly)
-	create(tag, excludeTag)
-	setTag(tag?)
-	setExcludeTag(tag?)
-	find()
-	findBounded()
-	API for querying with bounds
-
-Move EntityQuery to util/entity_query.lua
-
-
 Reindexing
 ----------
 entity.indexed table, for indexed values of data
@@ -31,21 +6,15 @@ entitySys:onEntityReindex
 	entitySys:reindexBounds
 	entitySys:reindexTags
 
-Client indexing
----------------
-
-IN ADDITION TO simulation indexing (does not replace it)
-
-
-C client entity table
-
-C querying
-	default bounds is int min to int max
-	decide bounds first vs tags first based on number of chunks
+Client indexing - IN ADDITION TO simulation indexing (does not replace it)
+- Static entity sprite indexing
+- 
 
 
 Static initialization phase
 ---------------------------
+
+Init = static initialization only?
 
 game.static created and populated all in one game event
 world.static created and populated all in one world event
@@ -95,18 +64,6 @@ client.drawSprite({
 self:broadcast("onDrawScreen")
 client.drawEnd()
 ```
-
-
-Modularization
---------------
-Add support for a command-line argument to specify the entrypoint
-
-Move src/game to games/game/.  Add a games/examples/
-
-Multiple spritesheets - how?  TODO thoughts
-
-Move x/y/w/h handling into a Bounds2d system
-
 
 Configuration
 -------------
@@ -186,12 +143,10 @@ Bounding
 - Overflow text onto next row if width is reached.
 - Clamp text within width/height bounds.
 
-Font loading and unicode.  Bring alcohol.
+Rich text support: font loading, unicode, and kerning.  Bring alcohol.
 
 
 Misc Issues
 -----------
 
 - Releasing with a specified game does not change the client's default target
-- No docs example of running a game headless (no client) - add a makefile target?
-

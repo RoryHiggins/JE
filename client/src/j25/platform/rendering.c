@@ -1,10 +1,9 @@
 #include <j25/platform/rendering.h>
 
+#include <j25/core/common.h>
 #include <j25/core/container.h>
-#include <j25/core/debug.h>
 
 #include <math.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

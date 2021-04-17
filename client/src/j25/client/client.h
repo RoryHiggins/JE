@@ -3,7 +3,7 @@
 #if !defined(JE_CORE_CLIENT_H)
 #define JE_CORE_CLIENT_H
 
-#include <j25/core/api.h>
+#include <j25/core/common.h>
 
 #include <stdbool.h>
 #include <stdint.h>
