@@ -13,11 +13,11 @@ function Player:tickEntity(entity)
 	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
 
 	local inputDirX = (
-		util.boolToNumber(self.inputSys:get("right"))
-		- util.boolToNumber(self.inputSys:get("left")))
+		util.boolGetValue(self.inputSys:get("right"))
+		- util.boolGetValue(self.inputSys:get("left")))
 	local inputDirY = (
-		util.boolToNumber(self.inputSys:get("down"))
-		- util.boolToNumber(self.inputSys:get("up")))
+		util.boolGetValue(self.inputSys:get("down"))
+		- util.boolGetValue(self.inputSys:get("up")))
 
 	-- scale movement by normalized direction perpindicular to gravity (so movement=left/right when falling down, etc)
 	local moveDirX = inputDirX * math.abs(util.sign(constants.physicsGravityY))

@@ -1,3 +1,4 @@
+local log = require("engine/util/log")
 local util = require("engine/util/util")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
@@ -355,27 +356,27 @@ function Physics:onRunTests()
 	})
 
 	-- sanity check; physics system only supports gravity on one axis
-	assert((gravitySignX == 0) or (gravitySignY == 0))
+	log.assert((gravitySignX == 0) or (gravitySignY == 0))
 
 	-- simulate being in the air
 	local entity = self.templateSys:instantiate(physicsTemplate, 0, 0)
-	assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["air"])
+	log.assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["air"])
 
 	-- simulate being on the ground
 	self.templateSys:instantiate(wallTemplate, gridDownX, gridDownY)
-	assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["solid"])
+	log.assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["solid"])
 
 	-- simulate idle frames
-	assert(entity.x == 0)
-	assert(entity.y == 0)
-	assert(entity.forceX == 0)
-	assert(entity.forceY == 0)
-	assert(entity.speedX == 0)
-	assert(entity.speedY == 0)
+	log.assert(entity.x == 0)
+	log.assert(entity.y == 0)
+	log.assert(entity.forceX == 0)
+	log.assert(entity.forceY == 0)
+	log.assert(entity.speedX == 0)
+	log.assert(entity.speedY == 0)
 	for _ = 1, 5 do
 		self:onStep()
-		assert(entity.x == 0)
-		assert(entity.y == 0)
+		log.assert(entity.x == 0)
+		log.assert(entity.y == 0)
 	end
 
 	-- simulate falling off a ledge
@@ -384,29 +385,29 @@ function Physics:onRunTests()
 		entity.forceY = entity.forceY + (constants.physicsGravityX)
 		self:onStep()
 	end
-	assert(util.sign(entity.x) ~= 0)
-	assert(util.sign(entity.y) ~= 0)
+	log.assert(util.sign(entity.x) ~= 0)
+	log.assert(util.sign(entity.y) ~= 0)
 
 	-- test reset logic
 	self:stopX(entity)
 	self:stopY(entity)
 	self.entitySys:setPos(entity, 0, 0)
-	assert(entity.x == 0)
-	assert(entity.y == 0)
-	assert(entity.forceX == 0)
-	assert(entity.forceY == 0)
-	assert(entity.speedX == 0)
-	assert(entity.speedY == 0)
+	log.assert(entity.x == 0)
+	log.assert(entity.y == 0)
+	log.assert(entity.forceX == 0)
+	log.assert(entity.forceY == 0)
+	log.assert(entity.speedX == 0)
+	log.assert(entity.speedY == 0)
 
 	-- simulate being pushed
-	assert(self:tryPushX(entity, 1) or self:tryPushY(entity, 1))
-	assert((entity.x ~= 0) or (entity.y ~= 0))
+	log.assert(self:tryPushX(entity, 1) or self:tryPushY(entity, 1))
+	log.assert((entity.x ~= 0) or (entity.y ~= 0))
 
 	-- simulate being carried
 	local carryable = self.templateSys:instantiate(physicsTemplate, -gridDownX, -gridDownY)
-	assert(self:tryMoveX(entity, 1) or self:tryMoveY(entity, 1))
-	assert((entity.x ~= 0) or (entity.y ~= 0))
-	assert((carryable.x ~= -gridDownX) or (carryable.y ~= -gridDownY))
+	log.assert(self:tryMoveX(entity, 1) or self:tryMoveY(entity, 1))
+	log.assert((entity.x ~= 0) or (entity.y ~= 0))
+	log.assert((carryable.x ~= -gridDownX) or (carryable.y ~= -gridDownY))
 end
 
 return Physics

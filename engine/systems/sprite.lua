@@ -1,6 +1,6 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
-local client = require("engine/systems/client")
+local client = require("engine/client/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
 
@@ -24,7 +24,7 @@ function Sprite:addSprite(spriteId, u, v, w, h, r, g, b, a)
 		sprites[spriteId] = sprite
 	end
 
-	log.debug("sprite=%s", util.toComparable(sprite))
+	log.trace("sprite=%s", util.getComparable(sprite))
 
 	return sprite
 end
@@ -66,17 +66,17 @@ function Sprite:onRunTests()
 	local entity = self.entitySys:create()
 	local testSprite = self:addSprite("test", 40, 0, 8, 8)
 
-	assert(self:get("test") == testSprite)
+	log.assert(self:get("test") == testSprite)
 
 	self:attach(entity, testSprite)
-	assert(entity.spriteId == "test")
-	assert(entity.tags.sprite)
+	log.assert(entity.spriteId == "test")
+	log.assert(entity.tags.sprite)
 
 	self.simulation:draw()
 
 	self:detach(entity, testSprite)
-	assert(entity.spriteId == nil)
-	assert(entity.tags.sprite == nil)
+	log.assert(entity.spriteId == nil)
+	log.assert(entity.tags.sprite == nil)
 end
 
 return Sprite

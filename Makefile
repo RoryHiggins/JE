@@ -8,7 +8,7 @@
 # - TRACE (debug build with extremely verbose logging)
 TARGET := DEVELOPMENT
 APP := game
-HEADLESS := 0
+HEADLESS_CLIENT := 0
 UNITY_BUILD := 0
 
 # Dependencies
@@ -26,7 +26,7 @@ CLIENT := $(BUILD)/j25_client
 
 # Commands
 # ---
-.PHONY: $(CLIENT) release run run_headless run_debugger profile docs clean
+.PHONY: $(CLIENT) release run run_headless debug profile docs clean
 .DEFAULT_GOAL := $(CLIENT)
 
 
@@ -39,7 +39,7 @@ ifeq ($(TARGET),PROFILED)
 endif
 
 $(CLIENT):
-	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -D JE_BUILD_HEADLESS=$(HEADLESS) -D JE_DEFAULT_APP=$(APP) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=$(UNITY_BUILD)
+	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -D JE_BUILD_HEADLESS=$(HEADLESS_CLIENT) -D JE_DEFAULT_APP=$(APP) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=$(UNITY_BUILD)
 	$(CMAKE) --build $(BUILD)
 release:
 	make TARGET=RELEASE APP=$(APP)
@@ -69,7 +69,7 @@ run: $(CLIENT)
 run_headless:
 	$(LUA) apps/$(APP)/main.lua
 run_debugger: $(CLIENT)
-	gdb --args $(CLIENT) --app apps/$(APP)
+	gdb -ex 'break jeErr' --ex run --args $(CLIENT) --debug --app apps/$(APP)
 profile: gmon.out
 	gprof -b $(CLIENT)* gmon.out > profile.txt && cat profile.txt
 tidy:

@@ -1,30 +1,42 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
-local client = require("engine/systems/client")
+local client = require("engine/client/client")
 
 local Simulation = {}
 Simulation.__index = Simulation
 Simulation.SYSTEM_NAME = "simulation"
 Simulation.DUMP_FILE = "./game_dump.sav"
 Simulation.SAVE_FILE = "./game_save.sav"
-function Simulation:broadcast(event, ...)
-	for _, system in ipairs(self.private.systemsOrder) do
+function Simulation:broadcast(event, tolerate_errors, ...)
+	for _, system in ipairs(self.private.eventListeners) do
 		local eventHandler = system[event]
 		if eventHandler then
-			eventHandler(system, ...)
+			if tolerate_errors then
+				log.protectedCall(eventHandler, system, ...)
+			else
+				eventHandler(system, ...)
+			end
 		end
 	end
 end
+function Simulation:tryGetSystem(systemName)
+	if type(systemName) ~= "string" then
+		log.debug("systemName is not registered, systemName=%s", systemName)
+		return {}
+	end
+
+	return self.private.systems[systemName]
+end
 function Simulation:addSystem(system)
 	if type(system) ~= "table" then
-		log.error("system is not a table, system=%s", util.toComparable(system))
+		log.error("system is not a table, system=%s", util.getComparable(system))
 		return {}
 	end
 
 	local systemName = system.SYSTEM_NAME
 
 	if type(systemName) ~= "string" then
-		log.error("system.SYSTEM_NAME is not valid, system=%s", util.toComparable(system))
+		log.error("system.SYSTEM_NAME is not valid, system=%s", util.getComparable(system))
 		return {}
 	end
 
@@ -40,55 +52,47 @@ function Simulation:addSystem(system)
 			systemInstance:onInit(self)
 		end
 
-		self.private.systemsOrder[#self.private.systemsOrder + 1] = systemInstance
+		self.private.eventListeners[#self.private.eventListeners + 1] = systemInstance
 	end
 
 	return systemInstance
 end
-function Simulation:clientStep()
+function Simulation:step()
 	log.trace("")
 
 	if not client.state.running then
 		self.private.running = false
 	end
 
-	-- only update the client if the game is running
-	if self.private.running then
-		client.step()
+	if not self.private.running then
+		return
 	end
 
+	-- only update the client if the game is running
+	client.step()
+	log.trace("client.step complete, fps=%d", self.input.fps)
+
+	-- consume state updates from client
 	self.input.screen = {
 		["x1"] = 0,
 		["y1"] = 0,
 		["x2"] = client.state.width,
 		["y2"] = client.state.height,
 	}
-
 	self.input.fps = client.state.fps
 
-	self:broadcast("onClientStep")
-
-	log.trace("clientStep complete, fps=%d", self.input.fps)
+	self:broadcast("onStep", true)
 end
 function Simulation:draw()
 	log.trace("")
 
-	self:broadcast("onDraw")
-end
-function Simulation:step()
-	log.trace("")
-
-	self:clientStep()
-
-	self:broadcast("onStep")
-
-	self:draw()
+	self:broadcast("onDraw", true)
 end
 function Simulation:worldInit()
 	log.debug("")
 
 	self.state.world = {}
-	self:broadcast("onWorldInit")
+	self:broadcast("onWorldInit", false)
 end
 function Simulation:init()
 	log.debug("")
@@ -103,7 +107,7 @@ function Simulation:init()
 	-- clear anything drawn by previous simulation
 	client.drawReset()
 
-	self:broadcast("onInit", self)
+	self:broadcast("onInit", false, self)
 	self:worldInit({})
 end
 function Simulation:start()
@@ -114,7 +118,7 @@ function Simulation:start()
 	end
 
 	if not self.private.running then
-		self:broadcast("onStart")
+		self:broadcast("onStart", false)
 		self.private.running = true
 	end
 end
@@ -122,7 +126,7 @@ function Simulation:stop()
 	log.debug("")
 
 	if self.private.running then
-		self:broadcast("onStop")
+		self:broadcast("onStop", true)
 		self.private.running = false
 	end
 end
@@ -171,9 +175,9 @@ function Simulation:dump(filename)
 	local dump = {
 		["world"] = self.state.world,
 		["constants"] = self.constants,
-		["systems"] = util.getKeys(self.private.systems),
+		["systems"] = util.tableGetKeys(self.private.systems),
 	}
-	if not util.writeDataUncompressed(filename, util.toComparable(dump)) then
+	if not util.writeDataUncompressed(filename, util.getComparable(dump)) then
 		log.error("client.writeData() failed")
 		return false
 	end
@@ -183,14 +187,14 @@ end
 function Simulation:onRunTests()
 	self:init()
 
-	local gameBeforeSave = util.toComparable(self.state.world)
-	assert(self:dump("test_dump.sav"))
-	assert(self:save("test_save.sav"))
-	assert(self:load("test_save.sav"))
+	local gameBeforeSave = util.getComparable(self.state.world)
+	log.assert(self:dump("test_dump.sav"))
+	log.assert(self:save("test_save.sav"))
+	log.assert(self:load("test_save.sav"))
 	os.remove("test_dump.sav")
 	os.remove("test_save.sav")
 
-	local gameAfterLoad = util.toComparable(self.state.world)
+	local gameAfterLoad = util.getComparable(self.state.world)
 	if gameBeforeSave ~= gameAfterLoad then
 		log.error("Mismatched state before save and after load: before=%s, after=%s",
 				   gameBeforeSave, gameAfterLoad)
@@ -231,12 +235,18 @@ function Simulation:runTests()
 				  testSuitesCount, testTimeSeconds)
 end
 function Simulation:run(...)
-	self.args = {...}
-	log.debug("arguments: %s", util.toComparable(self.args))
-
 	local startTimeSeconds = os.clock()
-	local logLevelBackup = log.logLevel
 	log.logLevel = client.state.logLevel
+
+	self.args = {...}
+	if util.tableHasValue(self.args, "--debug") then
+		log.enableDebugger()
+	end
+	if log.logLevel >= log.LOG_LEVEL_NONE then
+		log.disableLogging()
+	end
+
+	log.debug("arguments: %s", util.getComparable(self.args))
 
 	self:init()
 	self:runTests()
@@ -245,14 +255,13 @@ function Simulation:run(...)
 
 	while self.private.running do
 		self:step()
+		self:draw()
 	end
 
 	self:stop()
 
 	self:save(self.SAVE_FILE)
 	self:dump(self.DUMP_FILE)
-
-	log.logLevel = logLevelBackup
 
 	local endTimeSeconds = os.clock()
 	local runTimeSeconds = endTimeSeconds - startTimeSeconds
@@ -267,15 +276,10 @@ function Simulation.new()
 			["running"] = false,
 
 			["systems"] = {
-				["simulation"] = nil,  -- recursive reference cannot be resolved inside table initializer
-				["util"] = util,
-				["client"] = client,
 			},
 
-			["systemsOrder"] = {
+			["eventListeners"] = {
 				nil,  -- will be replaced with simulation; recursive ref can't be resolved in table initializer
-				util,
-				client,
 			},
 		},
 
@@ -300,8 +304,7 @@ function Simulation.new()
 		},
 	}
 	-- must assign recursive references after initializer
-	simulation.private.systems.simulation = simulation
-	simulation.private.systemsOrder[1] = simulation
+	simulation.private.eventListeners[1] = simulation
 
 	setmetatable(simulation, Simulation)
 

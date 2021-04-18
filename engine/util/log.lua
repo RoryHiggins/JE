@@ -7,9 +7,18 @@ log.LOG_LEVEL_ERR = 4
 log.LOG_LEVEL_NONE = 5
 log.testsLogLevel = log.LOG_LEVEL_WARN
 log.logLevel = log.LOG_LEVEL_LOG
+log.debugger = nil
+log.protectedCall = pcall
+log.assert = assert
+local function noop()
+end
 local function logImpl(level, format, ...)
 	if log.logLevel > level then
 		return
+	end
+
+	if log.debugger and level >= log.LOG_LEVEL_WARN then
+		log.debugger()
 	end
 
 	local callee_info = debug.getinfo(3, "Sln")
@@ -31,5 +40,19 @@ end
 function log.error(format, ...)
 	logImpl(log.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format, ...)
 end
-
+function log.enableDebugger()
+	log.debugger = require("engine/lib/debugger/debugger")
+	log.protectedCall = log.debugger.call
+	log.assert = log.debugger.assert
+end
+function log.disableLogging()
+	log.debugger = nil
+	log.protectedCall = pcall
+	log.assert = noop
+	log.trace = noop
+	log.debug = noop
+	log.info = noop
+	log.warn = noop
+	log.error = noop
+end
 return log

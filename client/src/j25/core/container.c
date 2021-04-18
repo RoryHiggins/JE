@@ -282,76 +282,6 @@ bool jeString_create(struct jeString* string) {
 
 	return ok;
 }
-bool jeString_createFormatted(struct jeString* string, const char* formatStr, ...) {
-	bool ok = true;
-
-	if (string == NULL) {
-		JE_ERROR("string=NULL");
-		ok = false;
-	}
-
-	if (formatStr == NULL) {
-		JE_ERROR("formatStr=NULL");
-		ok = false;
-
-		formatStr = "<jeString_createFormatted null formatStr>";
-	}
-
-	JE_TRACE("string=%p, formatStr=%s", (void*)string, formatStr);
-
-	ok = ok && jeString_create(string);
-
-	va_list args = {0};
-	va_start(args, formatStr);
-
-	/*Copy of variadic arguments for calculating array size*/
-	va_list argsCopy = {0};
-	va_copy(argsCopy, args);
-
-	int formattedStringSize = -1;
-	if (ok) {
-		formattedStringSize = vsnprintf(/*array*/ NULL, 0, formatStr, argsCopy);
-
-		JE_TRACE("string=%p, formatStr=%s, formattedStringSize=%d", (void*)string, formatStr, formattedStringSize);
-
-		if (formattedStringSize < 0) {
-			JE_ERROR("vsnprintf() failed with formatStr=%s, formattedStringSize=%d", formatStr, formattedStringSize);
-			ok = false;
-		}
-	}
-
-	ok = ok && jeString_setCount(string, (uint32_t)(formattedStringSize + 1));
-
-	char* dest = NULL;
-	if (ok) {
-		dest = jeString_get(string, 0);
-
-		if (dest == NULL) {
-			JE_ERROR("jeString_get() failed with string=%p", (void*)string);
-			ok = false;
-		}
-	}
-
-	ok = ok && (dest != NULL);
-
-	if (ok) {
-		formattedStringSize = vsnprintf(dest, (size_t)formattedStringSize + 1, formatStr, args);
-
-		if (formattedStringSize < 0) {
-			JE_ERROR(
-				"vsnprintf() failed with dest=%p, formatStr=%s, formattedStringSize=%d",
-				(void*)dest,
-				formatStr,
-				formattedStringSize);
-			ok = false;
-		}
-	}
-
-	va_end(argsCopy);
-	va_end(args);
-
-	return ok;
-}
 void jeString_destroy(struct jeString* string) {
 	if (string != NULL) {
 		jeArray_destroy(&string->array);
@@ -458,6 +388,80 @@ bool jeString_push(struct jeString* string, const char* data, uint32_t count) {
 	ok = ok && jeArray_push(&string->array, (const void*)data, count);
 	return ok;
 }
+bool jeString_set(struct jeString* string, const char* data, uint32_t count) {
+	bool ok = jeString_setCount(string, 0);
+	ok = ok && jeString_push(string, data, count);
+
+	return ok;
+}
+bool jeString_setFormatted(struct jeString* string, const char* formatStr, ...) {
+	bool ok = true;
+
+	if (string == NULL) {
+		JE_ERROR("string=NULL");
+		ok = false;
+	}
+
+	if (formatStr == NULL) {
+		JE_ERROR("formatStr=NULL");
+		ok = false;
+
+		formatStr = "<jeString_setFormatted null formatStr>";
+	}
+
+	JE_TRACE("string=%p, formatStr=%s", (void*)string, formatStr);
+
+	va_list args = {0};
+	va_start(args, formatStr);
+
+	/*Copy of variadic arguments for calculating array size*/
+	va_list argsCopy = {0};
+	va_copy(argsCopy, args);
+
+	int formattedStringSize = -1;
+	if (ok) {
+		formattedStringSize = vsnprintf(/*array*/ NULL, 0, formatStr, argsCopy);
+
+		JE_TRACE("string=%p, formatStr=%s, formattedStringSize=%d", (void*)string, formatStr, formattedStringSize);
+
+		if (formattedStringSize < 0) {
+			JE_ERROR("vsnprintf() failed with formatStr=%s, formattedStringSize=%d", formatStr, formattedStringSize);
+			ok = false;
+		}
+	}
+
+	ok = ok && jeString_setCount(string, (uint32_t)(formattedStringSize + 1));
+
+	char* dest = NULL;
+	if (ok) {
+		dest = jeString_get(string, 0);
+
+		if (dest == NULL) {
+			JE_ERROR("jeString_get() failed with string=%p", (void*)string);
+			ok = false;
+		}
+	}
+
+	ok = ok && (dest != NULL);
+
+	if (ok) {
+		formattedStringSize = vsnprintf(dest, (size_t)formattedStringSize + 1, formatStr, args);
+
+		if (formattedStringSize < 0) {
+			JE_ERROR(
+				"vsnprintf() failed with dest=%p, formatStr=%s, formattedStringSize=%d",
+				(void*)dest,
+				formatStr,
+				formattedStringSize);
+			ok = false;
+		}
+	}
+
+	va_end(argsCopy);
+	va_end(args);
+
+	return ok;
+}
 
 void jeContainer_runTests() {
 #if JE_DEBUGGING
@@ -514,9 +518,16 @@ void jeContainer_runTests() {
 		JE_ASSERT(jeString_getCount(&string) >= 5);
 		JE_ASSERT(jeString_getCapacity(&string) >= jeString_getCount(&string));
 		JE_ASSERT(jeString_get(&string, 0) != NULL);
-
 		jeString_destroy(&string);
-		JE_ASSERT(jeString_createFormatted(&string, "hello %s number %u", "person", 42u));
+
+		JE_ASSERT(jeString_create(&string));
+		const char target[] = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234";
+		JE_ASSERT(jeString_set(&string, target, strlen(target)));
+		JE_ASSERT(strcmp(jeString_get(&string, 0), target) == 0);
+		jeString_destroy(&string);
+
+		JE_ASSERT(jeString_create(&string));
+		JE_ASSERT(jeString_setFormatted(&string, "hello %s number %u", "person", 42u));
 		jeString_destroy(&string);
 	}
 #endif

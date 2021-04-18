@@ -112,7 +112,7 @@ make -B TARGET=DEBUG
 # - DEBUG - optimized for debugging.  extra static analysis tools enabled, extra gdb debugging info, and verbose logging
 # - TRACE - debug build with extremely verbose logging enabled
 
-# run game with client running in gdb.  for debugging the client
+# run game with lua debugger enabled and client running in gdb
 make run_debugger
 
 # create a fully packaged release.tar.gz which can be delivered standalone

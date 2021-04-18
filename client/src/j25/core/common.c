@@ -18,8 +18,11 @@ const char* jeLoggerLevel_getLabel(uint32_t loggerLevel);
 
 const char* __asan_default_options();
 
-void jeErr() {
+JE_API_NOINLINE void jeErr() {
+	static uint32_t jeErr_count = 0;
+
 	/* dummy function to breakpoint on an error */
+	jeErr_count++;
 }
 
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
@@ -90,7 +93,7 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 	formatStr = formatStr ? formatStr : "<jeLogger_log null formatStr>";
 
 	if (jeLogger_levelOverride <= loggerLevel) {
-		if (loggerLevel <= JE_LOG_LEVEL_ERR) {
+		if (loggerLevel >= JE_LOG_LEVEL_WARN) {
 			jeErr();
 		}
 

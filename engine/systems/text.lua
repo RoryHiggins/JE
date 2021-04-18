@@ -1,4 +1,5 @@
-local client = require("engine/systems/client")
+local log = require("engine/util/log")
+local client = require("engine/client/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
 
@@ -64,19 +65,19 @@ function Text:onRunTests()
 	local entity = self.entitySys:create()
 	local testFont = self:addFont("test", 0, 160, 8, 8, " ", "~", 8)
 
-	assert(self:getFont("test") == testFont)
+	log.assert(self:getFont("test") == testFont)
 
 	self:attach(entity, testFont, "hello")
-	assert(entity.fontId == "test")
-	assert(entity.tags.text)
-	assert(entity.text == "hello")
+	log.assert(entity.fontId == "test")
+	log.assert(entity.tags.text)
+	log.assert(entity.text == "hello")
 
 	self.simulation:draw()
 
 	self:detach(entity, testFont)
-	assert(entity.spriteId == nil)
-	assert(entity.tags.sprite == nil)
-	assert(entity.text == nil)
+	log.assert(entity.spriteId == nil)
+	log.assert(entity.tags.sprite == nil)
+	log.assert(entity.text == nil)
 end
 
 return Text

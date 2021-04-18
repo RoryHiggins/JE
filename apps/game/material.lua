@@ -1,3 +1,4 @@
+local log = require("engine/util/log")
 local Entity = require("engine/systems/entity")
 
 local Material = {}
@@ -27,7 +28,7 @@ function Material:onEntityTag(entity, tag, tagId)
 	end
 end
 function Material:onRunTests()
-	assert(self.simulation.constants.materials ~= nil)
+	log.assert(self.simulation.constants.materials ~= nil)
 end
 
 return Material

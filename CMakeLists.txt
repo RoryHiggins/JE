@@ -70,6 +70,9 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 			je_add_compile_link_options(-fanalyzer)
 		endif()
 
+		# disable warnings needed by debugger_lua library
+		je_add_compile_link_options(-Wno-overlength-strings)
+
 		if(NOT WIN32)
 			je_add_compile_link_options(-fsanitize=address,leak,undefined -fsanitize-recover=address -fsanitize-address-use-after-scope -fstack-protector)
 		endif()
@@ -104,7 +107,7 @@ if(MINGW)
 endif()
 
 if(JE_BUILD_HEADLESS)
-	target_compile_definitions(j25 PRIVATE "JE_BUILD_HEADLESS=1")
+	target_compile_definitions(j25 PRIVATE "JE_BUILD_HEADLESS")
 else()
 	target_link_libraries(j25 PRIVATE ${JE_SDL2_LIBRARIES} ${JE_OPENGL_LIBRARIES} PNG::PNG)
 endif()

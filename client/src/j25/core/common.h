@@ -22,6 +22,12 @@
 #define JE_API_PRINTF(FORMAT_ARG, VA_ARG)
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+#define JE_API_NOINLINE __attribute__ ((noinline))
+#else
+#define JE_API_NOINLINE
+#endif
+
 /**
  * Casts the result to void to inform the compiler that the result is not used
  * Primary use-case is to suppress unused function argument warnings

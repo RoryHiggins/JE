@@ -3,6 +3,15 @@
 # Misc Issues
 
 
+# Lua debugger setup
+
+
+# Lua+C stack traces
+
+
+# Lua error recovery?
+
+
 # Render targets
 
 Client: add support for triggering a viewport draw, with the given viewport
@@ -10,11 +19,10 @@ Client: add support for triggering a viewport draw, with the given viewport
 Engine: add support for multiple game cameras
 - Expose the current camera in the render event
 - replace camera.cameraTarget with a CameraFollow component
-```lua
--- clear 
+```
 for _, camera in pairs(self.entitySys:findAll("camera"))
 	client.drawBegin()  -- makes drawReset useless
-	self:broadcast("onDraw", camera)
+	self:broadcast("onDraw", true, camera)
 	client.drawEnd(camera)
 end
 ```

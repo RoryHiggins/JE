@@ -54,6 +54,11 @@ extern "C" {
 struct jeWindow;
 struct lua_State;
 
+struct jeClient {
+	struct jeWindow* window;
+	struct lua_State* lua;
+};
+
 const char* jeLua_getError(lua_State* lua);
 double jeLua_getNumberField(lua_State* lua, uint32_t tableIndex, const char* field);
 double jeLua_getOptionalNumberField(lua_State* lua, uint32_t tableIndex, const char* field, double defaultValue);
@@ -819,15 +824,11 @@ bool jeLua_run(struct jeWindow* window, const char* filename, int argumentCount,
 	return ok;
 }
 
-bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) {
+bool jeClient_run(int argumentCount, char** arguments) {
 	bool ok = true;
 
-	JE_DEBUG("client=%p", (void*)client);
-
-	if (client == NULL) {
-		JE_ERROR("client=NULL");
-		ok = false;
-	}
+	struct jeClient client;
+	memset((void*)&client, 0, sizeof(struct jeClient));
 
 	if ((arguments == NULL) && (argumentCount > 0)) {
 		JE_ERROR("arguments=NULL when argumentCount > 0");
@@ -836,11 +837,6 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 
 	const char* appDir = JE_DEFAULT_APP_DIR;
 	if (ok) {
-		memset((void*)client, 0, sizeof(struct jeClient));
-
-		client->window = NULL;
-		client->lua = NULL;
-
 		for (int i = 0; i < argumentCount; i++) {
 			if (strcmp(arguments[i], "--appdir") == 0) {
 				ok = ok && ((i + 1) < argumentCount);
@@ -855,30 +851,31 @@ bool jeClient_run(struct jeClient* client, int argumentCount, char** arguments) 
 		}
 	}
 
-	JE_DEBUG("client=%p, appDir=%s", (void*)client, appDir);
+	JE_DEBUG("client=%p, appDir=%s", (void*)&client, appDir);
 
 	struct jeString luaMainFilename = {0};
-	ok &= jeString_createFormatted(&luaMainFilename, "%s/main.lua", appDir);
+
+	ok = ok && jeString_create(&luaMainFilename);
+	ok = ok && jeString_setFormatted(&luaMainFilename, "%s/main.lua", appDir);
 
 	struct jeString spritesFilename = {0};
-	ok &= jeString_createFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
+	ok = ok && jeString_create(&spritesFilename);
+	ok = ok && jeString_setFormatted(&spritesFilename, "%s/data/sprites.png", appDir);
 
 	if (ok) {
-		client->window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename, 0));
+		client.window = jeWindow_create(/*startVisible*/ true, jeString_get(&spritesFilename, 0));
 	}
 
 	if (ok) {
-		if (jeWindow_getIsValid(client->window) == false) {
+		if (jeWindow_getIsValid(client.window) == false) {
 			JE_ERROR("window is not valid");
 			ok = false;
 		}
 	}
 
-	ok = ok && jeLua_run(client->window, jeString_get(&luaMainFilename, 0), argumentCount, arguments);
+	ok = ok && jeLua_run(client.window, jeString_get(&luaMainFilename, 0), argumentCount, arguments);
 
-	if (client != NULL) {
-		jeWindow_destroy(client->window);
-	}
+	jeWindow_destroy(client.window);
 
 	jeString_destroy(&spritesFilename);
 	jeString_destroy(&luaMainFilename);

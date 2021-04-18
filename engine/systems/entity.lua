@@ -138,7 +138,7 @@ function Entity:tag(entity, tag)
 
 	entityTags[tag] = tagId
 
-	self.simulation:broadcast("onEntityTag", entity, tag, tagId)
+	self.simulation:broadcast("onEntityTag", false, entity, tag, tagId)
 end
 function Entity:untag(entity, tag)
 	local entityTags = entity.tags
@@ -160,7 +160,7 @@ function Entity:untag(entity, tag)
 	tagEntities[tagsCount] = nil
 	entityTags[tag] = nil
 
-	self.simulation:broadcast("onEntityTag", entity, tag, nil)
+	self.simulation:broadcast("onEntityTag", false, entity, tag, nil)
 end
 function Entity:find(tag, getAll)
 	local world = self.simulation.state.world
@@ -254,7 +254,7 @@ function Entity:destroy(entity)
 		return
 	end
 
-	self.simulation:broadcast("onEntityDestroy", entity)
+	self.simulation:broadcast("onEntityDestroy", false, entity)
 
 	local entityTags = entity.tags
 	for tag, _ in pairs(entityTags) do
@@ -332,80 +332,80 @@ function Entity:onRunTests()
 
 	local entity = self:create()
 	local entity2 = self:create()
-	assert(entity.id ~= entity2.id)
-	assert(world.entities[entity.id] == entity)
-	assert(world.entities[entity2.id] == entity2)
+	log.assert(entity.id ~= entity2.id)
+	log.assert(world.entities[entity.id] == entity)
+	log.assert(world.entities[entity2.id] == entity2)
 
-	assert((entity.x == 0) and (entity.y == 0) and (entity.w == 0) and (entity.h == 0))
-	assert(util.setEquality(util.getKeys(entity.chunks), {}))
+	log.assert((entity.x == 0) and (entity.y == 0) and (entity.w == 0) and (entity.h == 0))
+	log.assert(util.setEquals(util.tableGetKeys(entity.chunks), {}))
 	self:tag(entity, "red")
-	assert(self:findBounded(0, 0, 100, 100, "red") == nil)
-	assert(#self:findAllBounded(0, 0, 100, 100, "red") == 0)
+	log.assert(self:findBounded(0, 0, 100, 100, "red") == nil)
+	log.assert(#self:findAllBounded(0, 0, 100, 100, "red") == 0)
 
 	self:setBounds(entity, 64, 96, 16, 32)
-	assert(entity.x == 64 and entity.y == 96 and entity.w == 16 and entity.h == 32)
-	assert(util.setEquality(util.getKeys(entity.chunks), {"1,1"}))
-	assert(world.chunkEntities["1,1"][entity.chunks["1,1"]] == entity.id)
-	assert(#self:findAllBounded(0, 0, 100, 100, "red") == 1)
-	assert(self:findBounded(0, 0, 100, 100, "red"))
-	assert(self:findBounded(0, 0, 64, 96, "red") == nil)
-	assert(self:findBounded(0, 0, 65, 97, "red"))
-	assert(self:findBounded(80, 128, 1, 1, "red") == nil)
-	assert(self:findBounded(79, 127, 1, 1, "red"))
+	log.assert(entity.x == 64 and entity.y == 96 and entity.w == 16 and entity.h == 32)
+	log.assert(util.setEquals(util.tableGetKeys(entity.chunks), {"1,1"}))
+	log.assert(world.chunkEntities["1,1"][entity.chunks["1,1"]] == entity.id)
+	log.assert(#self:findAllBounded(0, 0, 100, 100, "red") == 1)
+	log.assert(self:findBounded(0, 0, 100, 100, "red"))
+	log.assert(self:findBounded(0, 0, 64, 96, "red") == nil)
+	log.assert(self:findBounded(0, 0, 65, 97, "red"))
+	log.assert(self:findBounded(80, 128, 1, 1, "red") == nil)
+	log.assert(self:findBounded(79, 127, 1, 1, "red"))
 
-	assert(self:findRelative(entity, 0, 0, "red") == nil)
-	assert(#self:findAllRelative(entity, 0, 0, "red") == 0)
+	log.assert(self:findRelative(entity, 0, 0, "red") == nil)
+	log.assert(#self:findAllRelative(entity, 0, 0, "red") == 0)
 
 	self:setPos(entity, 32, 32)
-	assert(entity.x == 32)
-	assert(entity.y == 32)
+	log.assert(entity.x == 32)
+	log.assert(entity.y == 32)
 
 	self:setBounds(entity, 0, 0, 0, 0)
-	assert(util.setEquality(util.getKeys(entity.chunks), {}))
+	log.assert(util.setEquals(util.tableGetKeys(entity.chunks), {}))
 
 	self:untag(entity, "red")
 	self:tag(entity, "red")
-	assert(util.setEquality(util.getKeys(entity.tags), {"red"}))
+	log.assert(util.setEquals(util.tableGetKeys(entity.tags), {"red"}))
 
 	self:tag(entity, "green")
-	assert(util.setEquality(util.getKeys(entity.tags), {"red", "green"}))
+	log.assert(util.setEquals(util.tableGetKeys(entity.tags), {"red", "green"}))
 
-	assert(self:find("red") == entity)
-	assert(util.setEquality(self:findAll("red"), {entity}))
+	log.assert(self:find("red") == entity)
+	log.assert(util.setEquals(self:findAll("red"), {entity}))
 
 	self:tag(entity2, "red")
-	assert(util.setEquality(self:findAll("red"), {entity, entity2}))
+	log.assert(util.setEquals(self:findAll("red"), {entity, entity2}))
 
 	self:destroy(entity)
-	assert(entity.destroyed)
-	assert(util.setEquality(self:findAll("red"), {entity2}))
+	log.assert(entity.destroyed)
+	log.assert(util.setEquals(self:findAll("red"), {entity2}))
 
 	self:destroy(entity2)
-	assert(entity.destroyed)
-	assert(util.setEquality(self:findAll("red"), {}))
+	log.assert(entity.destroyed)
+	log.assert(util.setEquals(self:findAll("red"), {}))
 
 	local entities = {}
 	local numEntities = 5
-	assert(#self:findAllBounded(0, 0, 100, 100, "blue") == 0)
+	log.assert(#self:findAllBounded(0, 0, 100, 100, "blue") == 0)
 	for i = 1, numEntities do
 		entity = self:create()
 		self:setBounds(entity, i, i, 1, 1)
 		self:tag(entity, tostring(i))
 		self:tag(entity, "blue")
 
-		assert(self:find(tostring(i)) == entity)
+		log.assert(self:find(tostring(i)) == entity)
 
 		entities[#entities + 1] = entity
 	end
 
-	assert(util.setEquality(self:findAll("blue"), entities))
-	assert(#self:findAllBounded(0, 0, 100, 100, "blue") == numEntities)
+	log.assert(util.setEquals(self:findAll("blue"), entities))
+	log.assert(#self:findAllBounded(0, 0, 100, 100, "blue") == numEntities)
 
 	for _, entityToDestroy in ipairs(entities) do
 		self:destroy(entityToDestroy)
 	end
 
-	assert(util.setEquality(self:findAll("blue"), {}))
+	log.assert(util.setEquals(self:findAll("blue"), {}))
 
 	self.ENTITY_CHUNK_SIZE = entityChunkSizeBackup
 end

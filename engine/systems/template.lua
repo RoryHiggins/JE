@@ -1,3 +1,4 @@
+local log = require("engine/util/log")
 local util = require("engine/util/util")
 local Entity = require("engine/systems/entity")
 
@@ -73,7 +74,7 @@ function Template:onInit(simulation)
 	self.simulation.constants.templates = {}
 end
 function Template:onRunTests()
-	assert(self.simulation.constants.templates ~= nil)
+	log.assert(self.simulation.constants.templates ~= nil)
 
 	local template = self:add("yee", {
 		["properties"] = {
@@ -83,12 +84,12 @@ function Template:onRunTests()
 			["yee"] = true
 		},
 	})
-	assert(self:get("yee") == template)
+	log.assert(self:get("yee") == template)
 
 	local entity = self:instantiate(template)
-	assert(self.entitySys:find("yee") == entity)
-	assert(self.entitySys:find("yee").x == 2)
-	assert(self.entitySys:find("yee").tags["yee"] ~= nil)
+	log.assert(self.entitySys:find("yee") == entity)
+	log.assert(self.entitySys:find("yee").x == 2)
+	log.assert(self.entitySys:find("yee").tags["yee"] ~= nil)
 end
 
 return Template

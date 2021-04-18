@@ -1,3 +1,4 @@
+local log = require("engine/util/log")
 local Entity = require("engine/systems/entity")
 
 local Camera = {}
@@ -26,10 +27,10 @@ function Camera:onDraw()
 	camera.x2 = camera.x1 + self.simulation.input.screen.x2
 	camera.y2 = camera.y1 + self.simulation.input.screen.y2
 
-	self.simulation:broadcast("onCameraDraw", camera)
+	self.simulation:broadcast("onCameraDraw", true, camera)
 end
 function Camera:onRunTests()
-	assert(self.simulation.state.world.camera ~= nil)
+	log.assert(self.simulation.state.world.camera ~= nil)
 	self:onDraw()
 end
 
