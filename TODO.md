@@ -3,15 +3,6 @@
 # Misc Issues
 
 
-# Lua debugger setup
-
-
-# Lua+C stack traces
-
-
-# Lua error recovery?
-
-
 # Render targets
 
 Client: add support for triggering a viewport draw, with the given viewport

@@ -10,8 +10,7 @@ log.logLevel = log.LOG_LEVEL_LOG
 log.debugger = nil
 log.protectedCall = pcall
 log.assert = assert
-local function noop()
-end
+log.levelStack = {}
 local function logImpl(level, format, ...)
 	if log.logLevel > level then
 		return
@@ -45,14 +44,16 @@ function log.enableDebugger()
 	log.protectedCall = log.debugger.call
 	log.assert = log.debugger.assert
 end
-function log.disableLogging()
-	log.debugger = nil
-	log.protectedCall = pcall
-	log.assert = noop
-	log.trace = noop
-	log.debug = noop
-	log.info = noop
-	log.warn = noop
-	log.error = noop
+function log.pushLogLevel(level)
+	log.levelStack[#log.levelStack + 1] = log.logLevel
+	log.logLevel = level
+end
+function log.popLogLevel()
+	if #log.levelStack == 0 then
+		return
+	end
+
+	log.logLevel = log.levelStack[#log.levelStack]
+	log.levelStack[#log.levelStack] = nil
 end
 return log

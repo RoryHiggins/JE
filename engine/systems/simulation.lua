@@ -19,14 +19,6 @@ function Simulation:broadcast(event, tolerate_errors, ...)
 		end
 	end
 end
-function Simulation:tryGetSystem(systemName)
-	if type(systemName) ~= "string" then
-		log.debug("systemName is not registered, systemName=%s", systemName)
-		return {}
-	end
-
-	return self.private.systems[systemName]
-end
 function Simulation:addSystem(system)
 	if type(system) ~= "table" then
 		log.error("system is not a table, system=%s", util.getComparable(system))
@@ -57,6 +49,14 @@ function Simulation:addSystem(system)
 
 	return systemInstance
 end
+function Simulation:tryGetSystem(systemName)
+	if type(systemName) ~= "string" then
+		log.debug("systemName is not registered, systemName=%s", systemName)
+		return {}
+	end
+
+	return self.private.systems[systemName]
+end
 function Simulation:step()
 	log.trace("")
 
@@ -72,13 +72,9 @@ function Simulation:step()
 	client.step()
 	log.trace("client.step complete, fps=%d", self.input.fps)
 
-	-- consume state updates from client
-	self.input.screen = {
-		["x1"] = 0,
-		["y1"] = 0,
-		["x2"] = client.state.width,
-		["y2"] = client.state.height,
-	}
+	-- consume input updates from client
+	self.input.screen.x2 = client.state.width
+	self.input.screen.y2 = client.state.height
 	self.input.fps = client.state.fps
 
 	self:broadcast("onStep", true)
@@ -95,20 +91,21 @@ function Simulation:worldInit()
 	self:broadcast("onWorldInit", false)
 end
 function Simulation:init()
-	log.debug("")
+	log.debug("arguments: %s", util.getComparable(self.private.args))
 
 	math.randomseed(0)
 
-	self.private.running = false
-
-	self.constants = {}
-	self.constants.saveVersion = 1
+	if util.tableHasValue(self.private.args, "--debug") then
+		log.enableDebugger()
+	end
 
 	-- clear anything drawn by previous simulation
 	client.drawReset()
 
+	self.private.running = false
+
 	self:broadcast("onInit", false, self)
-	self:worldInit({})
+	self:worldInit()
 end
 function Simulation:start()
 	log.debug("")
@@ -206,14 +203,11 @@ function Simulation:runTests()
 		return
 	end
 
-	local startTimeSeconds = os.clock()
-
-	local logLevelBackup = log.logLevel
-	log.logLevel = client.state.testsLogLevel
-
+	log.pushLogLevel(client.state.testsLogLevel)
 	log.info("starting")
 
 	local testSuitesCount = 0
+	local startTimeSeconds = os.clock()
 
 	for _, system in pairs(self.private.systems) do
 		if system.onRunTests and system.SYSTEM_NAME ~= "simulation" then
@@ -224,33 +218,23 @@ function Simulation:runTests()
 		end
 	end
 
-	-- clear any garbage left by the last test
-	self:init()
-
-	log.logLevel = logLevelBackup
-
 	local endTimeSeconds = os.clock()
 	local testTimeSeconds = endTimeSeconds - startTimeSeconds
+
+	log.popLogLevel()
 	log.info("complete, testSuitesCount=%d, testTimeSeconds=%.2f",
 				  testSuitesCount, testTimeSeconds)
 end
 function Simulation:run(...)
 	local startTimeSeconds = os.clock()
-	log.logLevel = client.state.logLevel
 
-	self.args = {...}
-	if util.tableHasValue(self.args, "--debug") then
-		log.enableDebugger()
-	end
-	if log.logLevel >= log.LOG_LEVEL_NONE then
-		log.disableLogging()
-	end
+	log.pushLogLevel(client.state.logLevel)
 
-	log.debug("arguments: %s", util.getComparable(self.args))
+	self.private.args = {...}
 
-	self:init()
 	self:runTests()
 
+	self:init()
 	self:start()
 
 	while self.private.running do
@@ -263,9 +247,8 @@ function Simulation:run(...)
 	self:save(self.SAVE_FILE)
 	self:dump(self.DUMP_FILE)
 
-	local endTimeSeconds = os.clock()
-	local runTimeSeconds = endTimeSeconds - startTimeSeconds
-	log.info("complete, runTimeSeconds=%.2f", runTimeSeconds)
+	log.info("runTimeSeconds=%.2f", os.clock() - startTimeSeconds)
+	log.popLogLevel()
 end
 
 function Simulation.new()
@@ -281,10 +264,16 @@ function Simulation.new()
 			["eventListeners"] = {
 				nil,  -- will be replaced with simulation; recursive ref can't be resolved in table initializer
 			},
+
+			["args"] = {},
+			["startTimeSeconds"] = 0,
+			["endTimeSeconds"] = 0,
 		},
 
 		-- Constants defining the behavior of the simulation
-		["constants"] = {},
+		["constants"] = {
+			["saveVersion"] = 1,
+		},
 
 		-- Input from the client to the simulation step (screen, fps, keyboard/controller input status, random seed, etc)
 		-- Should be the only entirely non-deterministic state that can influence simulation.state
