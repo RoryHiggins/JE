@@ -1,4 +1,4 @@
-local client = require("engine/client")
+local client = require("engine/systems/client")
 local Sprite = require("engine/systems/sprite")
 
 local Shape = {}

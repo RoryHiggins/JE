@@ -1,6 +1,6 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
-local client = require("engine/client")
+local client = require("engine/systems/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
 

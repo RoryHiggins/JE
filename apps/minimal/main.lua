@@ -1,4 +1,4 @@
-local Simulation = require("engine/simulation")
+local Simulation = require("engine/systems/simulation")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
 local Sprite = require("engine/systems/sprite")

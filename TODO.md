@@ -1,34 +1,15 @@
 
-Misc Issues
------------
+
+# Misc Issues
 
 
-
-Configuration
--------------
-
-
-Static initialization phase
----------------------------
-
-Init = static initialization only?
-
-game.static created and populated all in one game event
-world.static created and populated all in one world event
-
-
-Client-side rendering state
----------------------------
-
-
-Render targets
---------------
+# Render targets
 
 Client: add support for triggering a viewport draw, with the given viewport
 
-Engine: add support for multiple cameras
-- Expose the current camera 
- viewports support
+Engine: add support for multiple game cameras
+- Expose the current camera in the render event
+- replace camera.cameraTarget with a CameraFollow component
 ```lua
 -- clear 
 for _, camera in pairs(self.entitySys:findAll("camera"))
@@ -38,10 +19,22 @@ for _, camera in pairs(self.entitySys:findAll("camera"))
 end
 ```
 
-Editor
-------
 
-gui draw loop (begin, end with gui capera)
+# Animations
+
+
+# Configuration
+
+
+# Client-side render state indexing
+
+
+# Client-side tag+bounds indexing
+
+
+# Editor
+
+gui draw loop (begin, end with gui camera)
 - GUI at native screen resolution, on top of game viewports
 
 Keyboard + mouse focused
@@ -97,9 +90,7 @@ Editor support
 - UI Element: Textbox
 
 
-
-Text rendering
---------------
+# Improved text rendering
 Bounding
 - Overflow text onto next row if width is reached.
 - Clamp text within width/height bounds.

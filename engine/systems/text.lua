@@ -1,4 +1,4 @@
-local client = require("engine/client")
+local client = require("engine/systems/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
 

@@ -1,6 +1,6 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
-local client = require("engine/client")
+local client = require("engine/systems/client")
 
 local Simulation = {}
 Simulation.__index = Simulation
@@ -273,7 +273,7 @@ function Simulation.new()
 			},
 
 			["systemsOrder"] = {
-				nil,  -- recursive reference cannot be resolved inside table initializer
+				nil,  -- will be replaced with simulation; recursive ref can't be resolved in table initializer
 				util,
 				client,
 			},
