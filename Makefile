@@ -7,7 +7,7 @@
 # - DEBUG (optimized for debugging with gdb)
 # - TRACE (debug build with extremely verbose logging)
 TARGET := DEVELOPMENT
-APP := game
+APP := example_platformer
 HEADLESS_CLIENT := 0
 UNITY_BUILD := 0
 

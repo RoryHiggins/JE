@@ -6,8 +6,8 @@ local Sprite = require("engine/systems/sprite")
 local Text = require("engine/systems/text")
 local Shape = require("engine/systems/shape")
 
-local Wall = require("apps/game/entities/wall")
-local Player = require("apps/game/entities/player")
+local Wall = require("apps/example_platformer/entities/wall")
+local Player = require("apps/example_platformer/entities/player")
 
 local Game = {}
 Game.SYSTEM_NAME = "game"

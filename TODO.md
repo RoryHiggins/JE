@@ -3,6 +3,15 @@
 # Misc Issues
 
 
+# Move as much logic as possible out of simulation.lua
+
+world -> a new systems/world.lua
+input -> systems/input.lua
+
+
+# Refactor input to support multiple source ids
+
+
 # Render targets
 
 Client: add support for triggering a viewport draw, with the given viewport
@@ -10,6 +19,7 @@ Client: add support for triggering a viewport draw, with the given viewport
 Engine: add support for multiple game cameras
 - Expose the current camera in the render event
 - replace camera.cameraTarget with a CameraFollow component
+- input source id == camera id make sense?
 ```
 for _, camera in pairs(self.entitySys:findAll("camera"))
 	client.drawBegin()  -- makes drawReset useless

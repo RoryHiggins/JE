@@ -31,9 +31,9 @@ Lua/C game engine for game jams.  Very much WIP, only for personal use.
 
 
 ## Games
-[games/minimal/](games/minimal/README.md) - example game with the minimum code needed to do something interesting with the engine
+[games/example_minimal/](games/example_minimal/README.md) - example game with the minimum code needed to do something interesting with the engine
 
-[games/game/](games/game/README.md) - platformer game built in parallel with the engine
+[games/example_platformer/](games/example_platformer/README.md) - platformer example game built in parallel with the engine
 
 ![Default game example](./example_output.png)
 
@@ -99,8 +99,8 @@ make run
 make run_headless
 
 # override the app to run
-make run APP=apps/game
-make run_headless APP=apps/game
+make run APP=apps/example_platformer
+make run_headless APP=apps/example_platformer
 
 # override target and rebuild client with debug logging and gdb-friendly debug symbols
 make -B TARGET=DEBUG
@@ -116,7 +116,7 @@ make -B TARGET=DEBUG
 make run_debugger
 
 # create a fully packaged release.tar.gz which can be delivered standalone
-make release APP=apps/game
+make release APP=apps/example_platformer
 
 # generate a performance profile using gprof.  build with TARGET=PROFILED, run game, then run this command
 make profile

@@ -1,5 +1,5 @@
 local Simulation = require("engine/systems/simulation")
-local Game = require("apps/game/game")
+local Game = require("apps/example_platformer/game")
 
 local function main(...)
 	local simulation = Simulation.new()

@@ -39,7 +39,7 @@ if(JE_BUILD_TARGET STREQUAL "DEVELOPMENT")
 endif()
 SET(JE_BUILD_HEADLESS false CACHE BOOL "j25 build headless enabled")
 
-set(JE_DEFAULT_APP "game" CACHE STRING "j25 default app to run")
+set(JE_DEFAULT_APP "example_platformer" CACHE STRING "j25 default app to run")
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	je_add_compile_link_options(-Wall -Wextra -pedantic -Werror=vla -Winvalid-pch -fno-exceptions)
