@@ -522,7 +522,7 @@ void jeContainer_runTests() {
 
 		JE_ASSERT(jeString_create(&string));
 		const char target[] = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234";
-		JE_ASSERT(jeString_set(&string, target, strlen(target)));
+		JE_ASSERT(jeString_set(&string, target, (uint32_t)strlen(target)));
 		JE_ASSERT(strcmp(jeString_get(&string, 0), target) == 0);
 		jeString_destroy(&string);
 

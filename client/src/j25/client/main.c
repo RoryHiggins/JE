@@ -1,5 +1,5 @@
-#include <j25/core/common.h>
 #include <j25/client/client.h>
+#include <j25/core/common.h>
 
 #include <stdlib.h>
 

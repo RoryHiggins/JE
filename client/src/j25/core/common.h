@@ -2,8 +2,8 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #if !defined(JE_CORE_API_H)
 #define JE_CORE_API_H
@@ -23,7 +23,7 @@
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-#define JE_API_NOINLINE __attribute__ ((noinline))
+#define JE_API_NOINLINE __attribute__((noinline))
 #else
 #define JE_API_NOINLINE
 #endif
