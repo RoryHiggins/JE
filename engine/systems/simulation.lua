@@ -257,14 +257,8 @@ function Simulation.new()
 		["private"] = {
 			-- whether the game is currently running
 			["running"] = false,
-
-			["systems"] = {
-			},
-
-			["eventListeners"] = {
-				nil,  -- will be replaced with simulation; recursive ref can't be resolved in table initializer
-			},
-
+			["systems"] = {},
+			["eventListeners"] = {},
 			["args"] = {},
 			["startTimeSeconds"] = 0,
 			["endTimeSeconds"] = 0,
@@ -293,7 +287,14 @@ function Simulation.new()
 		},
 	}
 	-- must assign recursive references after initializer
-	simulation.private.eventListeners[1] = simulation
+	local eventListeners = simulation.private.eventListeners
+	eventListeners[#eventListeners + 1] = simulation
+
+	-- add pseudo-systems to systems, for unit tests
+	local systems = simulation.private.systems
+	systems["log"] = log
+	systems["util"] = util
+	systems["client"] = client
 
 	setmetatable(simulation, Simulation)
 

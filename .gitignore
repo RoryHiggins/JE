@@ -1,6 +1,8 @@
 /build/
 /release/
 /engine/docs/build/
+/j25_release_*/
+/tmp/
 
 *.exe
 *.dll
@@ -12,7 +14,7 @@
 *.so
 *.lib
 *.gcda
-j25_*.tar.gz
+j25_release_*.tar.gz
 engine_client
 gmon.out
 profile.txt

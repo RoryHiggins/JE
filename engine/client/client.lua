@@ -33,6 +33,7 @@ end
 
 -- injected by the c client in main.c:jeGame_registerLuaClientBindings()
 local client = jeLuaClientBindings or headlessClient  -- luacheck: globals jeLuaClientBindings
+client.SYSTEM_NAME = "client"
 function client.onRunTests()
 	headlessClient.writeData("clientTestFile", "")
 	log.assert(headlessClient.readData("clientTestFile") == "")

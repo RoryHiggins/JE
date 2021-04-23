@@ -4,6 +4,7 @@
 #include <j25/core/container.h>
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
+#include <j25/platform/audio.h>
 #include <j25/platform/window.h>
 
 #include <ctype.h>
@@ -656,6 +657,9 @@ int jeLua_runTests(lua_State* lua) {
 	jeRendering_runTests();
 	numTestSuites++;
 
+	jeAudio_runTests();
+	numTestSuites++;
+
 	jeWindow_runTests();
 	numTestSuites++;
 
@@ -836,16 +840,17 @@ bool jeClient_run(int argumentCount, char** arguments) {
 	}
 
 	const char* appDir = JE_DEFAULT_APP_DIR;
+	const uint32_t maxArgLen = 32;
 	if (ok) {
 		for (int i = 0; i < argumentCount; i++) {
-			if (strcmp(arguments[i], "--appdir") == 0) {
+			if (strncmp(arguments[i], "--appdir", maxArgLen) == 0) {
 				ok = ok && ((i + 1) < argumentCount);
 
 				if (ok) {
 					appDir = arguments[i + 1];
 				}
 			}
-			if (strcmp(arguments[i], "--debug") == 0) {
+			if (strncmp(arguments[i], "--debug", maxArgLen) == 0) {
 				jeLogger_setLevelOverride(JE_LOG_LEVEL_DEBUG);
 			}
 		}

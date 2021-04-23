@@ -1,10 +1,9 @@
 #include <j25/platform/image.h>
 
-#if !defined(JE_BUILD_HEADLESS)
-
 #include <j25/core/common.h>
 #include <j25/core/container.h>
 
+#if !defined(JE_BUILD_HEADLESS)
 #include <string.h>
 
 #include <png.h>
@@ -40,7 +39,7 @@ bool jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, stru
 
 	return ok;
 }
-bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
+bool jeImage_createFromPNGFile(struct jeImage* image, const char* filename) {
 	JE_DEBUG("image=%p, filename=%s", (void*)image, filename);
 
 	bool ok = true;
@@ -124,11 +123,6 @@ void jeImage_runTests() {
 
 #if defined(JE_BUILD_HEADLESS)
 
-#include <j25/core/common.h>
-#include <j25/core/container.h>
-
-#include <stdbool.h>
-
 bool jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, struct jeColorRGBA32 fillColor) {
 	JE_MAYBE_UNUSED(image);
 	JE_MAYBE_UNUSED(width);
@@ -137,7 +131,7 @@ bool jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, stru
 
 	return false;
 }
-bool jeImage_createFromFile(struct jeImage* image, const char* filename) {
+bool jeImage_createFromPNGFile(struct jeImage* image, const char* filename) {
 	JE_MAYBE_UNUSED(image);
 	JE_MAYBE_UNUSED(filename);
 

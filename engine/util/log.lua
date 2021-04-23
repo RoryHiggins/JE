@@ -1,4 +1,5 @@
 local log = {}
+log.SYSTEM_NAME = "log"
 log.LOG_LEVEL_TRACE = 0  -- logs for debugging that are happening very frequently (e.g. each step)
 log.LOG_LEVEL_DEBUG = 1
 log.LOG_LEVEL_LOG = 2

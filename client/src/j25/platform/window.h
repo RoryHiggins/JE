@@ -5,9 +5,6 @@
 
 #include <j25/core/common.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #define JE_INPUT_LEFT 0
 #define JE_INPUT_UP 1
 #define JE_INPUT_RIGHT 2

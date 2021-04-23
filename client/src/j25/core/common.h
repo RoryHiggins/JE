@@ -90,6 +90,8 @@ struct jeLogger {
 	uint32_t line;
 };
 
+JE_API_PUBLIC void jeBreakpoint();
+
 JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line);
 JE_API_PUBLIC uint32_t jeLogger_getLevel();
 JE_API_PUBLIC void jeLogger_setLevelOverride(uint32_t loggerLevelOverride);

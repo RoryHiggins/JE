@@ -1,6 +1,28 @@
 
 
-# Misc Issues
+# Errors
+
+Capture stack trace on a lua error
+Dump simulation state + stack trace on a lua error
+- Dump the first error only
+
+
+# Audio
+
+wav loading and playing
+
+ogg streaming is a nice-to-have
+
+cleanup:
+- test coverage
+- exclude libogg in headless client builds?
+
+
+# jeString guarantee null termination
+Capacity always at least 1 > than count.  added capacity is null padded
+
+
+# Image.c tests
 
 
 # Move as much logic as possible out of simulation.lua
@@ -105,3 +127,6 @@ Bounding
 - Clamp text within width/height bounds.
 
 Rich text support: font loading, unicode, and kerning.  Bring alcohol.
+
+
+# Misc Issues

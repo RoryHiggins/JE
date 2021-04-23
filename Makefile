@@ -26,7 +26,7 @@ CLIENT := $(BUILD)/j25_client
 
 # Commands
 # ---
-.PHONY: $(CLIENT) release run run_headless debug profile docs clean
+.PHONY: $(CLIENT) release run run_headless run_debugger profile tidy format clean
 .DEFAULT_GOAL := $(CLIENT)
 
 
@@ -47,7 +47,7 @@ release:
 	rm -rf build/release
 	mkdir build/release
 
-	cp build/local/RELEASE/j25_client -- build/release
+	cp build/local/RELEASE/j25_client -- build/release/$(APP)
 	cp build/local/RELEASE/*.dll -- build/release
 
 	mkdir build/release/client
@@ -55,10 +55,7 @@ release:
 
 	# cp -r engine -- build/release
 	mkdir build/release/engine
-	cp -r engine/lib -- build/release/engine
-	cp -r engine/systems -- build/release/engine
-	cp -r engine/util -- build/release/engine
-	cp engine/*.lua -- build/release/engine
+	cp -r engine -- build/release
 
 	mkdir build/release/apps
 	cp -r apps/$(APP) -- build/release/apps
@@ -69,7 +66,7 @@ run: $(CLIENT)
 run_headless:
 	$(LUA) apps/$(APP)/main.lua
 run_debugger: $(CLIENT)
-	gdb -ex 'break jeErr' --ex run --args $(CLIENT) --debug --app apps/$(APP)
+	gdb -ex 'break jeBreakpoint' --ex run --args $(CLIENT) --debug --app apps/$(APP)
 profile: gmon.out
 	gprof -b $(CLIENT)* gmon.out > profile.txt && cat profile.txt
 tidy:
@@ -78,4 +75,4 @@ format:
 	find ./client -name '*.c' -or -name '*.h' | xargs clang-format -i -Werror --
 clean:
 	rm -f game_dump.sav game_save.sav gmon.out profile.txt
-	rm -rf build j25_release_*.tar.gz
+	rm -rf build j25_release_*

@@ -1,12 +1,11 @@
 #include <j25/platform/window.h>
 
-#if !defined(JE_BUILD_HEADLESS)
-
 #include <j25/core/common.h>
 #include <j25/core/container.h>
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 
+#if !defined(JE_BUILD_HEADLESS)
 #define GLEW_STATIC
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
@@ -132,7 +131,7 @@ bool jeSDL_initReentrant() {
 	if (!jeSDL_sdl.intialized) {
 		const Uint32 sdl_init_flags =
 			(SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
-			 SDL_INIT_GAMECONTROLLER);
+			 SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO);
 
 		JE_TRACE("SDL_Init");
 		if (SDL_Init(sdl_init_flags) != 0) {
@@ -1032,7 +1031,7 @@ struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilena
 	if (ok) {
 		SDL_SetWindowMinimumSize(window->window, JE_WINDOW_MIN_WIDTH, JE_WINDOW_MIN_HEIGHT);
 
-		if ((optSpritesFilename == NULL) || !jeImage_createFromFile(&window->image, optSpritesFilename)) {
+		if ((optSpritesFilename == NULL) || !jeImage_createFromPNGFile(&window->image, optSpritesFilename)) {
 			/*
 			 * As a fallback, create a gray texture big enough to allow mapping of color.
 			 * Gray is chosen to have it be visible against the white fill color.
@@ -1202,13 +1201,6 @@ void jeWindow_runTests() {
 #endif
 
 #if defined(JE_BUILD_HEADLESS)
-
-#include <j25/core/common.h>
-#include <j25/core/container.h>
-#include <j25/platform/rendering.h>
-
-#include <stdbool.h>
-
 struct jeWindow {
 	bool unused;
 };

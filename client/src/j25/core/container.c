@@ -205,7 +205,7 @@ bool jeArray_ensureCapacity(struct jeArray* array, uint32_t minCapacity) {
 	if (ok) {
 		uint32_t newCapacity = array->capacity;
 
-		if (newCapacity < JE_BUFFER_START_CAPACITY) {
+		if ((newCapacity < JE_BUFFER_START_CAPACITY) && (newCapacity > 0)) {
 			newCapacity = JE_BUFFER_START_CAPACITY;
 		}
 
@@ -513,17 +513,19 @@ void jeContainer_runTests() {
 		JE_ASSERT(jeString_push(&string, "hello", 6));
 		jeString_destroy(&string);
 
+		const char pushValue[] = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234";
 		JE_ASSERT(jeString_create(&string));
-		JE_ASSERT(jeString_push(&string, "hello", sizeof("hello")));
+		JE_ASSERT(jeString_push(&string, pushValue, (uint32_t)strlen(pushValue)));
 		JE_ASSERT(jeString_getCount(&string) >= 5);
 		JE_ASSERT(jeString_getCapacity(&string) >= jeString_getCount(&string));
 		JE_ASSERT(jeString_get(&string, 0) != NULL);
+		JE_ASSERT(strncmp(jeString_get(&string, 0), pushValue, strlen(pushValue)) == 0);
 		jeString_destroy(&string);
 
 		JE_ASSERT(jeString_create(&string));
-		const char target[] = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234";
-		JE_ASSERT(jeString_set(&string, target, (uint32_t)strlen(target)));
-		JE_ASSERT(strcmp(jeString_get(&string, 0), target) == 0);
+		const char setValue[] = "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234";
+		JE_ASSERT(jeString_set(&string, setValue, (uint32_t)strlen(setValue)));
+		JE_ASSERT(strncmp(jeString_get(&string, 0), setValue, strlen(setValue)) == 0);
 		jeString_destroy(&string);
 
 		JE_ASSERT(jeString_create(&string));

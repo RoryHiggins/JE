@@ -2,6 +2,7 @@ local log = require("engine/util/log")
 local json = require("engine/lib/json/json")
 
 local util = {}
+util.SYSTEM_NAME = "util"
 
 function util.noop()
 end

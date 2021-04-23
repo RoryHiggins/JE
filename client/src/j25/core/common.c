@@ -12,17 +12,11 @@
 
 #define JE_TEMP_BUFFER_CAPACITY 262144
 
-void jeErr();
-
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel);
 
 const char* __asan_default_options();
 
-JE_API_NOINLINE void jeErr() {
-	static uint32_t jeErr_count = 0;
-
-	/* dummy function to breakpoint on an error */
-	jeErr_count++;
+JE_API_NOINLINE void jeBreakpoint() {
 }
 
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {
@@ -94,7 +88,7 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 
 	if (jeLogger_levelOverride <= loggerLevel) {
 		if (loggerLevel >= JE_LOG_LEVEL_WARN) {
-			jeErr();
+			jeBreakpoint();
 		}
 
 		const char* label = jeLoggerLevel_getLabel(loggerLevel);
@@ -112,7 +106,7 @@ void jeLogger_log(struct jeLogger logger, uint32_t loggerLevel, const char* form
 void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionStr) {
 	expressionStr = expressionStr ? expressionStr : "<jeLogger_assert null expressionStr>";
 	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
-		jeErr();
+		jeBreakpoint();
 		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
 	}
 }

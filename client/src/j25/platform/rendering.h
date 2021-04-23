@@ -6,9 +6,6 @@
 #include <j25/core/common.h>
 #include <j25/core/container.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #define JE_PRIMITIVE_TYPE_UNKNOWN 0
 #define JE_PRIMITIVE_TYPE_POINTS 1
 #define JE_PRIMITIVE_TYPE_LINES 2
