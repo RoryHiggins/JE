@@ -129,7 +129,7 @@ function Player:onInit(simulation)
 			["player"] = true,
 		},
 		["editor"] = {
-			["category"] = "special",
+			["category"] = "common",
 		},
 	})
 end

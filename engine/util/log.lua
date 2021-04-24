@@ -39,12 +39,9 @@ function log.error(format, ...)
 	logImpl(log.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format.."\n"..debug.traceback(), ...)
 end
 function log.assert(expr)
-	if expr then
-		return true
+	if not expr then
+		error()
 	end
-
-	log.error("Assertion failed")
-	return false
 end
 function log.protectedCall(fn, ...)
 	local args = {...}

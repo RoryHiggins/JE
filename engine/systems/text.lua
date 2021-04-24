@@ -1,4 +1,5 @@
 local log = require("engine/util/log")
+local util = require("engine/util/util")
 local client = require("engine/client/client")
 local Entity = require("engine/systems/entity")
 local Camera = require("engine/systems/camera")
@@ -34,8 +35,27 @@ end
 function Text:getFont(fontId)
 	return self.simulation.constants.fonts[fontId]
 end
+function Text:getDefaultFont()
+	return self.defaultFont
+end
 function Text.draw(_, renderable, font, camera)
 	client.drawText(renderable, font, camera)
+end
+function Text:drawDebugString(text)
+	if not self.simulation.constants.developerDebugging then
+		return
+	end
+
+	local renderable = {
+		["text"] = tostring(text),
+		["x"] = 0,
+		["y"] = self.debugTextY,
+		["z"] = -10,
+		["a"] = 0.4,
+	}
+	self.debugTextY = self.debugTextY + 8
+
+	client.drawText(renderable, self.defaultFont, self.simulation.input.screen)
 end
 function Text:attach(entity, font, text)
 	entity.fontId = font.fontId
@@ -53,6 +73,13 @@ function Text:onInit(simulation)
 	self.cameraSys = self.simulation:addSystem(Camera)
 
 	self.simulation.constants.fonts = {}
+
+	self.debugTextY = 0
+
+	self.defaultFont = self:addFont("default", 0, 160, 8, 8, " ", "~", 8)
+end
+function Text:onStep()
+	self.debugTextY = 0
 end
 function Text:onCameraDraw(camera)
 	local fonts = self.simulation.constants.fonts

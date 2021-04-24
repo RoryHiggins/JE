@@ -10,30 +10,11 @@ local Template = require("engine/systems/template")
 
 local Placeholder = {}
 Placeholder.SYSTEM_NAME = "placeholder"
-function Placeholder:onInit(simulation)
-	self.simulation = simulation
-	self.entitySys = self.simulation:addSystem(Entity)
-	self.spriteSys = self.simulation:addSystem(Sprite)
-	self.templateSys = self.simulation:addSystem(Template)
-
-	self.placeholderTemplate = self.templateSys:add("placeholder", {
-		["properties"] = {
-			["w"] = 8,
-			["h"] = 8,
-			["z"] = 1,
-			["placeholderTemplateId"] = nil,
-			["spriteId"] = self.spriteSys:getInvalid().spriteId,
-		},
-		["tags"] = {
-			["sprite"] = true,
-			["placeholder"] = true,
-		},
-	})
-	self.placeholderCopyFields = {"w", "h", "r", "g", "b", "a", "spriteId"}
-end
 function Placeholder:setTemplate(placeholder, template)
 	log.assert(template.editor ~= nil)
 	log.assert(template.properties.spriteId ~= nil)
+	log.assert(template.properties.w ~= nil)
+	log.assert(template.properties.h ~= nil)
 
 	local sprite = self.spriteSys:get(template.properties.spriteId)
 	log.assert(sprite ~= nil)
@@ -80,9 +61,37 @@ function Placeholder:clearAll()
 	end
 	return changed
 end
+function Placeholder:onInit(simulation)
+	self.simulation = simulation
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.templateSys = self.simulation:addSystem(Template)
+
+	self.placeholderTemplate = self.templateSys:add("placeholder", {
+		["properties"] = {
+			["w"] = 8,
+			["h"] = 8,
+			["z"] = 1,
+			["placeholderTemplateId"] = nil,
+			["spriteId"] = self.spriteSys:getInvalid().spriteId,
+		},
+		["tags"] = {
+			["sprite"] = true,
+			["placeholder"] = true,
+		},
+	})
+	self.placeholderCopyFields = {"w", "h", "r", "g", "b", "a", "spriteId"}
+	self.placeholderVisible = true
+end
+
 
 local PlaceholderInstance = {}
 PlaceholderInstance.SYSTEM_NAME = "placeholderInstance"
+function PlaceholderInstance:clearAll()
+	for _, editorPlaced in ipairs(self.entitySys:findAll(self.placeholderInstanceTag)) do
+		self.entitySys:destroy(editorPlaced)
+	end
+end
 function PlaceholderInstance:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -90,62 +99,11 @@ function PlaceholderInstance:onInit(simulation)
 
 	self.placeholderInstanceTag = "placeholderInstance"
 end
-function PlaceholderInstance:clearAll()
-	for _, editorPlaced in ipairs(self.entitySys:findAll(self.placeholderInstanceTag)) do
-		self.entitySys:destroy(editorPlaced)
-	end
-end
 
 
 local Editor = {}
 Editor.SYSTEM_NAME = "editor"
 
-function Editor:onInit(simulation)
-	self.simulation = simulation
-	self.inputSys = self.simulation:addSystem(Input)
-	self.entitySys = self.simulation:addSystem(Entity)
-	self.spriteSys = self.simulation:addSystem(Sprite)
-	self.textSys = self.simulation:addSystem(Text)
-	self.shapeSys = self.simulation:addSystem(Shape)
-	self.backgroundSys = self.simulation:addSystem(Background)
-	self.templateSys = self.simulation:addSystem(Template)
-	self.placeholderSys = self.simulation:addSystem(Placeholder)
-	self.placeholderInstanceSys = self.simulation:addSystem(PlaceholderInstance)
-
-	self.gridSize = 8
-
-	self.editorNoSelectionTemplate = self.templateSys:add("editorNoSelection", {
-		["properties"] = {
-			["spriteId"] = self.spriteSys:getInvalid().spriteId
-		},
-		["editor"] = {
-			["selectible"] = false,
-			["category"] = "special"
-		},
-	})
-	self.editorTemplate = self.templateSys:add("editor", {
-		["properties"] = {
-			["w"] = self.gridSize,
-			["h"] = self.gridSize,
-			["placeholderTemplateId"] = self.editorNoSelectionTemplate.templateId,
-			["spriteId"] = self.spriteSys:getInvalid().spriteId,
-		},
-		["tags"] = {
-			["editor"] = true,
-			["sprite"] = true,
-		},
-	})
-	self.modeIdToMode = {"selection", "test", "save", "load"}
-	self.modeToModeId = {}
-	for i, mode in ipairs(self.modeIdToMode) do
-		self.modeToModeId[mode] = i
-	end
-
-	self.mode = "selection"
-	self.saveTable = {}
-	self.saved = false
-	self.saveFilename = "editor.map"
-end
 function Editor:findNextEditorTemplate(templateId, step)
 	step = step or 1
 	templateId = templateId or 1
@@ -194,7 +152,9 @@ function Editor:setEditorTemplate(editor, template)
 		end
 	end
 end
-function Editor:selectionModeStep(editor)
+function Editor:editModeStep()
+	local editor = self:getInstance()
+
 	local selectionScrollDir = (
 		util.boolGetValue(self.inputSys:getPressed("right"))
 		- util.boolGetValue(self.inputSys:getPressed("left")))
@@ -220,17 +180,11 @@ function Editor:selectionModeStep(editor)
 		end
 	end
 end
-function Editor:selectionModeDraw(editor, camera)
-	local font = self.textSys:getFont("default")
+function Editor:editModeDraw(camera)
+	local editor = self:getInstance()
+
 	local template = self.templateSys:get(editor.placeholderTemplateId)
-	local selectionText = {
-		["x"] = 0,
-		["y"] = 16,
-		["z"] = -10,
-		["a"] = 0.4,
-		["text"] = "selection="..tostring(template.templateName)
-	}
-	self.textSys:draw(selectionText, font, self.simulation.input.screen)
+	self.textSys:drawDebugString("selection="..tostring(template.templateName))
 
 	local editorOutline = util.deepcopy(editor)
 	editorOutline.r = 0
@@ -246,6 +200,13 @@ function Editor:selectionModeDraw(editor, camera)
 
 	editor.x = math.floor((camera.mouseX) / self.gridSize) * self.gridSize
 	editor.y = math.floor((camera.mouseY) / self.gridSize) * self.gridSize
+end
+function Editor:clearAll()
+	self.placeholderSys:clearAll()
+	self.placeholderInstanceSys:clearAll()
+	self.simulation:worldInit()
+
+	self.saved = false
 end
 function Editor:saveToTable()
 	local entities = {}
@@ -274,19 +235,17 @@ function Editor:saveToTable()
 
 	return save
 end
-function Editor:clearAll()
-	self.placeholderSys:clearAll()
-	self.placeholderInstanceSys:clearAll()
-
-	self.saved = false
-end
 function Editor:loadFromTable(save)
 	self:clearAll()
 
 	for _, entity in ipairs(save.entities) do
 		local template = self.templateSys:getByName(entity.templateName)
 		if template ~= nil then
-			self.placeholderSys:create(template, entity.x, entity.y)
+			if self.mode == "playing" then
+				self.templateSys:instantiate(template, entity.x, entity.y)
+			else
+				self.placeholderSys:create(template, entity.x, entity.y)
+			end
 		else
 			log.error("unrecognized templateId=%s", entity.templateName)
 		end
@@ -297,11 +256,14 @@ function Editor:loadFromTable(save)
 end
 function Editor:saveToFile(filename)
 	log.info("filename=%s", filename)
+
 	self.saveTable = self:saveToTable()
+
 	if not util.writeDataUncompressed(filename, util.json.encode(self.saveTable)) then
 		return false
 	end
 
+	self.saveFilename = filename
 	self.saved = true
 	return true
 end
@@ -311,6 +273,8 @@ function Editor:loadFromFile(filename)
 	if not util.getFileExists(filename) then
 		return false
 	end
+
+	self.saveFilename = filename
 
 	local saveStr = util.readDataUncompressed(filename)
 	if not saveStr then
@@ -324,75 +288,155 @@ function Editor:loadFromFile(filename)
 	self.saved = true
 	return true
 end
-function Editor:startEditing()
-	self.templateSys:instantiate(self.editorTemplate)
-	self:loadFromFile(self.saveFilename)
-end
-function Editor:onStep()
-	local editorRunning = false
-	for _, editor in ipairs(self.entitySys:findAll("editor")) do
-		editorRunning = true
-		if self.mode == "selection" then
-			self.entitySys:tag(editor, "sprite")
-			self:selectionModeStep(editor)
-		else
-			self.entitySys:untag(editor, "sprite")
-		end
-
-		if self.mode == "save" then
-			if self.inputSys:getPressed("a") then
-				self:saveToFile(self.saveFilename)
-			end
-		end
-		if self.mode == "load" then
-			if self.inputSys:getPressed("a") then
-				self:loadFromFile(self.saveFilename)
-			end
-		end
+function Editor:getInstance()
+	local editor = self.entitySys:find("editor")
+	if not editor then
+		editor = self.templateSys:instantiate(self.editorTemplate)
 	end
 
-	if editorRunning then
-		local modeScrollDir = (
-			util.boolGetValue(self.inputSys:getPressed("down"))
-			- util.boolGetValue(self.inputSys:getPressed("up")))
+	return editor
+end
+function Editor:setMode(newMode)
+	local oldMode = self.mode
 
+	if oldMode == newMode then
+		return
+	end
+
+	log.debug("oldMode=%s, newMode=%s", oldMode, newMode)
+
+	if oldMode == "editing" then
+		self.entitySys:untag(self:getInstance(), "sprite")
+	end
+
+	if oldMode ~= "playing" then
+		self:saveToTable()
+	end
+
+	self.mode = newMode
+
+	if (oldMode == "playing") or (newMode == "playing") then
+		self:loadFromTable(self.saveTable)
+	end
+
+	if newMode == "editing" then
+		self.entitySys:tag(self:getInstance(), "sprite")
+	end
+end
+function Editor:onInit(simulation)
+	self.simulation = simulation
+	self.inputSys = self.simulation:addSystem(Input)
+	self.entitySys = self.simulation:addSystem(Entity)
+	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.textSys = self.simulation:addSystem(Text)
+	self.shapeSys = self.simulation:addSystem(Shape)
+	self.backgroundSys = self.simulation:addSystem(Background)
+	self.templateSys = self.simulation:addSystem(Template)
+	self.placeholderSys = self.simulation:addSystem(Placeholder)
+	self.placeholderInstanceSys = self.simulation:addSystem(PlaceholderInstance)
+
+	self.gridSize = 8
+
+	self.editorNoSelectionTemplate = self.templateSys:add("editorNoSelection", {
+		["properties"] = {
+			["spriteId"] = self.spriteSys:getInvalid().spriteId
+		},
+		["editor"] = {
+			["selectible"] = false,
+			["category"] = "common"
+		},
+	})
+	self.editorTemplate = self.templateSys:add("editor", {
+		["properties"] = {
+			["w"] = self.gridSize,
+			["h"] = self.gridSize,
+			["placeholderTemplateId"] = self.editorNoSelectionTemplate.templateId,
+			["spriteId"] = self.spriteSys:getInvalid().spriteId,
+		},
+		["tags"] = {
+			["editor"] = true,
+			["sprite"] = true,
+		},
+	})
+	self.modeIdToMode = {"editing", "saving", "loading", "playing"}
+	self.modeToModeId = {}
+	for i, mode in ipairs(self.modeIdToMode) do
+		self.modeToModeId[mode] = i
+	end
+
+	self.mode = "playing"
+	self.saveTable = {
+		["entities"] = {},
+		["background"] = {
+			["r"] = 1,
+			["g"] = 1,
+			["b"] = 1,
+		}
+	}
+	self.saved = false
+	self.saveFilename = "map_editor.world"
+end
+function Editor:onStep()
+	if not self.simulation.constants.developerDebugging then
+		return
+	end
+
+	local mouseReleased = (
+		self.inputSys:getReleased("mouseLeft")
+		or self.inputSys:getReleased("mouseRight")
+	)
+	local actionReleased = (
+		self.inputSys:getReleased("a")
+		or self.inputSys:getReleased("b")
+	)
+	local modeScrollDir = (
+		util.boolGetValue(self.inputSys:getPressed("down"))
+		- util.boolGetValue(self.inputSys:getPressed("up"))
+	)
+
+	if self.mode == "editing" then
+		self:editModeStep()
+	end
+
+	if self.mode == "saving" then
+		if actionReleased or mouseReleased then
+			self:saveToFile(self.saveFilename)
+		end
+	end
+	if self.mode == "loading" then
+		if actionReleased or mouseReleased then
+			self:loadFromFile(self.saveFilename)
+		end
+	end
+	if self.mode == "playing" then
+		if mouseReleased then
+			self:setMode("editing")
+		end
+	end
+	if self.mode ~= "playing" then
 		if modeScrollDir ~= 0 then
 			local newModeId = util.moduloAddSkipZero(
 				self.modeToModeId[self.mode],
 				modeScrollDir,
 				#self.modeIdToMode + 1
 			)
-			self.mode = self.modeIdToMode[newModeId]
+			self:setMode(self.modeIdToMode[newModeId])
 		end
 	end
 end
 function Editor:onCameraDraw(camera)
-	for _, editor in ipairs(self.entitySys:findAll("editor")) do
-		local font = self.textSys:getFont("default")
+	if not self.simulation.constants.developerDebugging then
+		return
+	end
 
-		local modeText = {
-			["x"] = 0,
-			["y"] = 8,
-			["z"] = -10,
-			["a"] = 0.4,
-			["text"] = "mode="..tostring(self.mode)
-		}
-		self.textSys:draw(modeText, font, self.simulation.input.screen)
+	self.textSys:drawDebugString("mode="..tostring(self.mode))
 
-		if self.mode == "save" then
-			local savedText = {
-				["x"] = 0,
-				["y"] = 16,
-				["z"] = -10,
-				["a"] = 0.4,
-				["text"] = "saved="..tostring(self.saved)
-			}
-			self.textSys:draw(savedText, font, self.simulation.input.screen)
-			end
+	if self.mode == "saving" then
+		self.textSys:drawDebugString("saved="..tostring(self.saved))
+	end
 
-		if self.mode == "selection" then
-			self:selectionModeDraw(editor, camera)
-		end
+	if self.mode == "editing" then
+		self:editModeDraw(camera)
 	end
 end
 

@@ -14,6 +14,9 @@ local Player = require("apps/ld48/entities/player")
 
 local ld48 = {}
 ld48.SYSTEM_NAME = "ld48"
+ld48.modePlay = "play"
+ld48.modeEditor = "editor"
+ld48.modePlayTestWorld = "playTestWorld"
 function ld48:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -28,7 +31,7 @@ function ld48:onInit(simulation)
 	self.wallSys = self.simulation:addSystem(Wall)
 	self.playerSys = self.simulation:addSystem(Player)
 
-	self.font = self.textSys:addFont("default", 0, 160, 8, 8, " ", "~", 8)
+	self.font = self.textSys:getDefaultFont()
 end
 function ld48:testWorldInit()
 	self.templateSys:instantiate(self.playerSys.template, 64, 16)
@@ -43,24 +46,26 @@ function ld48:testWorldInit()
 		self.templateSys:instantiate(self.wallSys.template, x + 24, y, 8, 8)
 	end
 end
-function ld48:onWorldInit()
-	self.editorMode = false
+-- function ld48:onWorldInit()
+-- end
+function ld48:onStart()
+	-- self.mode = ld48.modePlay
+	self.mode = ld48.modeEditor
 
-	if self.editorMode then
-		self.editorSys:startEditing()
-	else
+	self.playerSys:gotoWorld(1)
+
+	if self.mode == ld48.modeEditor then
+		self.editorSys:setMode("editing")
+		self.simulation.constants.developerDebugging = true
+	end
+	if self.mode == ld48.modePlayTestWorld then
+		self.simulation:worldInit()
 		self:testWorldInit()
+		self.simulation.constants.developerDebugging = true
 	end
 end
 function ld48:onDraw()
-	local fps = {
-		["x"] = 0,
-		["y"] = 0,
-		["z"] = -10,
-		["a"] = 0.4,
-		["text"] = "fps="..tostring(self.simulation.input.fps)
-	}
-	self.textSys:draw(fps, self.font, self.simulation.input.screen)
+	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))
 end
 
 local simulation = Simulation.new()

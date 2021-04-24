@@ -21,9 +21,9 @@ function Background:onInit(simulation)
 		["z"] = 1000,
 	}
 	self.backgroundDefaults = {
-		["r"] = 1,
-		["g"] = 1,
-		["b"] = 1,
+		["r"] = 0.3,
+		["g"] = 0.2,
+		["b"] = 0.2,
 	}
 	self:resetColor()
 end

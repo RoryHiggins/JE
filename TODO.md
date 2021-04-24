@@ -8,6 +8,8 @@
 
 # Event handlers for keyboard input
 
+# Rethink keyboard controls for editor
+
 # Errors
 
 Capture stack trace on a lua error

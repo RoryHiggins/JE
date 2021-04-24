@@ -1,8 +1,11 @@
+local log = require("engine/util/log")
 local util = require("engine/util/util")
 local Input = require("engine/systems/input")
 local Entity = require("engine/systems/entity")
 local Sprite = require("engine/systems/sprite")
+local Text = require("engine/systems/text")
 local Template = require("engine/systems/template")
+local Editor = require("engine/systems/editor")
 
 local Material = require("apps/ld48/systems/material")
 local Physics = require("apps/ld48/systems/physics")
@@ -95,12 +98,56 @@ function Player:tickEntity(entity)
 	-- 	self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
 	-- end
 end
+function Player:resetProgress()
+	self.simulation.state.player = {
+		["worldId"] = 0,
+		["worldName"] = "<unknown world>",
+	}
+end
+function Player:getCurrentWorldName()
+	return self.simulation.state.player.worldName
+end
+function Player:computeWorldFilename(worldName)
+	return string.format(self.simulation.constants.worldFilenameFormat, worldName)
+end
+function Player:getCurrentWorldFilename()
+	return string.format(self.simulation.constants.worldFilenameFormat, self:getCurrentWorldName())
+end
+function Player:gotoWorld(worldId)
+	log.assert(worldId >= 1)
+	log.assert(worldId <= #self.simulation.constants.worlds)
+
+	local worldName = self.simulation.constants.worlds[worldId]
+
+	log.info("travelling from world %s to world %s", self:getCurrentWorldName(), worldName)
+
+	local worldFilename = self:computeWorldFilename(worldName)
+	if not self.editorSys:loadFromFile(worldFilename) then
+		log.error("failed to load file=%s", worldFilename)
+		return false
+	end
+
+	self.simulation.state.player.worldId = worldId
+	self.simulation.state.player.worldName = worldName
+end
+function Player:hasNextWorld()
+	return (self.simulation.state.player.worldId < #self.simulation.constants.worlds)
+end
+function Player:gotoNextWorld()
+	if not self:hasNextWorld() then
+		return false
+	end
+
+	return self:gotoWorld(self.simulation.state.player.worldId + 1)
+end
 function Player:onInit(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.spriteSys = self.simulation:addSystem(Sprite)
+	self.textSys = self.simulation:addSystem(Text)
 	self.templateSys = self.simulation:addSystem(Template)
+	self.editorSys = self.simulation:addSystem(Editor)
 
 	self.materialSys = self.simulation:addSystem(Material)
 	self.physicsSys = self.simulation:addSystem(Physics)
@@ -130,15 +177,28 @@ function Player:onInit(simulation)
 			["player"] = true,
 		},
 		["editor"] = {
-			["category"] = "special",
+			["category"] = "common",
 			["selectible"] = true,
 		},
 	})
+
+	local constants = self.simulation.constants
+	constants.worldFilenameFormat = "apps/ld48/data/%s.world"
+	constants.worldFirst = 1
+	constants.worldLast = 1
+	constants.worlds = {
+		"test"
+	}
+
+	self:resetProgress()
 end
 function Player:onStep()
 	for _, player in ipairs(self.entitySys:findAll("player")) do
 		self:tickEntity(player)
 	end
+end
+function Player:onDraw()
+	self.textSys:drawDebugString("world="..self:getCurrentWorldName())
 end
 function Player:onRunTests()
 	self.templateSys:instantiate(self.template)

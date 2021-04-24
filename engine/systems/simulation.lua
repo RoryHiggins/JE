@@ -95,10 +95,6 @@ function Simulation:init()
 
 	math.randomseed(0)
 
-	if util.tableHasValue(self.private.args, "--debug") then
-		log.enableDebugger()
-	end
-
 	-- clear anything drawn by previous simulation
 	client.drawReset()
 
@@ -115,8 +111,8 @@ function Simulation:start()
 	end
 
 	if not self.private.running then
-		self:broadcast("onStart", false)
 		self.private.running = true
+		self:broadcast("onStart", false)
 	end
 end
 function Simulation:stop()
@@ -132,7 +128,7 @@ function Simulation:save(filename)
 
 	local save = {
 		["saveVersion"] = self.constants.saveVersion,
-		["world"] = self.state.world,
+		["state"] = self.state,
 	}
 
 	if not client.writeData(filename, util.json.encode(save)) then
@@ -162,7 +158,7 @@ function Simulation:load(filename)
 				   self.constants.saveVersion, loadedSave.saveVersion)
 	end
 
-	self.state.world = loadedSave.world
+	self.state = loadedSave.state
 
 	return true
 end
@@ -170,7 +166,7 @@ function Simulation:dump(filename)
 	log.debug("filename=%s", filename)
 
 	local dump = {
-		["world"] = self.state.world,
+		["state"] = self.state,
 		["constants"] = self.constants,
 		["systems"] = util.tableGetKeys(self.private.systems),
 	}
@@ -228,24 +224,32 @@ end
 function Simulation:run(...)
 	local startTimeSeconds = os.clock()
 
-	log.pushLogLevel(client.state.logLevel)
-
 	self.private.args = {...}
 
-	self:runTests()
+	log.pushLogLevel(client.state.logLevel)
 
-	self:init()
-	self:start()
-
-	while self.private.running do
-		self:step()
-		self:draw()
+	if util.tableHasValue(self.private.args, "--debug") then
+		log.enableDebugger()
 	end
 
-	self:stop()
+	local function runInternal()
+		self:runTests()
 
-	self:save(self.SAVE_FILE)
-	self:dump(self.DUMP_FILE)
+		self:init()
+		self:start()
+
+		while self.private.running do
+			self:step()
+			self:draw()
+		end
+
+		self:stop()
+
+		self:save(self.SAVE_FILE)
+		self:dump(self.DUMP_FILE)
+	end
+
+	log.protectedCall(runInternal)
 
 	log.info("runTimeSeconds=%.2f", os.clock() - startTimeSeconds)
 	log.popLogLevel()
@@ -267,6 +271,7 @@ function Simulation.new()
 		-- Constants defining the behavior of the simulation
 		["constants"] = {
 			["saveVersion"] = 1,
+			["developerDebugging"] = false,
 		},
 
 		-- Input from the client to the simulation step (screen, fps, keyboard/controller input status, random seed, etc)
