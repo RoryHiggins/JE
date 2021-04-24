@@ -195,6 +195,9 @@ function util.rectCollides(ax, ay, aw, ah, bx, by, bw, bh)
 	        and (aw > 0) and (ah > 0) and (bw > 0) and (bh > 0))
 end
 
+function util.getFileExists(filename)
+	return (io.open(filename, "r") ~= nil)
+end
 function util.writeDataUncompressed(filename, dataStr)
 	local file, errMsg = io.open(filename, "w")
 	if file == nil then

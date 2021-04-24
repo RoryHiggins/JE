@@ -164,7 +164,11 @@ function Editor:findNextEditorTemplate(templateId, step)
 		log.trace("candidate: %s", util.getComparable(template))
 
 		if template.editor and template.editor.selectible then
-			return template
+			if self.spriteSys:get(template.properties.spriteId) == nil then
+				log.error("selectible set for template with nonexistent spriteId: %s", util.getComparable(template))
+			else
+				return template
+			end
 		end
 
 		nextTemplateId = util.moduloAddSkipZero(nextTemplateId, step, templateCount + 1)
@@ -304,6 +308,10 @@ end
 function Editor:loadFromFile(filename)
 	log.info("filename=%s", filename)
 
+	if not util.getFileExists(filename) then
+		return false
+	end
+
 	local saveStr = util.readDataUncompressed(filename)
 	if not saveStr then
 		return false
@@ -316,25 +324,14 @@ function Editor:loadFromFile(filename)
 	self.saved = true
 	return true
 end
-function Editor:starEditing()
+function Editor:startEditing()
 	self.templateSys:instantiate(self.editorTemplate)
 	self:loadFromFile(self.saveFilename)
 end
 function Editor:onStep()
-	local modeScrollDir = (
-		util.boolGetValue(self.inputSys:getPressed("down"))
-		- util.boolGetValue(self.inputSys:getPressed("up")))
-
-	if modeScrollDir ~= 0 then
-		local newModeId = util.moduloAddSkipZero(
-			self.modeToModeId[self.mode],
-			modeScrollDir,
-			#self.modeIdToMode + 1
-		)
-		self.mode = self.modeIdToMode[newModeId]
-	end
-
+	local editorRunning = false
 	for _, editor in ipairs(self.entitySys:findAll("editor")) do
+		editorRunning = true
 		if self.mode == "selection" then
 			self.entitySys:tag(editor, "sprite")
 			self:selectionModeStep(editor)
@@ -351,6 +348,21 @@ function Editor:onStep()
 			if self.inputSys:getPressed("a") then
 				self:loadFromFile(self.saveFilename)
 			end
+		end
+	end
+
+	if editorRunning then
+		local modeScrollDir = (
+			util.boolGetValue(self.inputSys:getPressed("down"))
+			- util.boolGetValue(self.inputSys:getPressed("up")))
+
+		if modeScrollDir ~= 0 then
+			local newModeId = util.moduloAddSkipZero(
+				self.modeToModeId[self.mode],
+				modeScrollDir,
+				#self.modeIdToMode + 1
+			)
+			self.mode = self.modeIdToMode[newModeId]
 		end
 	end
 end
