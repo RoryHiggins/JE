@@ -104,7 +104,7 @@ function Game:onInit(simulation)
 	self.wallSys = self.simulation:addSystem(Wall)
 	self.playerSys = self.simulation:addSystem(Player)
 
-	self.font = self.textSys:addFont("test", 0, 160, 8, 8, " ", "~", 8)
+	self.font = self.textSys:addFont("default", 0, 160, 8, 8, " ", "~", 8)
 end
 function Game:onStart()
 	self:testWorldInit()

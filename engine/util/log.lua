@@ -9,7 +9,6 @@ log.LOG_LEVEL_NONE = 5
 log.testsLogLevel = log.LOG_LEVEL_WARN
 log.logLevel = log.LOG_LEVEL_LOG
 log.debugger = nil
-log.protectedCall = pcall
 log.assert = assert
 log.levelStack = {}
 local function logImpl(level, format, ...)
@@ -35,10 +34,15 @@ function log.info(format, ...)
 	logImpl(log.LOG_LEVEL_LOG, "[info  %s:%d] %s() "..format, ...)
 end
 function log.warn(format, ...)
-	logImpl(log.LOG_LEVEL_WARN, "[WARN  %s:%d] %s() "..format, ...)
+	logImpl(log.LOG_LEVEL_WARN, "[WARN  %s:%d] %s() "..format.."\n"..debug.traceback(), ...)
 end
 function log.error(format, ...)
-	logImpl(log.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format, ...)
+	logImpl(log.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format.."\n"..debug.traceback(), ...)
+end
+function log.protectedCall(fn, ...)
+	local args = {...}
+
+	return xpcall(function () fn(unpack(args)) end, log.error)
 end
 function log.enableDebugger()
 	log.debugger = require("engine/lib/debugger/debugger")

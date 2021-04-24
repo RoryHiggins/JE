@@ -1,5 +1,13 @@
 
 
+# Proper rectangle rendering
+
+# Draw sprite without attaching one
+
+# Raw keyboard input, including pressed/released detection
+
+# Event handlers for keyboard input
+
 # Errors
 
 Capture stack trace on a lua error

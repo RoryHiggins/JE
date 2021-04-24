@@ -134,7 +134,7 @@ function Player:onInit(simulation)
 	})
 end
 function Player:onStep()
-	for _, player in pairs(self.entitySys:findAll("player")) do
+	for _, player in ipairs(self.entitySys:findAll("player")) do
 		self:tickEntity(player)
 	end
 end

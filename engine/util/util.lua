@@ -19,6 +19,17 @@ function util.sign(x)
 
 	return 0
 end
+function util.moduloAddSkipZero(x, y, base)
+	local result = (x + y) % base
+	if (result == 0) then
+		if util.sign(y) < 0 then
+			result = (result - 1) % base
+		else
+			result = (result + 1) % base
+		end
+	end
+	return result
+end
 function util.boolGetValue(boolVal)
 	-- it's truly astonishing there is nothing builtin for this...
 	if boolVal then

@@ -5,7 +5,6 @@
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 
-#if !defined(JE_BUILD_HEADLESS)
 #define GLEW_STATIC
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
@@ -21,7 +20,7 @@
 #define JE_WINDOW_START_SCALE 4
 #define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
-#define JE_WINDOW_START_CAPTION "J25"
+#define JE_WINDOW_START_CAPTION "ld48"
 
 #define JE_GL_MESSAGE_BUFFER_CAPACITY (4 * 1024)
 
@@ -900,6 +899,9 @@ bool jeWindow_step(struct jeWindow* window) {
 					(int)event.caxis.value);
 				break;
 			}
+			case SDL_MOUSEMOTION: {
+
+			}
 			default: {
 				JE_TRACE("unhandled event, event.type=%u", event.type);
 				break;
@@ -1133,6 +1135,73 @@ bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId) {
 
 	return pressed;
 }
+bool jeWindow_getMousePos(const struct jeWindow* window, int32_t *outX, int32_t* outY) {
+	int x = 0;
+	int y = 0;
+
+	bool ok = true;
+
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		SDL_GetMouseState(&x, &y);
+
+		x /= (jeWindow_getWidth(window) / JE_WINDOW_MIN_WIDTH);
+		y /= (jeWindow_getHeight(window) / JE_WINDOW_MIN_HEIGHT);
+	}
+
+	if (outX != NULL) {
+		*outX = (int32_t)x;
+	}
+
+	if (outY != NULL) {
+		*outY = (int32_t)y;
+	}
+
+	JE_TRACE("window=%p, x=%d, y=%d", (void*)window, x, y);
+
+	return ok;
+}
+bool jeWindow_getMouseButton(const struct jeWindow* window, uint32_t button) {
+	bool state = false;
+	bool ok = true;
+
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
+
+	Uint32 sdlButtonMask = 0;
+	if (ok) {
+		switch (button) {
+			case JE_MOUSE_BUTTON_LEFT: {
+				sdlButtonMask = SDL_BUTTON(SDL_BUTTON_LEFT);
+				break;
+			}
+			case JE_MOUSE_BUTTON_MIDDLE: {
+				sdlButtonMask = SDL_BUTTON(SDL_BUTTON_MIDDLE);
+				break;
+			}
+			case JE_MOUSE_BUTTON_RIGHT: {
+				sdlButtonMask = SDL_BUTTON(SDL_BUTTON_RIGHT);
+				break;
+			}
+			default: {
+				JE_ERROR("unrecognized button, button=%u", button);
+				ok = false;
+			}
+		}
+	}
+
+	if (ok) {
+		state = (SDL_GetMouseState(NULL, NULL) & sdlButtonMask) != 0;
+	}
+
+	return state;
+}
 uint32_t jeWindow_getFps(const struct jeWindow* window) {
 	uint32_t fpsEstimate = 0;
 
@@ -1168,9 +1237,23 @@ void jeWindow_runTests() {
 	JE_ASSERT(jeWindow_getIsOpen(window));
 	JE_ASSERT(jeWindow_getWidth(window) == JE_WINDOW_START_WIDTH);
 	JE_ASSERT(jeWindow_getHeight(window) == JE_WINDOW_START_HEIGHT);
-	for (uint32_t i = 0; i < JE_INPUT_COUNT; i++) {
+	for (uint32_t i = JE_INPUT_FIRST; i < JE_INPUT_COUNT; i++) {
 		jeWindow_getInput(window, i);
 	}
+
+	for (uint32_t i = JE_MOUSE_BUTTON_FIRST; i < JE_MOUSE_BUTTON_COUNT; i++) {
+		jeWindow_getMouseButton(window, i);
+	}
+
+	int32_t mouseX = 0;
+	int32_t mouseY = 0;
+	JE_ASSERT(jeWindow_getMousePos(window, &mouseX, &mouseY));
+
+	int32_t oldMouseX = mouseX;
+	mouseX++;
+	JE_ASSERT(jeWindow_getMousePos(window, &mouseX, &mouseY));
+	JE_ASSERT(mouseX == oldMouseX);
+
 	jeWindow_getFps(window);
 
 	JE_ASSERT(jeWindow_clear(window));
@@ -1197,71 +1280,3 @@ void jeWindow_runTests() {
 	jeSDL_destroyReentrant();
 #endif
 }
-
-#endif
-
-#if defined(JE_BUILD_HEADLESS)
-struct jeWindow {
-	bool unused;
-};
-
-bool jeWindow_getIsOpen(const struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
-	return false;
-}
-uint32_t jeWindow_getWidth(const struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
-	return 0;
-}
-uint32_t jeWindow_getHeight(const struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
-	return 0;
-}
-bool jeWindow_getIsValid(struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
-	return true;
-}
-void jeWindow_resetPrimitives(struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-}
-void jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType) {
-	JE_MAYBE_UNUSED(window);
-	JE_MAYBE_UNUSED(vertices);
-	JE_MAYBE_UNUSED(primitiveType);
-}
-void jeWindow_show(struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-}
-bool jeWindow_step(struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-	return false;
-}
-void jeWindow_destroy(struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-}
-struct jeWindow* jeWindow_create(bool startVisible, const char* optSpritesFilename) {
-	JE_MAYBE_UNUSED(startVisible);
-	JE_MAYBE_UNUSED(optSpritesFilename);
-
-	return (struct jeWindow*)NULL;
-}
-bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId) {
-	JE_MAYBE_UNUSED(window);
-	JE_MAYBE_UNUSED(inputId);
-
-	return false;
-}
-uint32_t jeWindow_getFps(const struct jeWindow* window) {
-	JE_MAYBE_UNUSED(window);
-
-	return 0;
-}
-
-void jeWindow_runTests() {
-}
-
-#endif

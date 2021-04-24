@@ -44,7 +44,7 @@ function MinimalGame:onWorldInit()
 end
 function MinimalGame:onStep()
 	-- move blocks in random directions
-	for _, block in pairs(self.entitySys:findAll("block")) do
+	for _, block in ipairs(self.entitySys:findAll("block")) do
 		self.entitySys:movePos(block, math.floor(math.random(3) - 2), math.floor(math.random(3) - 2))
 	end
 end

@@ -11,6 +11,9 @@ Input.CLIENT_INPUT_MAP = {
 	["b"] = "inputB",
 	["x"] = "inputX",
 	["y"] = "inputY",
+	["mouseLeft"] = "inputMouseLeft",
+	["mouseMiddle"] = "inputMouseMiddle",
+	["mouseRight"] = "inputMouseRight",
 }
 function Input:stepInputs()
 	local previousInputs = self.inputs or {}
@@ -36,6 +39,8 @@ function Input:stepInputs()
 	end
 
 	self.inputs = inputs
+	self.mouseX = client.state["inputMouseX"]
+	self.mouseY = client.state["inputMouseY"]
 end
 function Input:get(inputKey)
 	return self.inputs[inputKey].down
@@ -45,6 +50,9 @@ function Input:getPressed(inputKey)
 end
 function Input:getReleased(inputKey)
 	return self.inputs[inputKey].released
+end
+function Input:getMousePos()
+	return self.mouseX, self.mouseY
 end
 function Input:onInit(simulation)
 	self.simulation = simulation

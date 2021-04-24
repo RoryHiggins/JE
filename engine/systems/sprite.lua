@@ -37,6 +37,9 @@ end
 function Sprite:getUntextured()
 	return self.simulation.constants.untexturedSprite
 end
+function Sprite:getInvalid()
+	return self.simulation.constants.invalidSprite
+end
 function Sprite:attach(entity, sprite)
 	entity.spriteId = sprite.spriteId
 
@@ -54,12 +57,18 @@ function Sprite:onInit(simulation)
 	self.simulation.constants.sprites = {}
 
 	self.simulation.constants.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
+	self.simulation.constants.invalidSprite = self:addSprite("invalid", 8, 0, 8, 8)
 end
 function Sprite:onCameraDraw(camera)
 	local sprites = self.simulation.constants.sprites
 
 	for _, entity in ipairs(self.entitySys:findAll("sprite")) do
-		client.drawSprite(entity, sprites[entity.spriteId], camera)
+		local sprite = sprites[entity.spriteId]
+		if sprite then
+			client.drawSprite(entity, sprite, camera)
+		else
+			log.error("invalid spriteId, entity=%s", util.getComparable(entity))
+		end
 	end
 end
 function Sprite:onRunTests()

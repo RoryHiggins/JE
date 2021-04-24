@@ -3,7 +3,6 @@
 #include <j25/core/common.h>
 #include <j25/core/container.h>
 
-#if !defined(JE_BUILD_HEADLESS)
 #include <string.h>
 
 #include <png.h>
@@ -118,30 +117,3 @@ void jeImage_runTests() {
 	jeImage_destroy(&image);
 #endif
 }
-
-#endif
-
-#if defined(JE_BUILD_HEADLESS)
-
-bool jeImage_create(struct jeImage* image, uint32_t width, uint32_t height, struct jeColorRGBA32 fillColor) {
-	JE_MAYBE_UNUSED(image);
-	JE_MAYBE_UNUSED(width);
-	JE_MAYBE_UNUSED(height);
-	JE_MAYBE_UNUSED(fillColor);
-
-	return false;
-}
-bool jeImage_createFromPNGFile(struct jeImage* image, const char* filename) {
-	JE_MAYBE_UNUSED(image);
-	JE_MAYBE_UNUSED(filename);
-
-	return false;
-}
-void jeImage_destroy(struct jeImage* image) {
-	JE_MAYBE_UNUSED(image);
-}
-
-void jeImage_runTests() {
-}
-
-#endif

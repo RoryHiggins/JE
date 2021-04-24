@@ -4,16 +4,33 @@ local Entity = require("engine/systems/entity")
 
 local Template = {}
 Template.SYSTEM_NAME = "template"
-function Template:add(templateId, template)
-	local templates = self.simulation.constants.templates
-	local currentTemplate = templates[templateId]
-	if currentTemplate == nil then
-		templates[templateId] = template
+function Template:add(templateName, template)
+	local constants = self.simulation.constants
+	local templatesByName = constants.templatesByName
+	local templatesById = constants.templatesById
+
+	local currentTemplate = templatesByName[templateName]
+	if currentTemplate ~= nil then
+		return currentTemplate
 	end
+
+	local templateId = self:getCount() + 1
+	template.templateName = templateName
+	template.templateId = templateId
+
+	templatesByName[templateName] = template
+	templatesById[templateId] = template
+
 	return template
 end
 function Template:get(templateId)
-	return self.simulation.constants.templates[templateId]
+	return self.simulation.constants.templatesById[templateId]
+end
+function Template:getCount()
+	return #self.simulation.constants.templatesById
+end
+function Template:getByName(templateName)
+	return self.simulation.constants.templatesByName[templateName]
 end
 function Template:apply(entity, template)
 	local entitySys = self.entitySys
@@ -71,10 +88,13 @@ function Template:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 
-	self.simulation.constants.templates = {}
+	local constants = self.simulation.constants
+	constants.templatesByName = {}
+	constants.templatesById = {}
 end
 function Template:onRunTests()
-	log.assert(self.simulation.constants.templates ~= nil)
+	log.assert(self.simulation.constants.templatesByName ~= nil)
+	log.assert(self.simulation.constants.templatesById ~= nil)
 
 	local template = self:add("yee", {
 		["properties"] = {
@@ -84,7 +104,8 @@ function Template:onRunTests()
 			["yee"] = true
 		},
 	})
-	log.assert(self:get("yee") == template)
+	log.assert(self:getByName("yee") == template)
+	log.assert(self:get(template.templateId) == template)
 
 	local entity = self:instantiate(template)
 	log.assert(self.entitySys:find("yee") == entity)

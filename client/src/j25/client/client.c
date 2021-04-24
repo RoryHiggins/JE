@@ -271,6 +271,25 @@ void jeLua_updateStates(lua_State* lua) {
 
 			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_Y));
 			lua_setfield(lua, stateStackPos, "inputY");
+
+			int32_t mouseX = 0;
+			int32_t mouseY = 0;
+			jeWindow_getMousePos(window, &mouseX, &mouseY);
+
+			lua_pushnumber(lua, (lua_Number)mouseX);
+			lua_setfield(lua, stateStackPos, "inputMouseX");
+
+			lua_pushnumber(lua, (lua_Number)mouseY);
+			lua_setfield(lua, stateStackPos, "inputMouseY");
+
+			lua_pushboolean(lua, jeWindow_getMouseButton(window, JE_MOUSE_BUTTON_LEFT));
+			lua_setfield(lua, stateStackPos, "inputMouseLeft");
+
+			lua_pushboolean(lua, jeWindow_getMouseButton(window, JE_MOUSE_BUTTON_MIDDLE));
+			lua_setfield(lua, stateStackPos, "inputMouseMiddle");
+
+			lua_pushboolean(lua, jeWindow_getMouseButton(window, JE_MOUSE_BUTTON_RIGHT));
+			lua_setfield(lua, stateStackPos, "inputMouseRight");
 		}
 
 		lua_settop(lua, stackPos);
@@ -428,7 +447,7 @@ void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t 
 		vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y", 0.0F);
 		vertices[0].x = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "x1", vertices[0].x);
 		vertices[0].y = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "y1", vertices[0].y);
-		vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z1", 0.0F);
+		vertices[0].z = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "z", 0.0F);
 		vertices[0].u = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "u1", 0.0F);
 		vertices[0].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v1", 0.0F);
 
@@ -534,6 +553,7 @@ int jeLua_drawLine(lua_State* lua) {
 }
 int jeLua_drawTriangle(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
+	// jeBreakpoint();
 	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
 	return 0;
 }

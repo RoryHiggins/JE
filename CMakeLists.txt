@@ -38,7 +38,6 @@ set(JE_ENGINE_LINK_MODE STATIC)
 if(JE_BUILD_TARGET STREQUAL "DEVELOPMENT")
 	set(JE_ENGINE_LINK_MODE SHARED)
 endif()
-SET(JE_BUILD_HEADLESS false CACHE BOOL "j25 build headless enabled")
 
 set(JE_DEFAULT_APP "example_platformer" CACHE STRING "j25 default app to run")
 
@@ -107,12 +106,7 @@ if(MINGW)
 	target_link_libraries(j25 PRIVATE mingw32)
 endif()
 
-if(JE_BUILD_HEADLESS)
-	target_compile_definitions(j25 PRIVATE "JE_BUILD_HEADLESS")
-else()
-	target_link_libraries(j25 PRIVATE ${JE_SDL2_LIBRARIES} ${JE_OPENGL_LIBRARIES} PNG::PNG)
-endif()
-target_link_libraries(j25 PRIVATE m)
+target_link_libraries(j25 PRIVATE m PNG::PNG ${JE_SDL2_LIBRARIES} ${JE_OPENGL_LIBRARIES})
 
 add_executable(j25_client)
 target_link_libraries(j25_client PRIVATE j25 m luajit-5.1 ZLIB::ZLIB ogg)

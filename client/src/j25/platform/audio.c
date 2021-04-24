@@ -274,6 +274,7 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 
 	SDL_AudioCVT converter;
 	memset((void*)&converter, 0, sizeof(converter));
+	converter.buf = NULL;
 
 	if (ok && mustConvert) {
 		int result = SDL_BuildAudioCVT(&converter,
@@ -287,6 +288,11 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 
 		if (result < 0) {
 			JE_ERROR("SDL_BuildAudioCVT() failed with error=%s", SDL_GetError());
+			ok = false;
+		}
+
+		if (converter.buf != NULL) {
+			JE_ERROR("SDL_BuildAudioCVT() allocated a buffer, this is unexpected and may leak");
 			ok = false;
 		}
 	}
@@ -448,21 +454,21 @@ void jeAudio_runTests() {
 	struct jeAudioMixer* mixer = jeAudioMixer_create();
 	JE_ASSERT(mixer != NULL);
 
-	JE_WARN("TODO REMOVE: temporary audio testing code");
-	{
-		struct jeAudio* audio = jeAudio_createFromWavFile(device, "tmp\\test_sound.wav");
-		JE_ASSERT(audio != NULL);
-		JE_ASSERT(jeAudio_formatForDevice(audio, device));
-		JE_ASSERT(jeAudioDevice_queue(device, audio));
-		JE_ASSERT(jeAudioDevice_clear(device));
+	// JE_WARN("TODO REMOVE: temporary audio testing code");
+	// {
+	// 	struct jeAudio* audio = jeAudio_createFromWavFile(device, "tmp\\test_sound.wav");
+	// 	JE_ASSERT(audio != NULL);
+	// 	JE_ASSERT(jeAudio_formatForDevice(audio, device));
+	// 	JE_ASSERT(jeAudioDevice_queue(device, audio));
+	// 	JE_ASSERT(jeAudioDevice_clear(device));
 
-		JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-		SDL_Delay(100);
-		JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-		SDL_Delay(400);
+	// 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
+	// 	SDL_Delay(100);
+	// 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
+	// 	SDL_Delay(400);
 
-		jeAudio_destroy(audio);
-	}
+	// 	jeAudio_destroy(audio);
+	// }
 
 	jeAudioMixer_destroy(mixer);
 
