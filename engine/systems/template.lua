@@ -71,8 +71,9 @@ function Template:apply(entity, template)
 	end
 end
 function Template:instantiate(template, x, y, w, h)
-	local entity = self.entitySys:create(template)
+	log.assert(template ~= nil)
 
+	local entity = self.entitySys:create()
 	self:apply(entity, template)
 
 	x = x or entity.x

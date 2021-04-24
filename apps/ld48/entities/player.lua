@@ -14,10 +14,10 @@ local Player = {}
 Player.SYSTEM_NAME = "player"
 Player.UNKNOWN_WORLD_NAME = "<unknown world>"
 Player.UNKNOWN_WORLD_ID = 0
-function Player:tickEntity(entity)
+function Player:tickEntity(player)
 	local constants = self.simulation.constants
 
-	local materialPhysics = self.physicsSys:getMaterialPhysics(entity)
+	local materialPhysics = self.physicsSys:getMaterialPhysics(player)
 
 	local inputDirX = (
 		util.boolGetValue(self.inputSys:get("right"))
@@ -30,31 +30,31 @@ function Player:tickEntity(entity)
 	local moveDirX = inputDirX * math.abs(util.sign(constants.physicsGravityY))
 	local moveDirY = inputDirY * math.abs(util.sign(constants.physicsGravityX))
 
-	local moveForceX = (moveDirX * entity.playerMoveForce * materialPhysics.moveForceStrength)
-	local moveForceY = (moveDirY * entity.playerMoveForce * materialPhysics.moveForceStrength)
+	local moveForceX = (moveDirX * player.playerMoveForce * materialPhysics.moveForceStrength)
+	local moveForceY = (moveDirY * player.playerMoveForce * materialPhysics.moveForceStrength)
 
-	local changingDirX = moveDirX ~= util.sign(entity.speedX)
-	local changingDirY = moveDirY ~= util.sign(entity.speedY)
+	local changingDirX = moveDirX ~= util.sign(player.speedX)
+	local changingDirY = moveDirY ~= util.sign(player.speedY)
 
 	if changingDirX then
-		moveForceX = moveForceX * entity.playerChangeDirForceMultiplier
+		moveForceX = moveForceX * player.playerChangeDirForceMultiplier
 	end
 	if changingDirY then
-		moveForceY = moveForceY * entity.playerChangeDirForceMultiplier
+		moveForceY = moveForceY * player.playerChangeDirForceMultiplier
 	end
 
-	if changingDirX or (math.abs(entity.speedX) < entity.playerTargetMovementSpeed) then
-		moveForceX = moveForceX * entity.playerBelowTargetMovementSpeedForceMultiplier
+	if changingDirX or (math.abs(player.speedX) < player.playerTargetMovementSpeed) then
+		moveForceX = moveForceX * player.playerBelowTargetMovementSpeedForceMultiplier
 	end
-	if changingDirY or (math.abs(entity.speedY) < entity.playerTargetMovementSpeed) then
-		moveForceY = moveForceY * entity.playerBelowTargetMovementSpeedForceMultiplier
+	if changingDirY or (math.abs(player.speedY) < player.playerTargetMovementSpeed) then
+		moveForceY = moveForceY * player.playerBelowTargetMovementSpeedForceMultiplier
 	end
 
-	entity.forceX = entity.forceX + moveForceX
-	entity.forceY = entity.forceY + moveForceY
+	player.forceX = player.forceX + moveForceX
+	player.forceY = player.forceY + moveForceY
 
 	local onGround = self.entitySys:findRelative(
-		entity,
+		player,
 		util.sign(constants.physicsGravityX),
 		util.sign(constants.physicsGravityY),
 		"solid"
@@ -65,49 +65,66 @@ function Player:tickEntity(entity)
 		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(constants.physicsGravityY)))
 	)
 
-	local fallingX = (constants.physicsGravityX ~= 0) and (entity.speedX * util.sign(constants.physicsGravityX) >= 0)
-	local fallingY = (constants.physicsGravityY ~= 0) and (entity.speedY * util.sign(constants.physicsGravityY) >= 0)
+	local fallingX = (constants.physicsGravityX ~= 0) and (player.speedX * util.sign(constants.physicsGravityX) >= 0)
+	local fallingY = (constants.physicsGravityY ~= 0) and (player.speedY * util.sign(constants.physicsGravityY) >= 0)
 	local falling = fallingX or fallingY
 	if not tryingToJump or onGround or falling then
-		entity.playerJumpFramesCur = 0
+		player.playerJumpFramesCur = 0
 	end
 
 	if tryingToJump then
 		if onGround then
 			if constants.physicsGravityX ~= 0 then
-				self.physicsSys:stopX(entity)
+				self.physicsSys:stopX(player)
 			end
 			if constants.physicsGravityY ~= 0 then
-				self.physicsSys:stopY(entity)
+				self.physicsSys:stopY(player)
 			end
-			local jumpForce = entity.playerJumpForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
-			entity.forceY = entity.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
-			entity.playerJumpFramesCur = entity.playerJumpFrames
-		elseif entity.playerJumpFramesCur > 0 then
-			local jumpFrameForce = entity.playerJumpFrameForce * materialPhysics.jumpForceStrength
-			entity.forceX = entity.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
-			entity.forceY = entity.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
-			entity.playerJumpFramesCur = entity.playerJumpFramesCur - 1
+			local jumpForce = player.playerJumpForce * materialPhysics.jumpForceStrength
+			player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
+			player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
+			player.playerJumpFramesCur = player.playerJumpFrames
+		elseif player.playerJumpFramesCur > 0 then
+			local jumpFrameForce = player.playerJumpFrameForce * materialPhysics.jumpForceStrength
+			player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
+			player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
+			player.playerJumpFramesCur = player.playerJumpFramesCur - 1
 		end
 	end
 
 	local collidingWithDeath = self.entitySys:findBounded(
-		entity.x,
-		entity.y,
-		entity.w,
-		entity.h,
+		player.x,
+		player.y,
+		player.w,
+		player.h,
 		"death"
 	)
-	-- TODO death...
+	local fallingToDeath = (player.y > (self.simulation.input.screen.y2 + 8))
+	local dying = collidingWithDeath or fallingToDeath
+	if dying then
+		self:die(player)
+	end
 
 	-- if inputDirY < 0 then
-	-- 	self.spriteSys:attach(entity, self.spriteSys:get("playerUp"))
+	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerUp"))
 	-- elseif inputDirX > 0 then
-	-- 	self.spriteSys:attach(entity, self.spriteSys:get("playerRight"))
+	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerRight"))
 	-- else
-	-- 	self.spriteSys:attach(entity, self.spriteSys:get("playerLeft"))
+	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerLeft"))
 	-- end
+end
+function Player:die()
+	if self:getCurrentWorldName() == "editor" then
+		self.editorSys:setMode(self.editorSys.modeEditing)
+		return
+	end
+
+	if self:getIsProgressionMap() then
+		self:reloadWorld()
+		return
+	end
+
+	self.simulation:getSystem("mainMenu"):start()
 end
 function Player:resetProgress()
 	self.simulation.state.player = {}
@@ -130,6 +147,10 @@ function Player:computeWorldFilename(worldName)
 end
 function Player:getCurrentWorldFilename()
 	return string.format(self.simulation.constants.worldFilenameFormat, self:getCurrentWorldName())
+end
+function Player:reloadWorld()
+	log.assert(self:getIsProgressionMap())
+	self:loadWorld(self.simulation.state.player.worldId)
 end
 function Player:startWorld(worldName, worldId)
 	worldName = worldName or self.UNKNOWN_WORLD_NAME
@@ -223,7 +244,7 @@ function Player:onInit(simulation)
 	self:resetProgress()
 end
 function Player:onLoadState()
-	self:loadWorld(self.simulation.state.player.worldId)
+	self:reloadWorld()
 end
 function Player:onStep()
 	for _, player in ipairs(self.entitySys:findAll("player")) do

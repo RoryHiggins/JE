@@ -104,6 +104,10 @@ end
 local Editor = {}
 Editor.EDITOR_FILENAME = "map_editor.world"
 Editor.SYSTEM_NAME = "editor"
+Editor.modeEditing = "editing"
+Editor.modeSaving = "saving"
+Editor.modeLoading = "loading"
+Editor.modePlaying = "playing"
 
 function Editor:findNextEditorTemplate(templateId, step)
 	step = step or 1
@@ -260,7 +264,7 @@ function Editor:loadFromTable(save)
 	for _, entity in ipairs(save.entities) do
 		local template = self.templateSys:getByName(entity.templateName)
 		if template ~= nil then
-			if self.mode == "playing" then
+			if self.mode == self.modePlaying then
 				self.templateSys:instantiate(template, entity.x, entity.y)
 			else
 				self.placeholderSys:create(template, entity.x, entity.y)
@@ -272,6 +276,9 @@ function Editor:loadFromTable(save)
 
 	local background = save.background
 	self.backgroundSys:setColor(background.r, background.g, background.b)
+
+	self.saveTable = save
+	self.saved = true
 end
 function Editor:saveToFile(filename)
 	log.info("filename=%s", filename)
@@ -303,8 +310,6 @@ function Editor:loadFromFile(filename)
 	local save = util.json.decode(saveStr)
 	self:loadFromTable(save)
 
-	self.saveTable = save
-	self.saved = true
 	return true
 end
 function Editor:getInstance()
@@ -324,28 +329,28 @@ function Editor:setMode(newMode)
 
 	log.debug("oldMode=%s, newMode=%s", oldMode, newMode)
 
-	if oldMode == "editing" then
+	if oldMode == self.modeEditing then
 		self.entitySys:untag(self:getInstance(), "sprite")
 	end
 
-	if oldMode ~= "playing" then
-		self.saveTable = self:saveToTable()
+	if newMode == self.modePlaying then
+		self:saveToTable()
 	end
 
 	self.mode = newMode
 
-	if (oldMode == "playing") or (newMode == "playing") then
+	if (oldMode == self.modePlaying) or (newMode == self.modePlaying) then
 		self:loadFromTable(self.saveTable)
 	end
 
-	if newMode == "editing" then
+	if newMode == self.modeEditing then
 		self.entitySys:tag(self:getInstance(), "sprite")
 	end
 end
 function Editor:startEditor()
 	self.simulation:getSystem("player"):createWorld("editor")
 	self:clearSaveTable()
-	self:setMode("editing")
+	self:setMode(self.modeEditing)
 	self:loadFromFile(self.saveFilename)
 end
 function Editor:onInit(simulation)
@@ -383,13 +388,13 @@ function Editor:onInit(simulation)
 			["sprite"] = true,
 		},
 	})
-	self.modeIdToMode = {"editing", "saving", "loading", "playing"}
+	self.modeIdToMode = {self.modeEditing, self.modeSaving, self.modeLoading, self.modePlaying}
 	self.modeToModeId = {}
 	for i, mode in ipairs(self.modeIdToMode) do
 		self.modeToModeId[mode] = i
 	end
 
-	self.mode = "playing"
+	self.mode = self.modePlaying
 	self:clearSaveTable()
 	self.saved = false
 	self.saveFilename = self.EDITOR_FILENAME
@@ -412,26 +417,26 @@ function Editor:onStep()
 		- util.boolGetValue(self.inputSys:getReleased("up"))
 	)
 
-	if self.mode == "editing" then
+	if self.mode == self.modeEditing then
 		self:editModeStep()
 	end
 
-	if self.mode == "saving" then
+	if self.mode == self.modeSaving then
 		if actionReleased or mouseReleased then
 			self:saveToFile(self.saveFilename)
 		end
 	end
-	if self.mode == "loading" then
+	if self.mode == self.modeLoading then
 		if actionReleased or mouseReleased then
 			self:loadFromFile(self.saveFilename)
 		end
 	end
-	if self.mode == "playing" then
+	if self.mode == self.modePlaying then
 		if mouseReleased then
-			self:setMode("editing")
+			self:setMode(self.modeEditing)
 		end
 	end
-	if self.mode ~= "playing" then
+	if self.mode ~= self.modePlaying then
 		local newModeId = util.moduloAddSkipZero(
 			self.modeToModeId[self.mode],
 			modeScrollDir,

@@ -30,7 +30,6 @@ function Wall:onInit(simulation)
 		})
 	end
 
-	self.template = self.templateSys:get("wallBlack")
 end
 
 return Wall

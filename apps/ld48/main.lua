@@ -16,7 +16,7 @@ local Player = require("apps/ld48/entities/player")
 local ld48 = {}
 ld48.SYSTEM_NAME = "ld48"
 ld48.modePlay = "play"
-ld48.modeEditor = "editor"
+ld48.modePlayEditor = "editor"
 ld48.modePlayTestWorld = "playTestWorld"
 ld48.modeResume = "resume"
 function ld48:onInit(simulation)
@@ -37,16 +37,19 @@ function ld48:onInit(simulation)
 	self.font = self.textSys:getDefaultFont()
 end
 function ld48:testWorldInit()
-	self.templateSys:instantiate(self.playerSys.template, 64, 16)
+	local playerTemplate = self.templateSys:getByName("player")
+	local wallTemplate = self.templateSys:getByName("wallRock")
+
+	self.templateSys:instantiate(playerTemplate, 64, 16)
 
 	-- step floors
 	for i = 1, 7 do
 		local x = 16 + ((i - 1) * 32)
 		local y = 16 + ((i - 1) * 32)
-		self.templateSys:instantiate(self.wallSys.template, x, y, 8, 8)
-		self.templateSys:instantiate(self.wallSys.template, x + 8, y, 8, 8)
-		self.templateSys:instantiate(self.wallSys.template, x + 16, y, 8, 8)
-		self.templateSys:instantiate(self.wallSys.template, x + 24, y, 8, 8)
+		self.templateSys:instantiate(wallTemplate, x, y, 8, 8)
+		self.templateSys:instantiate(wallTemplate, x + 8, y, 8, 8)
+		self.templateSys:instantiate(wallTemplate, x + 16, y, 8, 8)
+		self.templateSys:instantiate(wallTemplate, x + 24, y, 8, 8)
 	end
 end
 -- function ld48:onWorldInit()
@@ -56,13 +59,13 @@ function ld48:onStart()
 	self.mode = ld48.modePlay
 
 	-- self.mode = ld48.modeResume
-	-- self.mode = ld48.modeEditor
+	self.mode = ld48.modePlayEditor
 	-- self.mode = ld48.modePlayTestWorld
 
 	if self.mode == ld48.modePlay then
 		self.mainMenuSys:start()
 	end
-	if self.mode == ld48.modeEditor then
+	if self.mode == ld48.modePlayEditor then
 		self.simulation.constants.developerDebugging = true
 		self.editorSys:startEditor()
 	end
