@@ -12,6 +12,8 @@
 
 # Errors
 
+# Template inheritance?
+
 Capture stack trace on a lua error
 Dump simulation state + stack trace on a lua error
 - Dump the first error only

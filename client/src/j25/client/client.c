@@ -593,6 +593,11 @@ int jeLua_drawText(lua_State* lua) {
 		memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
 		jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
+		textBoundsVertices[0].z = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_z", textBoundsVertices[0].z);
+		textBoundsVertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_r", textBoundsVertices[0].r);
+		textBoundsVertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_g", textBoundsVertices[0].g);
+		textBoundsVertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_b", textBoundsVertices[0].b);
+		textBoundsVertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_a", textBoundsVertices[0].a);
 		textBoundsVertices[1] = textBoundsVertices[0];
 
 		JE_TRACE(

@@ -40,7 +40,8 @@ function log.error(format, ...)
 end
 function log.assert(expr)
 	if not expr then
-		error()
+		log.error("Assert failed")
+		error("Assert failed")
 	end
 end
 function log.protectedCall(fn, ...)

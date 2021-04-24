@@ -7,6 +7,7 @@ local Text = require("engine/systems/text")
 local Shape = require("engine/systems/shape")
 local Editor = require("engine/systems/editor")
 
+local MainMenu = require("apps/ld48/systems/main_menu")
 local Material = require("apps/ld48/systems/material")
 local Physics = require("apps/ld48/systems/physics")
 local Wall = require("apps/ld48/entities/wall")
@@ -17,6 +18,7 @@ ld48.SYSTEM_NAME = "ld48"
 ld48.modePlay = "play"
 ld48.modeEditor = "editor"
 ld48.modePlayTestWorld = "playTestWorld"
+ld48.modeResume = "resume"
 function ld48:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -26,6 +28,7 @@ function ld48:onInit(simulation)
 	self.shapeSys = self.simulation:addSystem(Shape)
 	self.editorSys = self.simulation:addSystem(Editor)
 
+	self.mainMenuSys = self.simulation:addSystem(MainMenu)
 	self.materialSys = self.simulation:addSystem(Material)
 	self.physicsSys = self.simulation:addSystem(Physics)
 	self.wallSys = self.simulation:addSystem(Wall)
@@ -49,24 +52,33 @@ end
 -- function ld48:onWorldInit()
 -- end
 function ld48:onStart()
-	-- self.mode = ld48.modePlay
-	self.mode = ld48.modeEditor
+	self.simulation.constants.developerDebugging = true
+	self.mode = ld48.modePlay
 
-	self.playerSys:gotoWorld(1)
+	-- self.mode = ld48.modeResume
+	-- self.mode = ld48.modeEditor
+	-- self.mode = ld48.modePlayTestWorld
 
+	if self.mode == ld48.modePlay then
+		self.mainMenuSys:start()
+	end
 	if self.mode == ld48.modeEditor then
-		self.editorSys:setMode("editing")
 		self.simulation.constants.developerDebugging = true
+		self.editorSys:startEditor()
 	end
 	if self.mode == ld48.modePlayTestWorld then
+		self.simulation.constants.developerDebugging = true
+		self.playerSys:createWorld("test")
 		self.simulation:worldInit()
 		self:testWorldInit()
-		self.simulation.constants.developerDebugging = true
+	end
+	if self.mode == ld48.modeResume then
+		self.simulation:load(Simulation.SAVE_FILE)
 	end
 end
-function ld48:onDraw()
-	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))
-end
+-- function ld48:onDraw()
+-- 	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))
+-- end
 
 local simulation = Simulation.new()
 simulation:addSystem(ld48)

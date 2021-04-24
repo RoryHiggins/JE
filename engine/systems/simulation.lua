@@ -5,7 +5,7 @@ local client = require("engine/client/client")
 local Simulation = {}
 Simulation.__index = Simulation
 Simulation.SYSTEM_NAME = "simulation"
-Simulation.DUMP_FILE = "./game_dump.sav"
+Simulation.DUMP_FILE = "./game_dump.json"
 Simulation.SAVE_FILE = "./game_save.sav"
 function Simulation:broadcast(event, tolerate_errors, ...)
 	for _, system in ipairs(self.private.eventListeners) do
@@ -49,7 +49,7 @@ function Simulation:addSystem(system)
 
 	return systemInstance
 end
-function Simulation:tryGetSystem(systemName)
+function Simulation:getSystem(systemName)
 	if type(systemName) ~= "string" then
 		log.debug("systemName is not registered, systemName=%s", systemName)
 		return {}
@@ -159,6 +159,7 @@ function Simulation:load(filename)
 	end
 
 	self.state = loadedSave.state
+	self:broadcast("onLoadState", false)
 
 	return true
 end
@@ -245,7 +246,6 @@ function Simulation:run(...)
 
 		self:stop()
 
-		self:save(self.SAVE_FILE)
 		self:dump(self.DUMP_FILE)
 	end
 

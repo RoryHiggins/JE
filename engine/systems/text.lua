@@ -57,6 +57,11 @@ function Text:drawDebugString(text)
 
 	client.drawText(renderable, self.defaultFont, self.simulation.input.screen)
 end
+function Text:getTextSize(text, font)
+	font = font or self:getDefaultFont()
+
+	return (#text * font.charW), (font.charH)
+end
 function Text:attach(entity, font, text)
 	entity.fontId = font.fontId
 	entity.text = text
@@ -85,7 +90,18 @@ function Text:onCameraDraw(camera)
 	local fonts = self.simulation.constants.fonts
 
 	for _, entity in ipairs(self.entitySys:findAll("text")) do
-		client.drawText(entity, fonts[entity.fontId], camera)
+
+		local font = self:getDefaultFont()
+		if entity.fontId ~= nil then
+			local entityFont = fonts[entity.fontId]
+			if font == nil then
+				log.error("unknown font, entity=%s", util.getComparable(entity))
+			else
+				font = entityFont
+			end
+		end
+
+		self:draw(entity, font, camera)
 	end
 end
 function Text:onRunTests()

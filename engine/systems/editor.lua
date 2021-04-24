@@ -102,6 +102,7 @@ end
 
 
 local Editor = {}
+Editor.EDITOR_FILENAME = "map_editor.world"
 Editor.SYSTEM_NAME = "editor"
 
 function Editor:findNextEditorTemplate(templateId, step)
@@ -156,8 +157,8 @@ function Editor:editModeStep()
 	local editor = self:getInstance()
 
 	local selectionScrollDir = (
-		util.boolGetValue(self.inputSys:getPressed("right"))
-		- util.boolGetValue(self.inputSys:getPressed("left")))
+		util.boolGetValue(self.inputSys:getReleased("right"))
+		- util.boolGetValue(self.inputSys:getReleased("left")))
 
 	local template = self.templateSys:get(editor.placeholderTemplateId)
 	if selectionScrollDir == 0 and template.templateName == self.editorNoSelectionTemplate.templateName then
@@ -170,8 +171,10 @@ function Editor:editModeStep()
 	end
 
 	if self.inputSys:get("mouseLeft") then
-		if self.placeholderSys:createIfFree(template, editor.x, editor.y, editor.w, editor.h) then
-			self.saved = false
+		if template.templateName ~= "editorNoSelection" then
+			if self.placeholderSys:createIfFree(template, editor.x, editor.y, editor.w, editor.h) then
+				self.saved = false
+			end
 		end
 	end
 	if self.inputSys:get("mouseRight") then
@@ -201,14 +204,28 @@ function Editor:editModeDraw(camera)
 	editor.x = math.floor((camera.mouseX) / self.gridSize) * self.gridSize
 	editor.y = math.floor((camera.mouseY) / self.gridSize) * self.gridSize
 end
-function Editor:clearAll()
+function Editor:clearWorld()
+	log.debug("")
+
 	self.placeholderSys:clearAll()
 	self.placeholderInstanceSys:clearAll()
 	self.simulation:worldInit()
 
 	self.saved = false
 end
+function Editor:clearSaveTable()
+	self.saveTable = {
+		["entities"] = {},
+		["background"] = {
+			["r"] = 1,
+			["g"] = 1,
+			["b"] = 1,
+		}
+	}
+end
 function Editor:saveToTable()
+	log.debug("")
+
 	local entities = {}
 	local backgroundR, backgroundG, backgroundB = self.backgroundSys:getColor()
 	local save = {
@@ -236,8 +253,10 @@ function Editor:saveToTable()
 	return save
 end
 function Editor:loadFromTable(save)
-	self:clearAll()
+	log.debug("")
 
+	self:clearWorld()
+	self:clearSaveTable()
 	for _, entity in ipairs(save.entities) do
 		local template = self.templateSys:getByName(entity.templateName)
 		if template ~= nil then
@@ -310,7 +329,7 @@ function Editor:setMode(newMode)
 	end
 
 	if oldMode ~= "playing" then
-		self:saveToTable()
+		self.saveTable = self:saveToTable()
 	end
 
 	self.mode = newMode
@@ -322,6 +341,12 @@ function Editor:setMode(newMode)
 	if newMode == "editing" then
 		self.entitySys:tag(self:getInstance(), "sprite")
 	end
+end
+function Editor:startEditor()
+	self.simulation:getSystem("player"):createWorld("editor")
+	self:clearSaveTable()
+	self:setMode("editing")
+	self:loadFromFile(self.saveFilename)
 end
 function Editor:onInit(simulation)
 	self.simulation = simulation
@@ -365,16 +390,9 @@ function Editor:onInit(simulation)
 	end
 
 	self.mode = "playing"
-	self.saveTable = {
-		["entities"] = {},
-		["background"] = {
-			["r"] = 1,
-			["g"] = 1,
-			["b"] = 1,
-		}
-	}
+	self:clearSaveTable()
 	self.saved = false
-	self.saveFilename = "map_editor.world"
+	self.saveFilename = self.EDITOR_FILENAME
 end
 function Editor:onStep()
 	if not self.simulation.constants.developerDebugging then
@@ -390,8 +408,8 @@ function Editor:onStep()
 		or self.inputSys:getReleased("b")
 	)
 	local modeScrollDir = (
-		util.boolGetValue(self.inputSys:getPressed("down"))
-		- util.boolGetValue(self.inputSys:getPressed("up"))
+		util.boolGetValue(self.inputSys:getReleased("down"))
+		- util.boolGetValue(self.inputSys:getReleased("up"))
 	)
 
 	if self.mode == "editing" then
@@ -414,14 +432,12 @@ function Editor:onStep()
 		end
 	end
 	if self.mode ~= "playing" then
-		if modeScrollDir ~= 0 then
-			local newModeId = util.moduloAddSkipZero(
-				self.modeToModeId[self.mode],
-				modeScrollDir,
-				#self.modeIdToMode + 1
-			)
-			self:setMode(self.modeIdToMode[newModeId])
-		end
+		local newModeId = util.moduloAddSkipZero(
+			self.modeToModeId[self.mode],
+			modeScrollDir,
+			#self.modeIdToMode + 1
+		)
+		self:setMode(self.modeIdToMode[newModeId])
 	end
 end
 function Editor:onCameraDraw(camera)

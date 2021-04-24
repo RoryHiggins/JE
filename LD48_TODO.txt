@@ -1,0 +1,12 @@
+
+
+
+Design:
+- Intro (if there's time): meteor collapsing into the world
+- Level backdrop: horizontal mineshaft tunnels
+- Tunnel platformer.  Focused on ceiling sticking and floaty gravity-less dashes to precisely avoid obstacles?
+- 
+
+
+Before release:
+- Disable debug text in Text:onInit

@@ -8,23 +8,22 @@ function Wall:onInit(simulation)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.templateSys = self.simulation:addSystem(Template)
 
-	self.spriteSys:addSprite("wallBlack", 0, 24, 8, 8)
-	self.spriteSys:addSprite("wallRock", 8, 24, 8, 8)
+	self.spriteSys:addSprite("death", 0, 8, 8, 8)
 
-	for _, wallName in ipairs({"wallBlack", "wallRock"}) do
-		self.templateSys:add(wallName, {
+	for _, deathName in ipairs({"death"}) do
+		self.templateSys:add(deathName, {
 			["properties"] = {
 				["w"] = 8,
 				["h"] = 8,
-				["spriteId"] = wallName,
+				["spriteId"] = deathName,
 			},
 			["tags"] = {
 				["sprite"] = true,
 				["material"] = true,
-				["solid"] = true,
+				["death"] = true,
 			},
 			["editor"] = {
-				["category"] = "wall",
+				["category"] = "death",
 				["selectible"] = true,
 			},
 		})
