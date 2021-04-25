@@ -16,7 +16,8 @@ local Player = require("apps/ld48/entities/player")
 local ld48 = {}
 ld48.SYSTEM_NAME = "ld48"
 ld48.modePlay = "play"
-ld48.modePlayEditor = "editor"
+ld48.modeEditor = "editor"
+ld48.modePlayInEditor = "playInEditor"
 ld48.modePlayTestWorld = "playTestWorld"
 ld48.modeResume = "resume"
 function ld48:onInit(simulation)
@@ -58,16 +59,22 @@ function ld48:onStart()
 	self.simulation.constants.developerDebugging = true
 	self.mode = ld48.modePlay
 
-	-- self.mode = ld48.modeResume
-	self.mode = ld48.modePlayEditor
+	-- self.mode = ld48.modeEditor
+	self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modePlayTestWorld
+	-- self.mode = ld48.modeResume
 
 	if self.mode == ld48.modePlay then
 		self.mainMenuSys:start()
 	end
-	if self.mode == ld48.modePlayEditor then
+	if self.mode == ld48.modeEditor then
 		self.simulation.constants.developerDebugging = true
 		self.editorSys:startEditor()
+	end
+	if self.mode == ld48.modePlayInEditor then
+		self.simulation.constants.developerDebugging = true
+		self.editorSys:startEditor()
+		self.editorSys:setMode(self.editorSys.modePlaying)
 	end
 	if self.mode == ld48.modePlayTestWorld then
 		self.simulation.constants.developerDebugging = true

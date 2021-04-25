@@ -64,10 +64,6 @@ function Simulation:step()
 		self.private.running = false
 	end
 
-	if not self.private.running then
-		return
-	end
-
 	-- only update the client if the game is running
 	client.step()
 	log.trace("client.step complete, fps=%d", self.input.fps)
@@ -122,6 +118,8 @@ function Simulation:stop()
 		self:broadcast("onStop", true)
 		self.private.running = false
 	end
+
+	client.step()
 end
 function Simulation:save(filename)
 	log.debug("filename=%s", filename)
@@ -253,6 +251,15 @@ function Simulation:run(...)
 
 	log.info("runTimeSeconds=%.2f", os.clock() - startTimeSeconds)
 	log.popLogLevel()
+
+	if (log.warnCount > 0) or (log.errorCount > 0) or (client.state.breakpointCount > 0) then
+		log.warn(string.format(
+			"simulation completed with warnings=%s, errors=%s, clientErrors=%s",
+			log.warnCount,
+			log.errorCount,
+			client.state.breakpointCount
+		))
+	end
 end
 
 function Simulation.new()

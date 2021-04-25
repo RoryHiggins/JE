@@ -290,6 +290,9 @@ void jeLua_updateStates(lua_State* lua) {
 
 			lua_pushboolean(lua, jeWindow_getMouseButton(window, JE_MOUSE_BUTTON_RIGHT));
 			lua_setfield(lua, stateStackPos, "inputMouseRight");
+
+			lua_pushnumber(lua, (lua_Number)jeBreakpoint_getCount());
+			lua_setfield(lua, stateStackPos, "breakpointCount");
 		}
 
 		lua_settop(lua, stackPos);
@@ -706,12 +709,15 @@ int jeLua_step(lua_State* lua) {
 		ok = false;
 	}
 
+	bool performStep = true;
 	if (jeWindow_getIsValid(window) == false) {
-		JE_ERROR("window is not valid");
-		ok = false;
+		JE_TRACE("window is not valid, skipping step");
+		performStep = false;
 	}
 
-	ok = ok && jeWindow_step(window);
+	if (performStep) {
+		ok = ok && jeWindow_step(window);
+	}
 
 	if (lua != NULL) {
 		jeLua_updateStates(lua);

@@ -9,19 +9,22 @@ log.LOG_LEVEL_NONE = 5
 log.testsLogLevel = log.LOG_LEVEL_WARN
 log.logLevel = log.LOG_LEVEL_LOG
 log.debugger = nil
+log.warnCount = 0
+log.errorCount = 0
 log.levelStack = {}
 local function logImpl(level, format, ...)
 	if log.logLevel > level then
 		return
 	end
 
-	if log.debugger and level >= log.LOG_LEVEL_WARN then
-		log.debugger()
-	end
 
 	local callee_info = debug.getinfo(3, "Sln")
 	print(string.format(format, callee_info.short_src, callee_info.currentline, callee_info.name, ...))
 	io.flush()
+
+	if log.debugger and level >= log.LOG_LEVEL_WARN then
+		log.debugger()
+	end
 end
 function log.trace(format, ...)
 	logImpl(log.LOG_LEVEL_TRACE, "[trace %s:%d] %s() "..format, ...)
@@ -34,9 +37,11 @@ function log.info(format, ...)
 end
 function log.warn(format, ...)
 	logImpl(log.LOG_LEVEL_WARN, "[WARN  %s:%d] %s() "..format.."\n"..debug.traceback(), ...)
+	log.warnCount = log.warnCount + 1
 end
 function log.error(format, ...)
 	logImpl(log.LOG_LEVEL_ERR, "[ERROR %s:%d] %s() "..format.."\n"..debug.traceback(), ...)
+	log.errorCount = log.errorCount + 1
 end
 function log.assert(expr)
 	if not expr then

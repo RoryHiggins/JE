@@ -16,7 +16,12 @@ const char* jeLoggerLevel_getLabel(uint32_t loggerLevel);
 
 const char* __asan_default_options();
 
+static uint32_t jeBreakpoint_count = 0;
 JE_API_NOINLINE void jeBreakpoint() {
+	jeBreakpoint_count++;
+}
+uint32_t jeBreakpoint_getCount() {
+	return jeBreakpoint_count;
 }
 
 const char* jeLoggerLevel_getLabel(uint32_t loggerLevel) {

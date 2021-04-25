@@ -91,6 +91,7 @@ struct jeLogger {
 };
 
 JE_API_PUBLIC void jeBreakpoint();
+JE_API_PUBLIC uint32_t jeBreakpoint_getCount();
 
 JE_API_PUBLIC struct jeLogger jeLogger_create(const char* file, const char* function, uint32_t line);
 JE_API_PUBLIC uint32_t jeLogger_getLevel();
