@@ -1,5 +1,6 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
+local client = require("engine/client/client")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
 local Material = require("apps/ld48/systems/material")
@@ -66,12 +67,24 @@ end
 function Physics:stopX(entity)
 	log.trace("stopping entity, entityId=%s", entity.id)
 
+	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
+	if (entity.tags.player ~= nil) and (math.abs(entity.speedX) >= 2.5) then
+		client.playSound(client.audioBump)
+	end
+	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+
 	entity.forceX = 0
 	entity.speedX = 0
 	entity.overflowX = 0
 end
 function Physics:stopY(entity)
 	log.trace("stopping entity, entityId=%s", entity.id)
+
+	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
+	if (entity.tags.player ~= nil) and (math.abs(entity.speedY) >= 2.5) then
+		client.playSound(client.audioBump)
+	end
+	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
 	entity.forceY = 0
 	entity.speedY = 0

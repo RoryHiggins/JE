@@ -104,6 +104,8 @@ function Player:tickEntity(player)
 
 	if shouldJump then
 		log.debug("player jump")
+		client.playSound(client.audioJump)
+
 		if constants.physicsGravityX ~= 0 then
 			self.physicsSys:stopX(player)
 		end
@@ -126,10 +128,10 @@ function Player:tickEntity(player)
 	end
 
 	local collidingWithDeath = self.entitySys:findBounded(
-		player.x,
-		player.y,
-		player.w,
-		player.h,
+		player.x + 2,
+		player.y + 1,
+		player.w - 4,
+		player.h - 2,
 		"death"
 	)
 	local outsideBounds = (
@@ -167,6 +169,7 @@ function Player:tickEntity(player)
 end
 function Player:die()
 	log.debug("player death")
+	client.playSound(client.audioDeath)
 
 	if self:getCurrentWorld() == "editor" then
 		self.editorSys:setMode(self.editorSys.modeEditing)
@@ -211,8 +214,8 @@ function Player:onInit(simulation)
 			["h"] = 7,
 			["spriteId"] = "playerRight2",
 			["playerHoverFramesCur"] = 0,
-			["playerHoverFrames"] = 100,
-			["playerJumpForce"] = 2.5,
+			["playerHoverFrames"] = 80,
+			["playerJumpForce"] = 2.65,
 			["playerHoverFrameForce"] = 0.2,
 			["playerMoveForce"] = 0.25,
 			["playerMovementDetectionThreshold"] = 0.25,

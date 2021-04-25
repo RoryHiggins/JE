@@ -7,7 +7,7 @@
 // #include <ogg/ogg.h>
 #include <SDL2/SDL.h>
 
-#define JE_AUDIO_MIXER_DEVICES_COUNT 10
+#define JE_AUDIO_MIXER_DEVICES_COUNT 3
 
 struct jeAudioDevice {
 	SDL_AudioSpec spec;
@@ -25,9 +25,9 @@ struct jeAudioMixer {
 	struct jeAudioDevice* soundDevices[JE_AUDIO_MIXER_DEVICES_COUNT];
 	uint32_t next_device;
 	uint32_t num_devices;
+	bool loop_music_device;
+	const struct jeAudio* music_loop_audio; // NON-OWNING; MUST OUTLIVE MIXER
 };
-
-// TODO JE_API_PUBLIC jeAudio_createFromOggFile(struct jeAudio* audio, const char* filename);
 
 void jeAudioDevice_destroy(struct jeAudioDevice* device) {
 	JE_TRACE("device=%p", (void*)device);
@@ -412,8 +412,42 @@ struct jeAudioDevice* jeAudioMixer_getMusicAudioDevice(struct jeAudioMixer* mixe
 
 	return device;
 }
+bool jeAudioMixer_loopMusic(struct jeAudioMixer* mixer, const struct jeAudio* audio) {
+	bool ok = true;
+
+	if (mixer == NULL) {
+		JE_ERROR("mixer=NULL");
+		ok = false;
+	}
+
+	if (audio == NULL) {
+		JE_ERROR("audio=NULL");
+		ok = false;
+	}
+
+	struct jeAudioDevice* music_device = NULL;
+
+	if (ok) {
+		music_device = jeAudioMixer_getMusicAudioDevice(mixer);
+		if (music_device == NULL) {
+			ok = false;
+		}
+	}
+
+	ok = ok && jeAudioDevice_clear(music_device);
+
+	if (ok) {
+		mixer->music_loop_audio = audio;
+	}
+
+	ok = ok && jeAudioDevice_queue(music_device, mixer->music_loop_audio);
+
+
+
+	return ok;
+}
 struct jeAudioDevice* jeAudioMixer_playSound(struct jeAudioMixer* mixer, const struct jeAudio* audio) {
-		bool ok = true;
+	bool ok = true;
 
 	if (mixer == NULL) {
 		JE_ERROR("mixer=NULL");
@@ -439,40 +473,58 @@ struct jeAudioDevice* jeAudioMixer_playSound(struct jeAudioMixer* mixer, const s
 
 	return device;
 }
+bool jeAudioMixer_step(struct jeAudioMixer* mixer) {
+	bool ok = true;
+
+	if (mixer == NULL) {
+		JE_ERROR("mixer=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		if (SDL_GetQueuedAudioSize(jeAudioMixer_getMusicAudioDevice(mixer)->id) == 0) {
+			ok = ok && jeAudioDevice_queue(jeAudioMixer_getMusicAudioDevice(mixer), mixer->music_loop_audio);
+		}
+	}
+
+	return ok;
+}
 
 void jeAudio_runTests() {
 #if JE_DEBUGGING
 
-	struct jeAudioDevice* device = jeAudioDevice_create();
-	JE_ASSERT(device != NULL);
+	// struct jeAudioDevice* device = jeAudioDevice_create();
+	// JE_ASSERT(device != NULL);
 
-	struct jeAudio* audioEmpty = jeAudio_create(device);
-	JE_ASSERT(audioEmpty != NULL);
-	JE_ASSERT(jeAudio_formatForDevice(audioEmpty, device));
-	jeAudio_destroy(audioEmpty);
+	// struct jeAudio* audioEmpty = jeAudio_create(device);
+	// JE_ASSERT(audioEmpty != NULL);
+	// JE_ASSERT(jeAudio_formatForDevice(audioEmpty, device));
+	// jeAudio_destroy(audioEmpty);
 
-	struct jeAudioMixer* mixer = jeAudioMixer_create();
-	JE_ASSERT(mixer != NULL);
+	// struct jeAudioMixer* mixer = jeAudioMixer_create();
+	// JE_ASSERT(mixer != NULL);
 
-	// JE_WARN("TODO REMOVE: temporary audio testing code");
-	// {
-	// 	struct jeAudio* audio = jeAudio_createFromWavFile(device, "tmp\\test_sound.wav");
-	// 	JE_ASSERT(audio != NULL);
-	// 	JE_ASSERT(jeAudio_formatForDevice(audio, device));
-	// 	JE_ASSERT(jeAudioDevice_queue(device, audio));
-	// 	JE_ASSERT(jeAudioDevice_clear(device));
+	// // JE_WARN("TODO REMOVE: temporary audio testing code");
+	// // {
+	// // 	// struct jeAudio* audio = jeAudio_createFromWavFile(device, "tmp\\test_sound.wav");
+	// // 	struct jeAudio* audio = jeAudio_createFromWavFile(device, "apps/ld48/data/song1.wav");
+	// // 	JE_ASSERT(audio != NULL);
+	// // 	JE_ASSERT(jeAudio_formatForDevice(audio, device));
+	// // 	JE_ASSERT(jeAudioDevice_queue(device, audio));
+	// // 	JE_ASSERT(jeAudioDevice_clear(device));
 
-	// 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-	// 	SDL_Delay(100);
-	// 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-	// 	SDL_Delay(400);
+	// // 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
+	// // 	SDL_Delay(100);
+	// // 	// JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
+	// // 	// SDL_Delay(4000);
 
-	// 	jeAudio_destroy(audio);
-	// }
+	// // 	// disgusting hack: allocate the music and never let it go for the program lifetime!
+	// // 	// jeAudio_destroy(audio);
+	// // }
 
-	jeAudioMixer_destroy(mixer);
+	// jeAudioMixer_destroy(mixer);
 
-	jeAudioDevice_destroy(device);
+	// jeAudioDevice_destroy(device);
 
 #endif
 }

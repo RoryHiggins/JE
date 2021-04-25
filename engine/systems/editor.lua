@@ -481,22 +481,23 @@ function Editor:onInit(simulation)
 		},
 	})
 
-	self.modeIdToMode = {
-		self.modeEditing,
-		-- self.modeSaving,
-		-- self.modeLoading,
-		self.modeLevelSelect,
-		self.modePlaying,
-	}
-	self.modeToModeId = {}
-	for i, mode in ipairs(self.modeIdToMode) do
-		self.modeToModeId[mode] = i
-	end
+	self:setupModes()
 
 	self.mode = self.modePlaying
 	self:clearSaveTable()
 	self.saved = false
 	self.saveFilename = self.EDITOR_FILENAME
+end
+function Editor:setupModes()
+	self.modeIdToMode = {}
+	self.modeIdToMode[#self.modeIdToMode + 1] = self.modeEditing
+	self.modeIdToMode[#self.modeIdToMode + 1] = self.modeLevelSelect
+	self.modeIdToMode[#self.modeIdToMode + 1] = self.modePlaying
+	self.modeToModeId = {}
+	for i, mode in ipairs(self.modeIdToMode) do
+		self.modeToModeId[mode] = i
+	end
+
 end
 function Editor:onStep()
 	if not self.simulation.constants.developerDebugging then

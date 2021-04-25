@@ -28,9 +28,9 @@ function MainMenu:createMenuButtons()
 		self:createMenuButton("Continue game", "continueGamePressed")
 	end
 
-	if self.simulation.constants.developerDebugging then
-		self:createMenuButton("Edit map", "editMapPressed")
-	end
+	-- if self.simulation.constants.developerDebugging then
+		self:createMenuButton("Map editor", "editMapPressed")
+	-- end
 end
 function MainMenu:newGamePressed()
 	self.simulation:getSystem("player"):loadFirstWorld()

@@ -64,29 +64,22 @@ end
 -- end
 function ld48:onStart()
 	self.mode = ld48.modePlay
+	self.simulation.constants.developerDebugging = false
+	local editorWorld = "temple3"
 
 	-- self.mode = ld48.modeEditor
-	self.mode = ld48.modePlayInEditor
-	-- self.mode = ld48.modePlayTestWorld
+	-- self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modeResume
-	local editorWorld = "temple2"
 
 	if self.mode == ld48.modePlay then
-		self.simulation.constants.developerDebugging = false
 		self.mainMenuSys:startMainMenu()
-	else
-		self.simulation.constants.developerDebugging = true
 	end
-
 	if self.mode == ld48.modeEditor then
 		self.editorSys:startEditor(editorWorld)
 	end
 	if self.mode == ld48.modePlayInEditor then
 		self.editorSys:startEditor(editorWorld)
 		self.editorSys:setMode(self.editorSys.modePlaying)
-	end
-	if self.mode == ld48.modePlayTestWorld then
-		self:testWorldInit()
 	end
 	if self.mode == ld48.modeResume then
 		self.simulation:load(Simulation.SAVE_FILE)

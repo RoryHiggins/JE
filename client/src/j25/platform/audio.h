@@ -23,7 +23,9 @@ JE_API_PUBLIC bool jeAudio_formatForDevice(struct jeAudio* audio, const struct j
 JE_API_PUBLIC void jeAudioMixer_destroy(struct jeAudioMixer* mixer);
 JE_API_PUBLIC struct jeAudioMixer* jeAudioMixer_create(void);
 JE_API_PUBLIC struct jeAudioDevice* jeAudioMixer_getMusicAudioDevice(struct jeAudioMixer* mixer);
+JE_API_PUBLIC bool jeAudioMixer_loopMusic(struct jeAudioMixer* mixer, const struct jeAudio* audio /* MUST OUTLIVE MIXER*/);
 JE_API_PUBLIC struct jeAudioDevice* jeAudioMixer_playSound(struct jeAudioMixer* mixer, const struct jeAudio* audio);
+JE_API_PUBLIC bool jeAudioMixer_step(struct jeAudioMixer* mixer);
 
 JE_API_PUBLIC void jeAudio_runTests();
 

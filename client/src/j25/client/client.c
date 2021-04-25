@@ -302,6 +302,12 @@ void jeLua_updateStates(lua_State* lua) {
 	}
 }
 
+// BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
+static struct jeAudioMixer* jeAudioMixer_instance = NULL;
+static struct jeAudio* jeAudio_prebaked[8] = {0};
+static uint32_t jeAudio_numPrebaked = 0;
+// END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+
 /*Lua-client bindings.  Note: return value = num responses pushed to lua stack*/
 int jeLua_readData(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
@@ -676,6 +682,42 @@ int jeLua_drawReset(lua_State* lua) {
 
 	return 0;
 }
+int jeLua_playSound(lua_State* lua) {
+	JE_TRACE("lua=%p", (void*)lua);
+
+	bool ok = true;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	if (jeAudioMixer_instance == NULL) {
+		JE_ERROR("jeAudioMixer_instance=NULL");
+		ok = false;
+	}
+
+	uint32_t index = 0;
+	if (ok) {
+		index = (uint32_t)luaL_checknumber(lua, 1);
+
+		if (index > jeAudio_numPrebaked) {
+			JE_ERROR("index > jeAudio_numPrebaked, index=%u", index);
+			ok = false;
+		}
+	}
+
+	if (jeAudio_prebaked[index] == NULL) {
+		JE_ERROR("jeAudio_prebaked[index]=NULL, index=%u", index);
+		ok = false;
+	}
+
+	if (ok) {
+		jeAudioMixer_playSound(jeAudioMixer_instance, jeAudio_prebaked[index]);
+	}
+
+	return 0;
+}
 int jeLua_runTests(lua_State* lua) {
 	uint32_t numTestSuites = 0;
 
@@ -707,6 +749,25 @@ int jeLua_runTests(lua_State* lua) {
 	return 1;
 }
 int jeLua_step(lua_State* lua) {
+	// BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
+	// This is garbage that doesn't clean up after itself.  Gamejam time limits demand it!
+	{
+		if (jeAudioMixer_instance == NULL) {
+			jeAudioMixer_instance = jeAudioMixer_create();
+			struct jeAudioDevice* reference_device = jeAudioMixer_getMusicAudioDevice(jeAudioMixer_instance);
+
+			struct jeAudio* music = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/song1.wav");
+			jeAudioMixer_loopMusic(jeAudioMixer_instance, music);
+
+			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/bump.wav");
+			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/jump.wav");
+			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/death.wav");
+		}
+		jeAudioMixer_step(jeAudioMixer_instance);
+
+	}
+	// END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+
 	struct jeWindow* window = jeLua_getWindow(lua);
 
 	JE_TRACE("lua=%p, window=%p", (void*)lua, (void*)window);
@@ -749,6 +810,7 @@ bool jeLua_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(drawSprite),
 		JE_LUA_CLIENT_BINDING(drawText),
 		JE_LUA_CLIENT_BINDING(drawReset),
+		JE_LUA_CLIENT_BINDING(playSound),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),
 		{NULL, NULL} /*sentinel value*/

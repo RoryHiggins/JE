@@ -48,4 +48,14 @@ function client.onRunTests()
 	return numTestSuites
 end
 
+
+-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
+-- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/bump.wav");
+-- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/jump.wav");
+-- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/death.wav");
+client.audioBump = 0
+client.audioJump = 1
+client.audioDeath = 2
+-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+
 return client
