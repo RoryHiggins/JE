@@ -36,6 +36,7 @@ function ld48:onInit(simulation)
 	self.wallSys = self.simulation:addSystem(Wall)
 	self.deathSys = self.simulation:addSystem(Death)
 	self.playerSys = self.simulation:addSystem(Player)
+	self.rockSys = self.simulation:addSystem(require("apps/ld48/entities/rock"))
 
 	self.font = self.textSys:getDefaultFont()
 end
@@ -65,10 +66,10 @@ function ld48:onStart()
 	self.mode = ld48.modePlay
 
 	-- self.mode = ld48.modeEditor
-	-- self.mode = ld48.modePlayInEditor
+	self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modePlayTestWorld
 	-- self.mode = ld48.modeResume
-	local editorWorld = "cave2"
+	local editorWorld = "temple1"
 
 	if self.mode == ld48.modePlay then
 		self.simulation.constants.developerDebugging = false

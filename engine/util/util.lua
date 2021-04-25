@@ -143,19 +143,22 @@ end
 function util.tableGetSorted(values)
 	return util.tableDeepSort(util.deepcopy(values))
 end
-function util.tableExtend(dest, overrides)
-	for key, value in pairs(overrides) do
-		if type(value) == "table" then
-			local destTable = dest[key]
-			if type(dest[key]) ~= "table" then
-				destTable = {}
-				dest[key] = destTable
+function util.tableExtend(dest, ...)
+	for i = 1, select("#", ...) do
+		local overrides = select(i, ...)
+		for key, value in pairs(overrides) do
+			if type(value) == "table" then
+				local destTable = dest[key]
+				if type(dest[key]) ~= "table" then
+					destTable = {}
+					dest[key] = destTable
+				end
+				util.tableExtend(destTable, value)
+			else
+				dest[key] = value
 			end
-			util.tableExtend(destTable, value)
-		else
 			dest[key] = value
 		end
-		dest[key] = value
 	end
 
 	return dest

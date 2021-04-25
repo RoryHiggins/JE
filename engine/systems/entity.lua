@@ -115,6 +115,9 @@ end
 function Entity:setPos(entity, x, y)
 	self:setBounds(entity, x, y, entity.w, entity.h)
 end
+function Entity:setSize(entity, w, h)
+	self:setBounds(entity, entity.x, entity.y, w, h)
+end
 function Entity:movePos(entity, offsetX, offsetY)
 	self:setBounds(entity, entity.x + offsetX, entity.y + offsetY, entity.w, entity.h)
 end
@@ -240,14 +243,14 @@ end
 function Entity:findAllBounded(x, y, w, h, filterTag, filterOutEntityId)
 	return self:findBounded(x, y, w, h, filterTag, filterOutEntityId, true)
 end
-function Entity:findRelative(entity, signX, signY, filterTag, getAll)
-	local relativeX = entity.x + (signX or 0)
-	local relativeY = entity.y + (signY or 0)
+function Entity:findRelative(entity, offsetX, offsetY, filterTag, getAll)
+	local relativeX = entity.x + (offsetX or 0)
+	local relativeY = entity.y + (offsetY or 0)
 
 	return self:findBounded(relativeX, relativeY, entity.w, entity.h, filterTag, entity.id, getAll)
 end
-function Entity:findAllRelative(entity, signX, signY, filterTag)
-	return self:findRelative(entity, signX, signY, filterTag, true)
+function Entity:findAllRelative(entity, offsetX, offsetY, filterTag)
+	return self:findRelative(entity, offsetX, offsetY, filterTag, true)
 end
 function Entity:destroy(entity)
 	if entity.destroyed then

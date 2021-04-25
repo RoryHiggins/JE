@@ -63,12 +63,16 @@ function Physics:getCarryablesRecursive(entity, outCarryables, recursionDepth)
 
 	return outCarryables
 end
-function Physics.stopX(_, entity)
+function Physics:stopX(entity)
+	log.trace("stopping entity, entityId=%s", entity.id)
+
 	entity.forceX = 0
 	entity.speedX = 0
 	entity.overflowX = 0
 end
-function Physics.stopY(_, entity)
+function Physics:stopY(entity)
+	log.trace("stopping entity, entityId=%s", entity.id)
+
 	entity.forceY = 0
 	entity.speedY = 0
 	entity.overflowY = 0
@@ -213,15 +217,41 @@ function Physics:tickForces(entity)
 	local materialPhysics = self:getMaterialPhysics(entity)
 
 	-- apply gravity to force
-	local entityGravityMultiplier = entity.physicsGravityMultiplier or 1
-	entity.forceX = entity.forceX + (constants.physicsGravityX * entityGravityMultiplier)
-	entity.forceY = entity.forceY + (constants.physicsGravityY * entityGravityMultiplier)
+	local entityGravityMultiplier = entity.physicsGravityMultiplier
+	if entityGravityMultiplier == nil then
+		entityGravityMultiplier = 1
+	end
+	local gravityForceX = constants.physicsGravityX * entityGravityMultiplier
+	local gravityForceY = constants.physicsGravityY * entityGravityMultiplier
+	local gravityForceApplied = (gravityForceX ~= 0) or (gravityForceY ~= 0)
+	if gravityForceApplied then
+		log.trace(
+			"gravity applied, entity=%s, gravityForceX=%s, gravityForceY=%s",
+			util.getComparable(entity),
+			gravityForceX,
+			gravityForceY
+		)
+	end
+	entity.forceX = entity.forceX + gravityForceX
+	entity.forceY = entity.forceY + gravityForceY
 
 	-- apply "friction" to speed
 	local speedSignX = util.sign(entity.speedX)
 	local speedSignY = util.sign(entity.speedY)
-	entity.speedX = entity.speedX - (materialPhysics.friction * util.sign(entity.speedX))
-	entity.speedY = entity.speedY - (materialPhysics.friction * util.sign(entity.speedY))
+	local frictionX = -(materialPhysics.friction * util.sign(entity.speedX))
+	local frictionY = -(materialPhysics.friction * util.sign(entity.speedY))
+	local frictionApplied = (frictionX ~= 0) or (frictionY ~= 0)
+	if frictionApplied then
+		log.trace(
+			"friction applied, entity=%s, frictionX=%s, frictionY=%s",
+			util.getComparable(entity),
+			frictionX,
+			frictionY
+		)
+	end
+
+	entity.speedX = entity.speedX + frictionX
+	entity.speedY = entity.speedY + frictionY
 	if util.sign(entity.speedX) ~= speedSignX then
 		self:stopX(entity)
 	end

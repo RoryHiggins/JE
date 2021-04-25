@@ -13,7 +13,7 @@ local Physics = require("apps/ld48/systems/physics")
 
 local Player = {}
 Player.SYSTEM_NAME = "player"
-Player.UNKNOWN_WORLD_NAME = "<unknown world>"
+Player.UNKNOWN_WORLD_NAME = "<world unset>"
 Player.UNKNOWN_WORLD_ID = 0
 function Player:tickEntity(player)
 	local constants = self.simulation.constants
@@ -67,8 +67,7 @@ function Player:tickEntity(player)
 		"solid"
 	)
 	local tryingToJump = (
-		(self.inputSys:get("a"))
-		or ((util.sign(constants.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(constants.physicsGravityX)))
+		((util.sign(constants.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(constants.physicsGravityX)))
 		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(constants.physicsGravityY)))
 	)
 	local tryingToFall = (
@@ -76,15 +75,15 @@ function Player:tickEntity(player)
 		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == util.sign(constants.physicsGravityY)))
 	)
 
-	-- local fallingX = (
-	-- 	(constants.physicsGravityX ~= 0)
-	-- 	and (player.speedX * util.sign(constants.physicsGravityX) >= 0)
-	-- )
-	-- local fallingY = (
-	-- 	(constants.physicsGravityY ~= 0)
-	-- 	and (player.speedY * util.sign(constants.physicsGravityY) >= 0)
-	-- )
-	-- local falling = fallingX or fallingY
+	local fallingX = (
+		(constants.physicsGravityX ~= 0)
+		and (player.speedX * util.sign(constants.physicsGravityX) >= 0)
+	)
+	local fallingY = (
+		(constants.physicsGravityY ~= 0)
+		and (player.speedY * util.sign(constants.physicsGravityY) >= 0)
+	)
+	local falling = (fallingX or fallingY) and not onGround
 
 	local risingX = (
 		(constants.physicsGravityX ~= 0)
@@ -95,24 +94,16 @@ function Player:tickEntity(player)
 		and (player.speedY * util.sign(constants.physicsGravityY) <= (-player.playerMovementDetectionThreshold))
 	)
 	local rising = risingX or risingY
-	local canHover = (tryingToJump and not nearGround) or not tryingToFall
-	local canJump = tryingToJump and onGround and not rising
-	if not canHover then
-		player.playerHoverFramesCur = 0
+	local shouldJump = tryingToJump and onGround and not rising
+	local shouldHover = tryingToJump or (falling and not tryingToFall and not nearGround)
+
+	if onGround and (player.playerHoverFramesCur < player.playerHoverFrames) then
+		log.debug("player restore hover")
+		player.playerHoverFramesCur = player.playerHoverFrames
 	end
 
-	if onGround then
-		player.playerHoverFramesCur = player.playerJumpFrames
-	end
-
-	if canHover and (player.playerHoverFramesCur > 0) then
-		local jumpFrameForce = player.playerJumpFrameForce * materialPhysics.jumpForceStrength
-		player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
-		player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
-		player.playerHoverFramesCur = player.playerHoverFramesCur - 1
-	end
-
-	if canJump then
+	if shouldJump then
+		log.debug("player jump")
 		if constants.physicsGravityX ~= 0 then
 			self.physicsSys:stopX(player)
 		end
@@ -122,7 +113,16 @@ function Player:tickEntity(player)
 		local jumpForce = player.playerJumpForce * materialPhysics.jumpForceStrength
 		player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
 		player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
-		player.playerHoverFramesCur = player.playerJumpFrames
+		player.playerHoverFramesCur = player.playerHoverFrames
+		shouldHover = false
+	end
+
+	if shouldHover and (player.playerHoverFramesCur > 0) then
+		log.trace("player hover, playerHoverFramesCur=%s", player.playerHoverFramesCur)
+		local hoverFrameForce = player.playerHoverFrameForce * materialPhysics.jumpForceStrength
+		player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * hoverFrameForce)
+		player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * hoverFrameForce)
+		player.playerHoverFramesCur = player.playerHoverFramesCur - 1
 	end
 
 	local collidingWithDeath = self.entitySys:findBounded(
@@ -138,6 +138,7 @@ function Player:tickEntity(player)
 
 	local fallingOffMap = (player.y > (self.simulation.input.screen.y2 + 8))
 	if fallingOffMap then
+		log.debug("player off map")
 		self:loadNextWorld()
 	end
 
@@ -148,14 +149,20 @@ function Player:tickEntity(player)
 		animationDir = "Right"
 	end
 
-	local animationIndex = 1 + math.floor(client.state.frame / 8) % 3
+	local animationIndex = 1 + math.floor(client.state.frame / 7) % 3
 
 	local spriteName = "player"..animationDir..tostring(animationIndex)
 	self.spriteSys:attach(player, self.spriteSys:get(spriteName))
 
-	player.offsetY = -(math.floor(client.state.frame / 60) % 2)
+	local droneFloatOffsetY = -(math.floor(client.state.frame / 60) % 2)
+	if not onGround then
+		droneFloatOffsetY = 0
+	end
+	player.offsetY = droneFloatOffsetY
 end
 function Player:die()
+	log.debug("player death")
+
 	if self:getCurrentWorld() == "editor" then
 		self.editorSys:setMode(self.editorSys.modeEditing)
 		return
@@ -190,18 +197,18 @@ function Player:onInit(simulation)
 		for j = 1, 3 do
 			local indexU = dirU + ((j - 1) * 8)
 			local spriteName = "player"..dir..tostring(j)
-			self.spriteSys:addSprite(spriteName, indexU, 0, 6, 6)
+			self.spriteSys:addSprite(spriteName, indexU, 0, 7, 7)
 		end
 	end
 	self.template = self.templateSys:add("player", {
 		["properties"] = {
-			["w"] = 6,
-			["h"] = 6,
+			["w"] = 7,
+			["h"] = 7,
 			["spriteId"] = "playerRight2",
 			["playerHoverFramesCur"] = 0,
+			["playerHoverFrames"] = 20,
 			["playerJumpForce"] = 2.5,
-			["playerJumpFrameForce"] = 0.25,
-			["playerJumpFrames"] = 80,
+			["playerHoverFrameForce"] = 0.25,
 			["playerMoveForce"] = 0.25,
 			["playerMovementDetectionThreshold"] = 0.5,
 			["playerDistanceNearGround"] = 4,
@@ -227,16 +234,24 @@ function Player:onInit(simulation)
 
 	local constants = self.simulation.constants
 	constants.worldFilenameFormat = "apps/ld48/data/%s.world"
-	constants.worldFirst = 1
-	constants.worldLast = 1
 	constants.worldIdToWorld = {
 		"cave1",
 		"cave2",
+		"cave3",
+		"cave4",
+		-- "cave5",
+		-- "cave6",
+		-- "cave7",
+		-- "cave8",
+		"temple1",
+		"end",
 	}
 	constants.worldToWorldId = {}
 	for i, mode in ipairs(constants.worldIdToWorld) do
 		constants.worldToWorldId[mode] = i
 	end
+	constants.firstWorldId = 1
+	constants.lastWorldId = #constants.worldIdToWorld
 
 	self:resetProgress()
 end
@@ -340,16 +355,26 @@ function Player:hasNextWorld()
 	return (self.simulation.state.player.worldId < #self.simulation.constants.worldIdToWorld)
 end
 function Player:loadNextWorld()
+	local nextWorldId = self.simulation.state.player.worldId + 1
+
 	if not self:hasNextWorld() then
-		log.info("no levels remain")
-		self:loadFirstWorld()
-		return false
+		log.info("no levels remain, wrapping around")
+		nextWorldId = self.simulation.constants.firstWorldId
 	end
 
-	return self:loadWorldId(self.simulation.state.player.worldId + 1)
+	return self:loadWorldId(nextWorldId)
+end
+function Player:loadPrevWorld()
+	local prevWorldId = self.simulation.state.player.worldId - 1
+
+	if prevWorldId < self.simulation.constants.firstWorldId then
+		log.info("no levels remain, wrapping around")
+		prevWorldId = self.simulation.constants.lastWorldId
+	end
+	return self:loadWorldId(prevWorldId)
 end
 function Player:loadFirstWorld()
-	return self:loadWorldId(self.simulation.constants.worldFirst)
+	return self:loadWorldId(self.simulation.constants.firstWorldId)
 end
 
 return Player

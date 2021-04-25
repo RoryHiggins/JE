@@ -51,10 +51,19 @@ function Text:drawDebugString(text)
 		["x"] = 0,
 		["y"] = self.debugTextY,
 		["z"] = -10,
+		["r"] = 0,
+		["g"] = 0,
+		["b"] = 0,
 		["a"] = 0.4,
 	}
 	self.debugTextY = self.debugTextY + 8
 
+	client.drawText(renderable, self.defaultFont, self.simulation.input.screen)
+
+	renderable.y = renderable.y + 1
+	renderable.r = 1
+	renderable.g = 1
+	renderable.b = 1
 	client.drawText(renderable, self.defaultFont, self.simulation.input.screen)
 end
 function Text:getTextSize(text, font)

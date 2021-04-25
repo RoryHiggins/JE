@@ -24,6 +24,7 @@ function Background:onInit(simulation)
 		["r"] = 0.3,
 		["g"] = 0.2,
 		["b"] = 0.2,
+		["a"] = 1,
 	}
 	self:resetColor()
 end
@@ -33,9 +34,15 @@ end
 function Background:resetColor()
 	self:setColor(self.backgroundDefaults.r, self.backgroundDefaults.g, self.backgroundDefaults.b)
 end
+function Background:get()
+	return self.background
+end
+function Background:getDefault()
+	return self.backgroundDefaults
+end
 function Background:getColor()
-	local color = self.background
-	return color.r, color.g, color.b, color.a
+	local background = self.background
+	return background.r, background.g, background.b, background.a
 end
 function Background:setColor(r, g, b)
 	self.background.r = r

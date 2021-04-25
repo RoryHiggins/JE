@@ -19,7 +19,12 @@
 
 - Fix text size estimation for multiline text
 
-# Template inheritance?
+# Remove need for manual uv management
+
+# Simplify bulk template instance creation
+- Template inheritance?
+
+# Physics: death is not treated like air for physics
 
 Capture stack trace on a lua error
 Dump simulation state + stack trace on a lua error

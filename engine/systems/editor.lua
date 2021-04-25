@@ -19,6 +19,7 @@ function Placeholder:setTemplate(placeholder, template)
 	local sprite = self.spriteSys:get(template.properties.spriteId)
 	log.assert(sprite ~= nil)
 
+	local oldW, oldH = placeholder.w, placeholder.h
 	for _, defaults in ipairs({sprite, template.properties}) do
 		for _, key in ipairs(self.placeholderCopyFields) do
 			if defaults[key] ~= nil then
@@ -26,6 +27,9 @@ function Placeholder:setTemplate(placeholder, template)
 			end
 		end
 	end
+	local newW, newH = placeholder.w, placeholder.h
+	placeholder.w, placeholder.h = oldW, oldH
+	self.entitySys:setSize(placeholder, newW, newH)
 
 	placeholder.placeholderTemplateId = template.templateId
 end
@@ -37,7 +41,15 @@ function Placeholder:create(template, x, y)
 end
 function Placeholder:createIfFree(template, x, y, w, h)
 	for _, placeholder in ipairs(self.entitySys:findAllBounded(x, y, w, h, "placeholder")) do
-		if placeholder.placeholderTemplateId == template.templateId then
+		local isSameTemplate = placeholder.placeholderTemplateId == template.templateId
+		local isOverlappable = (template.editor.overlappable ~= nil) and template.editor.overlappable
+		local equalBounds = (
+				(x == placeholder.x)
+				and (y == placeholder.y)
+				and (w == placeholder.w)
+				and (h == placeholder.h)
+			)
+		if isSameTemplate and (not isOverlappable or equalBounds) then
 			return false
 		end
 	end
@@ -88,7 +100,7 @@ function Placeholder:onInit(simulation)
 			["placeholder"] = true,
 		},
 	})
-	self.placeholderCopyFields = {"w", "h", "r", "g", "b", "a", "spriteId"}
+	self.placeholderCopyFields = {"w", "h", "r", "g", "b", "a", "offsetX", "offsetY", "spriteId"}
 	self.placeholderVisible = true
 end
 
@@ -148,16 +160,30 @@ function Editor:findNextEditorTemplate(templateId, step)
 
 	return self.templateSys:get(templateId)
 end
+function Editor:unsetEditorTemplate(editor)
+	self.entitySys:setSize(editor,  8, 8)
+	editor.r = 1
+	editor.g = 1
+	editor.b = 1
+	editor.a = 1
+	editor.offsetX = 0
+	editor.offsetY = 0
+	editor.spriteId = self.spriteSys:getInvalid().spriteId
+	editor.placeholderTemplateId = self.editorNoSelectionTemplate.templateId
+end
 function Editor:setEditorTemplate(editor, template)
 	local currentTemplate = self.templateSys:get(editor.placeholderTemplateId)
 
 	log.debug("changing selection from %s to %s", currentTemplate.templateName, template.templateName)
+
+	self:unsetEditorTemplate(editor)
 
 	editor.placeholderTemplateId = template.templateId
 
 	local sprite = self.spriteSys:get(template.properties.spriteId)
 	log.assert(sprite ~= nil)
 
+	local oldW, oldH = editor.w, editor.h
 	for _, defaults in ipairs({sprite, template.properties}) do
 		for _, key in ipairs(self.placeholderSys.placeholderCopyFields) do
 			if defaults[key] ~= nil then
@@ -165,6 +191,9 @@ function Editor:setEditorTemplate(editor, template)
 			end
 		end
 	end
+	local newW, newH = editor.w, editor.h
+	editor.w, editor.h = oldW, oldH
+	self.entitySys:setSize(editor, newW, newH)
 end
 function Editor:editModeStep()
 	local editor = self:getInstance()
@@ -228,8 +257,9 @@ function Editor:editModeDraw(camera)
 	editorOutline.z = editorOutline.z - 1
 	self.shapeSys:drawRect(editorOutline, camera, true)
 
-	editor.x = math.floor((camera.mouseX) / self.gridSize) * self.gridSize
-	editor.y = math.floor((camera.mouseY) / self.gridSize) * self.gridSize
+	local x = math.floor((camera.mouseX) / self.gridSize) * self.gridSize
+	local y = math.floor((camera.mouseY) / self.gridSize) * self.gridSize
+	self.entitySys:setPos(editor, x, y)
 end
 function Editor:clearWorld()
 	log.debug("")
@@ -284,7 +314,7 @@ function Editor:loadFromTable(save)
 
 	self:clearWorld()
 	self:clearSaveTable()
-	for _, entity in ipairs(save.entities) do
+	for _, entity in ipairs(save.entities or {}) do
 		local template = self.templateSys:getByName(entity.templateName)
 		if template ~= nil then
 			if self.mode == self.modePlaying then
@@ -297,14 +327,14 @@ function Editor:loadFromTable(save)
 		end
 	end
 
-	local background = save.background
+	local background = save.background or self.backgroundSys:getDefault()
 	self.backgroundSys:setColor(background.r, background.g, background.b)
 
 	self.saveTable = save
 	self.saved = true
 end
 function Editor:saveToFile(filename)
-	log.info("filename=%s", filename)
+	log.debug("filename=%s", filename)
 
 	self.saveTable = self:saveToTable()
 
@@ -472,6 +502,10 @@ function Editor:onStep()
 	if self.mode == self.modeLevelSelect then
 		if actionReleased or mouseReleased or self.inputSys:getReleased("right") then
 			self.simulation:getSystem("player"):loadNextWorld()
+			return
+		end
+		if self.inputSys:getReleased("left") then
+			self.simulation:getSystem("player"):loadPrevWorld()
 			return
 		end
 	end
