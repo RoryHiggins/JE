@@ -57,7 +57,7 @@ end
 function log.enableDebugger()
 	log.debugger = require("engine/lib/debugger/debugger")
 	log.protectedCall = log.debugger.call
-	log.assert = log.debugger.assert
+	-- log.assert = log.debugger.assert
 end
 function log.pushLogLevel(level)
 	log.levelStack[#log.levelStack + 1] = log.logLevel

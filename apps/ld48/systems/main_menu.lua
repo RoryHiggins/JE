@@ -33,7 +33,7 @@ function MainMenu:createMenuButtons()
 	end
 end
 function MainMenu:newGamePressed()
-	self.simulation:getSystem("player"):loadWorld(1)
+	self.simulation:getSystem("player"):loadFirstWorld()
 end
 function MainMenu:continueGamePressed()
 	self.simulation:load(self.simulation.SAVE_FILE)
@@ -52,7 +52,7 @@ function MainMenu:getSelectedButton()
 	end
 	return nil
 end
-function MainMenu:start()
+function MainMenu:startMainMenu()
 	log.info("setting up main menu")
 	self.simulation:getSystem("player"):createWorld("mainMenu")
 	self:createMenuButtons()

@@ -36,6 +36,7 @@ JE_API_PUBLIC void jeWindow_resetPrimitives(struct jeWindow* window);
 JE_API_PUBLIC void
 jeWindow_pushPrimitive(struct jeWindow* window, const struct jeVertex* vertices, uint32_t primitiveType);
 JE_API_PUBLIC bool jeWindow_getIsOpen(const struct jeWindow* window);
+JE_API_PUBLIC uint32_t jeWindow_getFrame(const struct jeWindow* window);
 JE_API_PUBLIC uint32_t jeWindow_getFps(const struct jeWindow* window);
 JE_API_PUBLIC bool jeWindow_getInput(const struct jeWindow* window, uint32_t inputId);
 JE_API_PUBLIC bool jeWindow_getMousePos(const struct jeWindow* window, int32_t *outX, int32_t* outY);

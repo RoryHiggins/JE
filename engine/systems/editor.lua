@@ -61,6 +61,14 @@ function Placeholder:clearAll()
 	end
 	return changed
 end
+function Placeholder:getTemplatesInArea(x, y, w, h)
+	local templates = {}
+	for _, placeholder in ipairs(self.entitySys:findAllBounded(x, y, w, h, "placeholder")) do
+		templates[#templates + 1] = self.templateSys:get(placeholder.placeholderTemplateId).templateName
+	end
+
+	return util.setCreate(templates)
+end
 function Placeholder:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -107,6 +115,7 @@ Editor.SYSTEM_NAME = "editor"
 Editor.modeEditing = "editing"
 Editor.modeSaving = "saving"
 Editor.modeLoading = "loading"
+Editor.modeLevelSelect = "levelSelect"
 Editor.modePlaying = "playing"
 
 function Editor:findNextEditorTemplate(templateId, step)
@@ -190,8 +199,22 @@ end
 function Editor:editModeDraw(camera)
 	local editor = self:getInstance()
 
-	local template = self.templateSys:get(editor.placeholderTemplateId)
-	self.textSys:drawDebugString("selection="..tostring(template.templateName))
+	local selectionTemplate = self.templateSys:get(editor.placeholderTemplateId)
+	self.textSys:drawDebugString("brush="..tostring(selectionTemplate.templateName))
+
+	local templatesAt = self.placeholderSys:getTemplatesInArea(editor.x, editor.y, editor.w, editor.h)
+	if #templatesAt > 0 then
+		local templatesStr = ""
+		local first = true
+		for _, templateName in ipairs(templatesAt) do
+			if not first then
+				templatesStr = templatesStr..","
+			end
+			templatesStr = templatesStr..templateName
+			first = false
+		end
+		self.textSys:drawDebugString("hover="..templatesStr)
+	end
 
 	local editorOutline = util.deepcopy(editor)
 	editorOutline.r = 0
@@ -347,8 +370,17 @@ function Editor:setMode(newMode)
 		self.entitySys:tag(self:getInstance(), "sprite")
 	end
 end
-function Editor:startEditor()
-	self.simulation:getSystem("player"):createWorld("editor")
+function Editor:startEditor(world)
+	self.simulation.constants.developerDebugging = true
+
+	local playerSys = self.simulation:getSystem("player")
+	if world ~= nil then
+		self.saveFilename = world
+		playerSys:loadWorld(world)
+	else
+		playerSys:createWorld("editor")
+	end
+
 	self:clearSaveTable()
 	self:setMode(self.modeEditing)
 	self:loadFromFile(self.saveFilename)
@@ -388,7 +420,13 @@ function Editor:onInit(simulation)
 			["sprite"] = true,
 		},
 	})
-	self.modeIdToMode = {self.modeEditing, self.modeSaving, self.modeLoading, self.modePlaying}
+	self.modeIdToMode = {
+		self.modeEditing,
+		-- self.modeSaving,
+		-- self.modeLoading,
+		self.modeLevelSelect,
+		self.modePlaying,
+	}
 	self.modeToModeId = {}
 	for i, mode in ipairs(self.modeIdToMode) do
 		self.modeToModeId[mode] = i
@@ -404,10 +442,7 @@ function Editor:onStep()
 		return
 	end
 
-	local mouseReleased = (
-		self.inputSys:getReleased("mouseLeft")
-		or self.inputSys:getReleased("mouseRight")
-	)
+	local mouseReleased = self.inputSys:getReleased("mouseLeft")
 	local actionReleased = (
 		self.inputSys:getReleased("a")
 		or self.inputSys:getReleased("b")
@@ -419,30 +454,49 @@ function Editor:onStep()
 
 	if self.mode == self.modeEditing then
 		self:editModeStep()
-	end
-
-	if self.mode == self.modeSaving then
-		if actionReleased or mouseReleased then
+		if not self.saved then
 			self:saveToFile(self.saveFilename)
 		end
 	end
-	if self.mode == self.modeLoading then
-		if actionReleased or mouseReleased then
-			self:loadFromFile(self.saveFilename)
+
+	-- if self.mode == self.modeSaving then
+	-- 	if actionReleased or mouseReleased then
+	-- 		self:saveToFile(self.saveFilename)
+	-- 	end
+	-- end
+	-- if self.mode == self.modeLoading then
+	-- 	if actionReleased or mouseReleased then
+	-- 		self:loadFromFile(self.saveFilename)
+	-- 	end
+	-- end
+	if self.mode == self.modeLevelSelect then
+		if actionReleased or mouseReleased or self.inputSys:getReleased("right") then
+			self.simulation:getSystem("player"):loadNextWorld()
+			return
 		end
 	end
 	if self.mode == self.modePlaying then
-		if mouseReleased then
+		if mouseReleased or self.inputSys:getReleased("mouseMiddle") then
 			self:setMode(self.modeEditing)
+			return
 		end
 	end
 	if self.mode ~= self.modePlaying then
+		if self.inputSys:getReleased("mouseMiddle") then
+			self:setMode(self.modePlaying)
+			return
+		end
+
 		local newModeId = util.moduloAddSkipZero(
 			self.modeToModeId[self.mode],
 			modeScrollDir,
 			#self.modeIdToMode + 1
 		)
-		self:setMode(self.modeIdToMode[newModeId])
+		local newMode = self.modeIdToMode[newModeId]
+		if newMode ~= self.mode then
+			self:setMode(self.modeIdToMode[newModeId])
+			return
+		end
 	end
 end
 function Editor:onCameraDraw(camera)
@@ -455,7 +509,6 @@ function Editor:onCameraDraw(camera)
 	if self.mode == "saving" then
 		self.textSys:drawDebugString("saved="..tostring(self.saved))
 	end
-
 	if self.mode == "editing" then
 		self:editModeDraw(camera)
 	end

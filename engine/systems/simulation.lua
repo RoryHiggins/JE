@@ -113,11 +113,8 @@ function Simulation:start()
 end
 function Simulation:stop()
 	log.debug("")
-
-	if self.private.running then
-		self:broadcast("onStop", true)
-		self.private.running = false
-	end
+	self:broadcast("onStop", true)
+	self.private.running = false
 
 	client.step()
 end

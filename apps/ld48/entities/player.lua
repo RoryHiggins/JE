@@ -1,5 +1,6 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
+local client = require("engine/client/client")
 local Input = require("engine/systems/input")
 local Entity = require("engine/systems/entity")
 local Sprite = require("engine/systems/sprite")
@@ -59,37 +60,69 @@ function Player:tickEntity(player)
 		util.sign(constants.physicsGravityY),
 		"solid"
 	)
+	local nearGround = self.entitySys:findRelative(
+		player,
+		util.sign(constants.physicsGravityX),
+		util.sign(constants.physicsGravityY) * player.playerDistanceNearGround,
+		"solid"
+	)
 	local tryingToJump = (
 		(self.inputSys:get("a"))
 		or ((util.sign(constants.physicsGravityX) ~= 0) and (util.sign(inputDirX) == -util.sign(constants.physicsGravityX)))
 		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == -util.sign(constants.physicsGravityY)))
 	)
+	local tryingToFall = (
+		((util.sign(constants.physicsGravityX) ~= 0) and (util.sign(inputDirX) == util.sign(constants.physicsGravityX)))
+		or ((util.sign(constants.physicsGravityY) ~= 0) and (util.sign(inputDirY) == util.sign(constants.physicsGravityY)))
+	)
 
-	local fallingX = (constants.physicsGravityX ~= 0) and (player.speedX * util.sign(constants.physicsGravityX) >= 0)
-	local fallingY = (constants.physicsGravityY ~= 0) and (player.speedY * util.sign(constants.physicsGravityY) >= 0)
-	local falling = fallingX or fallingY
-	if not tryingToJump or onGround or falling then
-		player.playerJumpFramesCur = 0
+	-- local fallingX = (
+	-- 	(constants.physicsGravityX ~= 0)
+	-- 	and (player.speedX * util.sign(constants.physicsGravityX) >= 0)
+	-- )
+	-- local fallingY = (
+	-- 	(constants.physicsGravityY ~= 0)
+	-- 	and (player.speedY * util.sign(constants.physicsGravityY) >= 0)
+	-- )
+	-- local falling = fallingX or fallingY
+
+	local risingX = (
+		(constants.physicsGravityX ~= 0)
+		and (player.speedX * util.sign(constants.physicsGravityX) <= (-player.playerMovementDetectionThreshold))
+	)
+	local risingY = (
+		(constants.physicsGravityY ~= 0)
+		and (player.speedY * util.sign(constants.physicsGravityY) <= (-player.playerMovementDetectionThreshold))
+	)
+	local rising = risingX or risingY
+	local canHover = (tryingToJump and not nearGround) or not tryingToFall
+	local canJump = tryingToJump and onGround and not rising
+	if not canHover then
+		player.playerHoverFramesCur = 0
 	end
 
-	if tryingToJump then
-		if onGround then
-			if constants.physicsGravityX ~= 0 then
-				self.physicsSys:stopX(player)
-			end
-			if constants.physicsGravityY ~= 0 then
-				self.physicsSys:stopY(player)
-			end
-			local jumpForce = player.playerJumpForce * materialPhysics.jumpForceStrength
-			player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
-			player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
-			player.playerJumpFramesCur = player.playerJumpFrames
-		elseif player.playerJumpFramesCur > 0 then
-			local jumpFrameForce = player.playerJumpFrameForce * materialPhysics.jumpForceStrength
-			player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
-			player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
-			player.playerJumpFramesCur = player.playerJumpFramesCur - 1
+	if onGround then
+		player.playerHoverFramesCur = player.playerJumpFrames
+	end
+
+	if canHover and (player.playerHoverFramesCur > 0) then
+		local jumpFrameForce = player.playerJumpFrameForce * materialPhysics.jumpForceStrength
+		player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpFrameForce)
+		player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpFrameForce)
+		player.playerHoverFramesCur = player.playerHoverFramesCur - 1
+	end
+
+	if canJump then
+		if constants.physicsGravityX ~= 0 then
+			self.physicsSys:stopX(player)
 		end
+		if constants.physicsGravityY ~= 0 then
+			self.physicsSys:stopY(player)
+		end
+		local jumpForce = player.playerJumpForce * materialPhysics.jumpForceStrength
+		player.forceX = player.forceX - (util.sign(constants.physicsGravityX) * jumpForce)
+		player.forceY = player.forceY - (util.sign(constants.physicsGravityY) * jumpForce)
+		player.playerHoverFramesCur = player.playerJumpFrames
 	end
 
 	local collidingWithDeath = self.entitySys:findBounded(
@@ -99,97 +132,46 @@ function Player:tickEntity(player)
 		player.h,
 		"death"
 	)
-	local fallingToDeath = (player.y > (self.simulation.input.screen.y2 + 8))
-	local dying = collidingWithDeath or fallingToDeath
-	if dying then
+	if collidingWithDeath then
 		self:die(player)
 	end
 
-	-- if inputDirY < 0 then
-	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerUp"))
-	-- elseif inputDirX > 0 then
-	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerRight"))
-	-- else
-	-- 	self.spriteSys:attach(player, self.spriteSys:get("playerLeft"))
-	-- end
+	local fallingOffMap = (player.y > (self.simulation.input.screen.y2 + 8))
+	if fallingOffMap then
+		self:loadNextWorld()
+	end
+
+	local animationDir = "Mid"
+	if (inputDirX < 0) then
+		animationDir = "Left"
+	elseif (inputDirX > 0) then
+		animationDir = "Right"
+	end
+
+	local animationIndex = 1 + math.floor(client.state.frame / 8) % 3
+
+	local spriteName = "player"..animationDir..tostring(animationIndex)
+	self.spriteSys:attach(player, self.spriteSys:get(spriteName))
+
+	player.offsetY = -(math.floor(client.state.frame / 60) % 2)
 end
 function Player:die()
-	if self:getCurrentWorldName() == "editor" then
+	if self:getCurrentWorld() == "editor" then
 		self.editorSys:setMode(self.editorSys.modeEditing)
 		return
 	end
 
-	if self:getIsProgressionMap() then
+	if self:getCurrentWorldIsTracked() then
 		self:reloadWorld()
 		return
 	end
 
-	self.simulation:getSystem("mainMenu"):start()
+	self.loadFirstWorld()
 end
 function Player:resetProgress()
 	self.simulation.state.player = {}
 	self.simulation.state.player.worldName = self.UNKNOWN_WORLD_NAME
 	self.simulation.state.player.worldId = self.UNKNOWN_WORLD_ID
-end
-function Player:getCurrentWorldName()
-	return self.simulation.state.player.worldName
-end
-function Player:getIsProgressionMap()
-	local worldId =  self.simulation.state.player.worldId
-	local worldName = self.simulation.state.player.worldName
-	return (
-		(worldId ~= self.UNKNOWN_WORLD_ID)
-		and (worldName ~= self.UNKNOWN_WORLD_NAME)
-	)
-end
-function Player:computeWorldFilename(worldName)
-	return string.format(self.simulation.constants.worldFilenameFormat, worldName)
-end
-function Player:getCurrentWorldFilename()
-	return string.format(self.simulation.constants.worldFilenameFormat, self:getCurrentWorldName())
-end
-function Player:reloadWorld()
-	log.assert(self:getIsProgressionMap())
-	self:loadWorld(self.simulation.state.player.worldId)
-end
-function Player:startWorld(worldName, worldId)
-	worldName = worldName or self.UNKNOWN_WORLD_NAME
-	worldId = worldId or self.UNKNOWN_WORLD_ID
-
-	log.info("travelling from world %s to world %s", self:getCurrentWorldName(), worldName)
-
-	self.simulation.state.player.worldName = worldName
-	self.simulation.state.player.worldId = worldId
-
-	self.simulation:broadcast("onPlayerStartWorld", false, worldName)
-end
-function Player:createWorld(worldName, worldId)
-	self.simulation:worldInit()
-	self:startWorld(worldName, worldId)
-end
-function Player:loadWorld(worldId)
-	log.assert(worldId >= 1)
-	log.assert(worldId <= #self.simulation.constants.worlds)
-
-	local worldName = self.simulation.constants.worlds[worldId]
-
-	local worldFilename = self:computeWorldFilename(worldName)
-	if not self.editorSys:loadFromFile(worldFilename) then
-		log.error("failed to load file=%s", worldFilename)
-		return false
-	end
-
-	self:startWorld(worldName, worldId)
-end
-function Player:hasNextWorld()
-	return (self.simulation.state.player.worldId < #self.simulation.constants.worlds)
-end
-function Player:loadNextWorld()
-	if not self:hasNextWorld() then
-		return false
-	end
-
-	return self:loadWorld(self.simulation.state.player.worldId + 1)
 end
 function Player:onInit(simulation)
 	self.simulation = simulation
@@ -203,22 +185,32 @@ function Player:onInit(simulation)
 	self.materialSys = self.simulation:addSystem(Material)
 	self.physicsSys = self.simulation:addSystem(Physics)
 
-	self.spriteSys:addSprite("player", 16, 0, 8, 8)
+	for i, dir in ipairs({"Mid", "Left", "Right"}) do
+		local dirU = 16 + ((i - 1) * 3 * 8)
+		for j = 1, 3 do
+			local indexU = dirU + ((j - 1) * 8)
+			local spriteName = "player"..dir..tostring(j)
+			self.spriteSys:addSprite(spriteName, indexU, 0, 6, 6)
+		end
+	end
 	self.template = self.templateSys:add("player", {
 		["properties"] = {
-			["w"] = 8,
-			["h"] = 8,
-			["spriteId"] = "player",
-			["playerJumpFramesCur"] = 0,
-			["playerJumpForce"] = 4,
-			["playerJumpFrameForce"] = 0.5,
-			["playerJumpFrames"] = 15,
+			["w"] = 6,
+			["h"] = 6,
+			["spriteId"] = "playerRight2",
+			["playerHoverFramesCur"] = 0,
+			["playerJumpForce"] = 2.5,
+			["playerJumpFrameForce"] = 0.25,
+			["playerJumpFrames"] = 80,
 			["playerMoveForce"] = 0.25,
+			["playerMovementDetectionThreshold"] = 0.5,
+			["playerDistanceNearGround"] = 4,
 			["playerChangeDirForceMultiplier"] = 0.8,
 			["playerTargetMovementSpeed"] = 2,
 			["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
 			["physicsCanPush"] = true,
 			["physicsCanCarry"] = false,
+			["physicsGravityMultiplier"] = 0.25,
 		},
 		["tags"] = {
 			["sprite"] = true,
@@ -237,9 +229,14 @@ function Player:onInit(simulation)
 	constants.worldFilenameFormat = "apps/ld48/data/%s.world"
 	constants.worldFirst = 1
 	constants.worldLast = 1
-	constants.worlds = {
-		"cave1"
+	constants.worldIdToWorld = {
+		"cave1",
+		"cave2",
 	}
+	constants.worldToWorldId = {}
+	for i, mode in ipairs(constants.worldIdToWorld) do
+		constants.worldToWorldId[mode] = i
+	end
 
 	self:resetProgress()
 end
@@ -252,7 +249,7 @@ function Player:onStep()
 	end
 end
 function Player:onDraw()
-	self.textSys:drawDebugString("world="..self:getCurrentWorldName())
+	self.textSys:drawDebugString("world="..self:getCurrentWorld())
 end
 function Player:onRunTests()
 	self.templateSys:instantiate(self.template)
@@ -261,9 +258,98 @@ function Player:onRunTests()
 	end
 end
 function Player:onStop()
-	if self:getIsProgressionMap() then
+	if self:getCurrentWorldIsTracked() then
 		self.simulation:save(self.simulation.SAVE_FILE)
+	else
+		log.info("world not tracked, skipping saving, world=%s", self:getCurrentWorld())
 	end
+end
+
+-- TODO: world management needs to move into engine
+function Player:getCurrentWorld()
+	return self.simulation.state.player.worldName
+end
+function Player:getCurrentWorldFilename()
+	return string.format(self.simulation.constants.worldFilenameFormat, self:getCurrentWorld())
+end
+function Player:getCurrentWorldIsTracked()
+	local worldId =  self.simulation.state.player.worldId
+	local worldName = self.simulation.state.player.worldName
+	return (
+		(worldId ~= self.UNKNOWN_WORLD_ID)
+		and (worldName ~= self.UNKNOWN_WORLD_NAME)
+	)
+end
+function Player:computeWorldFilename(worldName)
+	return string.format(self.simulation.constants.worldFilenameFormat, worldName)
+end
+function Player:reloadWorld()
+	if not self:getCurrentWorldIsTracked() then
+		log.error("trying to reload not tracked by world loader")
+		self:loadFirstWorld()
+		return
+	end
+
+	self:loadWorld(self:getCurrentWorld())
+end
+function Player:startWorld(worldName, worldId)
+	worldName = worldName or self.UNKNOWN_WORLD_NAME
+	worldId = worldId or self.UNKNOWN_WORLD_ID
+
+	log.info("travelling from world %s to world %s", self:getCurrentWorld(), worldName)
+
+	self.simulation.state.player.worldName = worldName
+	self.simulation.state.player.worldId = worldId
+
+	self.simulation:broadcast("onPlayerStartWorld", false, worldName)
+
+	return true
+end
+function Player:createWorld(worldName, worldId)
+	self.simulation:worldInit()
+	self:startWorld(worldName, worldId)
+end
+function Player:loadWorld(world)
+	log.assert(world ~= nil)
+	if (world == nil) then
+		return false
+	end
+
+	local worldId = self.simulation.constants.worldToWorldId[world]
+	if (worldId == nil) then
+		log.error("world not in list of worlds, world=%s", world)
+		return false
+	end
+
+	local worldFilename = self:computeWorldFilename(world)
+	if not self.editorSys:loadFromFile(worldFilename) then
+		log.error("failed to load file=%s", worldFilename)
+		return false
+	end
+
+	return self:startWorld(world, worldId)
+end
+function Player:loadWorldId(worldId)
+	local constants = self.simulation.constants
+	log.assert(worldId >= 1)
+	log.assert(worldId <= #constants.worldIdToWorld)
+
+	return self:loadWorld(constants.worldIdToWorld[worldId])
+end
+function Player:hasNextWorld()
+	return (self.simulation.state.player.worldId < #self.simulation.constants.worldIdToWorld)
+end
+function Player:loadNextWorld()
+	if not self:hasNextWorld() then
+		log.info("no levels remain")
+		self:loadFirstWorld()
+		return false
+	end
+
+	return self:loadWorldId(self.simulation.state.player.worldId + 1)
+end
+function Player:loadFirstWorld()
+	return self:loadWorldId(self.simulation.constants.worldFirst)
 end
 
 return Player

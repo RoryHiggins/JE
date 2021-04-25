@@ -11,6 +11,7 @@ local MainMenu = require("apps/ld48/systems/main_menu")
 local Material = require("apps/ld48/systems/material")
 local Physics = require("apps/ld48/systems/physics")
 local Wall = require("apps/ld48/entities/wall")
+local Death = require("apps/ld48/entities/death")
 local Player = require("apps/ld48/entities/player")
 
 local ld48 = {}
@@ -33,6 +34,7 @@ function ld48:onInit(simulation)
 	self.materialSys = self.simulation:addSystem(Material)
 	self.physicsSys = self.simulation:addSystem(Physics)
 	self.wallSys = self.simulation:addSystem(Wall)
+	self.deathSys = self.simulation:addSystem(Death)
 	self.playerSys = self.simulation:addSystem(Player)
 
 	self.font = self.textSys:getDefaultFont()
@@ -40,6 +42,10 @@ end
 function ld48:testWorldInit()
 	local playerTemplate = self.templateSys:getByName("player")
 	local wallTemplate = self.templateSys:getByName("wallRock")
+
+	self.simulation.constants.developerDebugging = true
+	self.playerSys:createWorld("test")
+	self.simulation:worldInit()
 
 	self.templateSys:instantiate(playerTemplate, 64, 16)
 
@@ -56,30 +62,29 @@ end
 -- function ld48:onWorldInit()
 -- end
 function ld48:onStart()
-	self.simulation.constants.developerDebugging = true
 	self.mode = ld48.modePlay
 
 	-- self.mode = ld48.modeEditor
-	self.mode = ld48.modePlayInEditor
+	-- self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modePlayTestWorld
 	-- self.mode = ld48.modeResume
+	local editorWorld = "cave2"
 
 	if self.mode == ld48.modePlay then
-		self.mainMenuSys:start()
-	end
-	if self.mode == ld48.modeEditor then
+		self.simulation.constants.developerDebugging = false
+		self.mainMenuSys:startMainMenu()
+	else
 		self.simulation.constants.developerDebugging = true
-		self.editorSys:startEditor()
+	end
+
+	if self.mode == ld48.modeEditor then
+		self.editorSys:startEditor(editorWorld)
 	end
 	if self.mode == ld48.modePlayInEditor then
-		self.simulation.constants.developerDebugging = true
-		self.editorSys:startEditor()
+		self.editorSys:startEditor(editorWorld)
 		self.editorSys:setMode(self.editorSys.modePlaying)
 	end
 	if self.mode == ld48.modePlayTestWorld then
-		self.simulation.constants.developerDebugging = true
-		self.playerSys:createWorld("test")
-		self.simulation:worldInit()
 		self:testWorldInit()
 	end
 	if self.mode == ld48.modeResume then

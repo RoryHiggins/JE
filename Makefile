@@ -7,7 +7,8 @@
 # - DEBUG (optimized for debugging with gdb)
 # - TRACE (debug build with extremely verbose logging)
 TARGET := DEVELOPMENT
-APP := example_platformer
+RELEASE_TARGET := RELEASE
+APP := ld48
 UNITY_BUILD := 0
 
 # Dependencies
@@ -41,13 +42,13 @@ $(CLIENT):
 	$(CMAKE) -S . -B $(BUILD) -D CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -D JE_BUILD_TARGET=$(TARGET) -D JE_DEFAULT_APP=$(APP) -G"Ninja" -D CMAKE_C_COMPILER=$(CC) -D CMAKE_UNITY_BUILD=$(UNITY_BUILD)
 	$(CMAKE) --build $(BUILD)
 release:
-	make TARGET=RELEASE APP=$(APP)
+	make TARGET=$(RELEASE_TARGET) APP=$(APP)
 
 	rm -rf build/release
 	mkdir build/release
 
-	cp build/local/RELEASE/j25_client -- build/release/$(APP)
-	cp build/local/RELEASE/*.dll -- build/release
+	cp build/local/$(RELEASE_TARGET)/j25_client -- build/release/$(APP)
+	cp build/local/$(RELEASE_TARGET)/*.dll -- build/release
 
 	mkdir build/release/client
 	cp -r client/data -- build/release/client

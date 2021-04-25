@@ -248,6 +248,9 @@ void jeLua_updateStates(lua_State* lua) {
 			lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
 			lua_setfield(lua, stateStackPos, "fps");
 
+			lua_pushnumber(lua, (lua_Number)jeWindow_getFrame(window));
+			lua_setfield(lua, stateStackPos, "frame");
+
 			lua_pushboolean(lua, jeWindow_getInput(window, JE_INPUT_LEFT));
 			lua_setfield(lua, stateStackPos, "inputLeft");
 
@@ -479,7 +482,7 @@ void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t 
 			vertices[2].v = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "v3", 1.0F);
 		}
 
-		for (uint32_t i = 0; i < vertexCount; i++) {
+		for (uint32_t i = 1; i < vertexCount; i++) {
 			vertices[i].z = vertices[0].z;
 			vertices[i].r = vertices[0].r;
 			vertices[i].g = vertices[0].g;
@@ -496,11 +499,17 @@ void jeLua_getPrimitiveImpl(lua_State* lua, struct jeVertex* vertices, uint32_t 
 		cameraX2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "x2", cameraX2);
 		cameraY2 = (float)jeLua_getOptionalNumberField(lua, cameraIndex, "y2", cameraY2);
 
-		float cameraOffsetX = -cameraX1 - floorf((cameraX2 - cameraX1) / 2.0F);
-		float cameraOffsetY = -cameraY1 - floorf((cameraY2 - cameraY1) / 2.0F);
+		float offsetX = 0.0F;
+		float offsetY = 0.0F;
+		offsetX = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "offsetX", 0.0F);
+		offsetY = (float)jeLua_getOptionalNumberField(lua, renderableIndex, "offsetY", 0.0F);
+
+		offsetX -= cameraX1 + floorf((cameraX2 - cameraX1) / 2.0F);
+		offsetY -= cameraY1 + floorf((cameraY2 - cameraY1) / 2.0F);
+
 		for (uint32_t i = 0; i < vertexCount; i++) {
-			vertices[i].x += cameraOffsetX;
-			vertices[i].y += cameraOffsetY;
+			vertices[i].x += offsetX;
+			vertices[i].y += offsetY;
 		}
 	}
 }
@@ -596,11 +605,11 @@ int jeLua_drawText(lua_State* lua) {
 		memset(&textBoundsVertices, 0, sizeof(textBoundsVertices));
 
 		jeLua_getPrimitiveImpl(lua, textBoundsVertices, 1);
-		textBoundsVertices[0].z = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_z", textBoundsVertices[0].z);
-		textBoundsVertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_r", textBoundsVertices[0].r);
-		textBoundsVertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_g", textBoundsVertices[0].g);
-		textBoundsVertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_b", textBoundsVertices[0].b);
-		textBoundsVertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "text_a", textBoundsVertices[0].a);
+		textBoundsVertices[0].z = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "textZ", textBoundsVertices[0].z);
+		textBoundsVertices[0].r = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "textR", textBoundsVertices[0].r);
+		textBoundsVertices[0].g = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "textG", textBoundsVertices[0].g);
+		textBoundsVertices[0].b = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "textB", textBoundsVertices[0].b);
+		textBoundsVertices[0].a = (float)jeLua_getOptionalNumberField(lua, defaultsIndex, "textA", textBoundsVertices[0].a);
 		textBoundsVertices[1] = textBoundsVertices[0];
 
 		JE_TRACE(

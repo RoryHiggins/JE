@@ -12,6 +12,7 @@ headlessClient.state = {
 	["width"] = 0,
 	["height"] = 0,
 	["fps"] = 0,
+	["frame"] = 0,
 	["logLevel"] = log.logLevel,
 	["testsEnabled"] = true,
 	["testsLogLevel"] = log.testsLogLevel,
@@ -23,6 +24,7 @@ headlessClient.state = {
 	["inputB"] = false,
 	["inputX"] = false,
 	["inputY"] = false,
+	["breakpointCount"] = 0,
 }
 function headlessClient.writeData(filename, dataStr)
 	return util.writeDataUncompressed(filename, dataStr)

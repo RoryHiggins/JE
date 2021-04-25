@@ -213,8 +213,9 @@ function Physics:tickForces(entity)
 	local materialPhysics = self:getMaterialPhysics(entity)
 
 	-- apply gravity to force
-	entity.forceX = entity.forceX + constants.physicsGravityX
-	entity.forceY = entity.forceY + constants.physicsGravityY
+	local entityGravityMultiplier = entity.physicsGravityMultiplier or 1
+	entity.forceX = entity.forceX + (constants.physicsGravityX * entityGravityMultiplier)
+	entity.forceY = entity.forceY + (constants.physicsGravityY * entityGravityMultiplier)
 
 	-- apply "friction" to speed
 	local speedSignX = util.sign(entity.speedX)
@@ -277,7 +278,7 @@ function Physics:onInit(simulation)
 	local constants = self.simulation.constants
 
 	constants.physicsGravityX = 0
-	constants.physicsGravityY = 0.5
+	constants.physicsGravityY = 1
 	constants.physicsMaxSpeed = 8
 	constants.physicsMaxRecursionDepth = 100
 	constants.physicsPushCounterforce = 0.1
@@ -314,100 +315,6 @@ function Physics.onEntityTag(_, entity, tag, tagId)
 		entity.physicsCanPush = entity.physicsCanPush or false
 		entity.physicsCanCarry = entity.physicsCanCarry or false
 	end
-end
-function Physics:onRunTests()
-	self.simulation:worldInit()
-
-	local constants = self.simulation.constants
-
-	local gridSize = 8
-
-	local gravitySignX = util.sign(constants.physicsGravityX)
-	local gravitySignY = util.sign(constants.physicsGravityY)
-
-	local gridDownX = gridSize * gravitySignX
-	local gridDownY = gridSize * gravitySignY
-
-	local physicsTemplate = self.templateSys:add("physicsTest", {
-		["properties"] = {
-			["w"] = gridSize,
-			["h"] = gridSize,
-			["physicsCanPush"] = true,
-			["physicsCanCarry"] = true,
-		},
-		["tags"] = {
-			["material"] = true,
-			["solid"] = true,
-			["physics"] = true,
-			["physicsPushable"] = true,
-			["physicsCarryable"] = true,
-			["physicsObject"] = true,
-		},
-	})
-	local wallTemplate = self.templateSys:add("physicsWallTest", {
-		["properties"] = {
-			["w"] = gridSize,
-			["h"] = gridSize,
-		},
-		["tags"] = {
-			["material"] = true,
-			["solid"] = true,
-		},
-	})
-
-	-- sanity check; physics system only supports gravity on one axis
-	log.assert((gravitySignX == 0) or (gravitySignY == 0))
-
-	-- simulate being in the air
-	local entity = self.templateSys:instantiate(physicsTemplate, 0, 0)
-	log.assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["air"])
-
-	-- simulate being on the ground
-	self.templateSys:instantiate(wallTemplate, gridDownX, gridDownY)
-	log.assert(self:getMaterialPhysics(entity) == constants.physicsMaterials["solid"])
-
-	-- simulate idle frames
-	log.assert(entity.x == 0)
-	log.assert(entity.y == 0)
-	log.assert(entity.forceX == 0)
-	log.assert(entity.forceY == 0)
-	log.assert(entity.speedX == 0)
-	log.assert(entity.speedY == 0)
-	for _ = 1, 5 do
-		self:onStep()
-		log.assert(entity.x == 0)
-		log.assert(entity.y == 0)
-	end
-
-	-- simulate falling off a ledge
-	for _ = 1, 100 do
-		entity.forceX = entity.forceX + (constants.physicsGravityY)
-		entity.forceY = entity.forceY + (constants.physicsGravityX)
-		self:onStep()
-	end
-	log.assert(util.sign(entity.x) ~= 0)
-	log.assert(util.sign(entity.y) ~= 0)
-
-	-- test reset logic
-	self:stopX(entity)
-	self:stopY(entity)
-	self.entitySys:setPos(entity, 0, 0)
-	log.assert(entity.x == 0)
-	log.assert(entity.y == 0)
-	log.assert(entity.forceX == 0)
-	log.assert(entity.forceY == 0)
-	log.assert(entity.speedX == 0)
-	log.assert(entity.speedY == 0)
-
-	-- simulate being pushed
-	log.assert(self:tryPushX(entity, 1) or self:tryPushY(entity, 1))
-	log.assert((entity.x ~= 0) or (entity.y ~= 0))
-
-	-- simulate being carried
-	local carryable = self.templateSys:instantiate(physicsTemplate, -gridDownX, -gridDownY)
-	log.assert(self:tryMoveX(entity, 1) or self:tryMoveY(entity, 1))
-	log.assert((entity.x ~= 0) or (entity.y ~= 0))
-	log.assert((carryable.x ~= -gridDownX) or (carryable.y ~= -gridDownY))
 end
 
 return Physics

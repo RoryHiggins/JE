@@ -1202,6 +1202,24 @@ bool jeWindow_getMouseButton(const struct jeWindow* window, uint32_t button) {
 
 	return state;
 }
+uint32_t jeWindow_getFrame(const struct jeWindow* window) {
+	uint32_t frame = 0;
+
+	bool ok = true;
+
+	if (window == NULL) {
+		JE_ERROR("window=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		frame = (uint32_t)window->frame;
+	}
+
+	JE_TRACE("window=%p, frame=%u", (void*)window, frame);
+
+	return frame;
+}
 uint32_t jeWindow_getFps(const struct jeWindow* window) {
 	uint32_t fpsEstimate = 0;
 

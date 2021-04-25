@@ -1,4 +1,9 @@
 
+# Major sources of error
+- 
+
+# World loading logic should be an engine system
+- Lots of decoupling cleanup to do
 
 # Proper rectangle rendering
 
@@ -10,7 +15,9 @@
 
 # Rethink keyboard controls for editor
 
-# Errors
+# Multiline text
+
+- Fix text size estimation for multiline text
 
 # Template inheritance?
 

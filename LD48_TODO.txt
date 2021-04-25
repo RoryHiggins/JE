@@ -9,4 +9,11 @@ Design:
 
 
 Before release:
-- Disable debug text in Text:onInit
+- Search for any leftover print statements
+- Disable debug mode in main
+- Restore play mode in main
+- Test briefly
+- Create release build
+- Re-test
+- Check DLLs for any missing in release bundle
+- Get someone else to test release bundle,s or test on another windows machine
