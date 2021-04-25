@@ -35,8 +35,9 @@ function ld48:onInit(simulation)
 	self.physicsSys = self.simulation:addSystem(Physics)
 	self.wallSys = self.simulation:addSystem(Wall)
 	self.deathSys = self.simulation:addSystem(Death)
-	self.playerSys = self.simulation:addSystem(Player)
 	self.rockSys = self.simulation:addSystem(require("apps/ld48/entities/rock"))
+	self.decorationSys = self.simulation:addSystem(require("apps/ld48/entities/decoration"))
+	self.playerSys = self.simulation:addSystem(Player)
 
 	self.font = self.textSys:getDefaultFont()
 end
@@ -65,10 +66,10 @@ end
 function ld48:onStart()
 	self.mode = ld48.modePlay
 	self.simulation.constants.developerDebugging = false
-	local editorWorld = "temple3"
+	local editorWorld = "hell1"
 
 	-- self.mode = ld48.modeEditor
-	-- self.mode = ld48.modePlayInEditor
+	self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modeResume
 
 	if self.mode == ld48.modePlay then

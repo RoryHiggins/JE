@@ -99,7 +99,6 @@ function Text:onCameraDraw(camera)
 	local fonts = self.simulation.constants.fonts
 
 	for _, entity in ipairs(self.entitySys:findAll("text")) do
-
 		local font = self:getDefaultFont()
 		if entity.fontId ~= nil then
 			local entityFont = fonts[entity.fontId]

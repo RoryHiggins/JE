@@ -247,14 +247,11 @@ function Player:onInit(simulation)
 		"cave2",
 		"cave3",
 		"cave4",
-		-- "cave5",
-		-- "cave6",
-		-- "cave7",
-		-- "cave8",
 		"temple1",
 		"temple2",
 		"temple3",
 		"temple4",
+		"hell1",
 		"end",
 	}
 	constants.worldToWorldId = {}

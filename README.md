@@ -1,7 +1,7 @@
-# LD48 - 
-My entry to the 48th Ludum Dare.
+# LD48 - Spelunking Simulator Pro 2022
+Entry to the [48th Ludum Dare](https://ldjam.com/events/ludum-dare/48) game jam.
 
-Short little hover physics platformer where you control a drone diving ever deeper into the abyss.
+Short little hover physics platformer where you control a survey drone investigating a cave.
 
 ![LD48 example](./example_output.png)
 
@@ -14,6 +14,7 @@ Middle click to toggle between playing and not playing.  When not in playing mod
 In editing mode: left/right/a/d to cycle between selections.  Mouse to move cursor, and z to change brush selection to match what cursor is hovering over.
 In map select mode: left/right to toggle between maps.
 In playing mode: play normally.  Middle click to return to editing mode.
+The map editor automatically saves any changes made.  Note that if you've changed to a built-in level, you will end up permanently editing it.  To restore built-in maps, redownload/re-extract the game and replace the affected .world files in apps/ld48/data/ with the ones from the fresh copy of the game.
 
 Credit:
 Aseprite used for making the "art".
