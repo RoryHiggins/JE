@@ -69,7 +69,7 @@ function ld48:onStart()
 	local editorWorld = "hell1"
 
 	-- self.mode = ld48.modeEditor
-	self.mode = ld48.modePlayInEditor
+	-- self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modeResume
 
 	if self.mode == ld48.modePlay then

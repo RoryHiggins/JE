@@ -335,7 +335,7 @@ function Editor:loadFromTable(save)
 	end
 
 	local messages = save.messages or {}
-	local messageY = self.simulation.input.screen.y2 - 24 - (8 * #messages)
+	local messageY = self.simulation.input.screen.y2 - (8 * #messages)
 	for _, message in ipairs(save.messages or {}) do
 		local messageEntity = self.templateSys:instantiate(self.messageTemplate, 0, messageY)
 		messageEntity.text = message.text
