@@ -69,7 +69,7 @@ function ld48:onStart()
 	self.mode = ld48.modePlayInEditor
 	-- self.mode = ld48.modePlayTestWorld
 	-- self.mode = ld48.modeResume
-	local editorWorld = "temple1"
+	local editorWorld = "temple2"
 
 	if self.mode == ld48.modePlay then
 		self.simulation.constants.developerDebugging = false

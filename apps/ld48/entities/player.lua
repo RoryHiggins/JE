@@ -94,8 +94,8 @@ function Player:tickEntity(player)
 		and (player.speedY * util.sign(constants.physicsGravityY) <= (-player.playerMovementDetectionThreshold))
 	)
 	local rising = risingX or risingY
-	local shouldJump = tryingToJump and onGround and not rising
-	local shouldHover = tryingToJump or (falling and not tryingToFall and not nearGround)
+	local shouldJump = tryingToJump and onGround
+	local shouldHover = not nearGround and not tryingToFall --[[and (tryingToJump or not rising)--]]
 
 	if onGround and (player.playerHoverFramesCur < player.playerHoverFrames) then
 		log.debug("player restore hover")
@@ -132,7 +132,12 @@ function Player:tickEntity(player)
 		player.h,
 		"death"
 	)
-	if collidingWithDeath then
+	local outsideBounds = (
+		((player.x + player.w) < 0)
+		or ((player.y + player.y) < 0)
+		or (player.x > self.simulation.input.screen.x2)
+	)
+	if outsideBounds or collidingWithDeath then
 		self:die(player)
 	end
 
@@ -154,10 +159,10 @@ function Player:tickEntity(player)
 	local spriteName = "player"..animationDir..tostring(animationIndex)
 	self.spriteSys:attach(player, self.spriteSys:get(spriteName))
 
-	local droneFloatOffsetY = -(math.floor(client.state.frame / 60) % 2)
-	if not onGround then
-		droneFloatOffsetY = 0
-	end
+	local droneFloatOffsetY = -(math.floor(client.state.frame / 20) % 2)
+	-- if (player.speedX ~= 0) or (player.speedY ~= 0) then
+	-- 	droneFloatOffsetY = 0
+	-- end
 	player.offsetY = droneFloatOffsetY
 end
 function Player:die()
@@ -206,18 +211,18 @@ function Player:onInit(simulation)
 			["h"] = 7,
 			["spriteId"] = "playerRight2",
 			["playerHoverFramesCur"] = 0,
-			["playerHoverFrames"] = 20,
+			["playerHoverFrames"] = 100,
 			["playerJumpForce"] = 2.5,
-			["playerHoverFrameForce"] = 0.25,
+			["playerHoverFrameForce"] = 0.2,
 			["playerMoveForce"] = 0.25,
-			["playerMovementDetectionThreshold"] = 0.5,
-			["playerDistanceNearGround"] = 4,
+			["playerMovementDetectionThreshold"] = 0.25,
+			["playerDistanceNearGround"] = 3,
 			["playerChangeDirForceMultiplier"] = 0.8,
 			["playerTargetMovementSpeed"] = 2,
 			["playerBelowTargetMovementSpeedForceMultiplier"] = 1.5,
 			["physicsCanPush"] = true,
 			["physicsCanCarry"] = false,
-			["physicsGravityMultiplier"] = 0.25,
+			["physicsGravityMultiplier"] = 0.2,
 		},
 		["tags"] = {
 			["sprite"] = true,
@@ -244,6 +249,9 @@ function Player:onInit(simulation)
 		-- "cave7",
 		-- "cave8",
 		"temple1",
+		"temple2",
+		"temple3",
+		"temple4",
 		"end",
 	}
 	constants.worldToWorldId = {}

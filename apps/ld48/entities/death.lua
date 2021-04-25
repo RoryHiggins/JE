@@ -9,14 +9,30 @@ function Death:onInit(simulation)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.templateSys = self.simulation:addSystem(Template)
 
-	local deathNames = {"death", "spikeDown", "spikeLeft", "spikeUp", "spikeRight", "spikeAll"}
+	local deathNames = {
+		"death",
+		"spikeDown",
+		"spikeLeft",
+		"spikeUp",
+		"spikeRight",
+		"spikeAll",
+		"spikeStoneDown",
+		"spikeStoneLeft",
+		"spikeStoneUp",
+		"spikeStoneRight",
+	}
 	local deathParams = {
 		["defaults"] = {["w"] = 8, ["h"] = 8, ["offsetX"] = 0, ["offsetY"] = 0, ["selectible"] = true},
 		["death"] = {["selectible"] = false},
-		["spikeDown"] = {["h"] = 3, ["offsetX"] = 0, ["offsetY"] = 5},
-		["spikeLeft"] = {["w"] = 3, },
+		["spikeDown"] = {["h"] = 3, ["offsetY"] = 5},
+		["spikeLeft"] = {["w"] = 3},
 		["spikeUp"] = {["h"] = 3},
-		["spikeRight"] = {["w"] = 3, ["offsetX"] = 5, ["offsetY"] = 0},
+		["spikeRight"] = {["w"] = 3, ["offsetX"] = 5},
+
+		["spikeJungleDown"] = {["h"] = 5, ["offsetY"] = 3},
+		["spikeJungleLeft"] = {["w"] = 5},
+		["spikeJungleUp"] = {["h"] = 5},
+		["spikeJungleRight"] = {["w"] = 5, ["offsetX"] = 3},
 	}
 
 	local baseU = 0

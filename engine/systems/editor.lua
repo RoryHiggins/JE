@@ -219,6 +219,12 @@ function Editor:editModeStep()
 			end
 		end
 	end
+	if self.inputSys:get("a") then
+		local templatesAt = self.placeholderSys:getTemplatesInArea(editor.x, editor.y, editor.w, editor.h)
+		if #templatesAt > 0 then
+			self:setEditorTemplate(editor, self.templateSys:getByName(templatesAt[1]))
+		end
+	end
 	if self.inputSys:get("mouseRight") then
 		if self.placeholderSys:clearArea(editor.x, editor.y, editor.w, editor.h) then
 			self.saved = false
@@ -291,7 +297,8 @@ function Editor:saveToTable()
 			["r"] = backgroundR,
 			["g"] = backgroundG,
 			["b"] = backgroundB,
-		}
+		},
+		["messages"] = util.deepcopy(self.messages)
 	}
 	for _, placeholder in ipairs(self.entitySys:findAll("placeholder")) do
 		local template = self.templateSys:get(placeholder.placeholderTemplateId)
@@ -326,6 +333,15 @@ function Editor:loadFromTable(save)
 			log.error("unrecognized templateId=%s", entity.templateName)
 		end
 	end
+
+	local messages = save.messages or {}
+	local messageY = self.simulation.input.screen.y2 - 24 - (8 * #messages)
+	for _, message in ipairs(save.messages or {}) do
+		local messageEntity = self.templateSys:instantiate(self.messageTemplate, 0, messageY)
+		messageEntity.text = message.text
+		messageY = messageY + 8
+	end
+	self.messages = util.deepcopy(save.messages)
 
 	local background = save.background or self.backgroundSys:getDefault()
 	self.backgroundSys:setColor(background.r, background.g, background.b)
@@ -450,6 +466,21 @@ function Editor:onInit(simulation)
 			["sprite"] = true,
 		},
 	})
+
+	self.messageTemplate = self.templateSys:add("message", {
+		["properties"] = {
+			["r"] = 1,
+			["g"] = 1,
+			["b"] = 1,
+			["a"] = 0.5,
+			["text"] = "",
+		},
+		["tags"] = {
+			["text"] = true,
+			["message"] = true,
+		},
+	})
+
 	self.modeIdToMode = {
 		self.modeEditing,
 		-- self.modeSaving,

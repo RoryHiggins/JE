@@ -8,7 +8,7 @@ function Wall:onInit(simulation)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.templateSys = self.simulation:addSystem(Template)
 
-	local wallNames = {"wallRock"}
+	local wallNames = {"wallRock", "wallMarble"}
 
 	local tags = {
 		["sprite"] = true,
