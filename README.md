@@ -6,7 +6,8 @@ Short little hover physics platformer where you control a survey drone investiga
 ![LD48 example](./example_output.png)
 
 Controls:
-wasd/arrow keys/dpad (game controller) to move.  Moving up will jump, moving down will temporarily stop hovering.  esc to quit.
+Player: wasd/arrow keys/dpad (game controller) to move.  Moving up will jump, moving down will temporarily stop hovering.  esc to quit.
+Menu: wasd/arrow keys/dpad to navigate.  z/enter to select a menu option.
 The hover physics are a bit unusual.  The goal was to allow very precise horizontal movement, with an emphasis on clinging to walls and ceilings for positioning.  The physics is not very difficult to master but I think it turned out kinda neat.
 
 Map editor controls:

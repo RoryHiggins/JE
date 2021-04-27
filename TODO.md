@@ -1,6 +1,6 @@
 
-# Major sources of error
-- 
+# Asset management at the engine level
+- Level, audio, sprite, spritesheets
 
 # World loading logic should be an engine system
 - Lots of decoupling cleanup to do
@@ -30,10 +30,13 @@ Capture stack trace on a lua error
 Dump simulation state + stack trace on a lua error
 - Dump the first error only
 
-
 # Audio
 
 wav loading and playing
+
+proper sound mixing
+
+volume control
 
 ogg streaming is a nice-to-have
 
