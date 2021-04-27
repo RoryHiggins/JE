@@ -109,15 +109,8 @@ endif()
 target_link_libraries(j25 PRIVATE m PNG::PNG ${JE_SDL2_LIBRARIES} ${JE_OPENGL_LIBRARIES})
 
 add_executable(j25_client)
-target_link_libraries(j25_client PRIVATE j25 m luajit-5.1 ZLIB::ZLIB #[[ogg]])
+target_link_libraries(j25_client PRIVATE j25 m luajit-5.1 ZLIB::ZLIB ogg)
 set_target_properties(j25_client PROPERTIES LINK_DEPENDS_NO_SHARED true)
 target_compile_definitions(j25_client PRIVATE "JE_DEFAULT_APP=\"${JE_DEFAULT_APP}\"")
 
 add_subdirectory("client")
-
-# print out state (for package discovery debugging)
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#     message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()

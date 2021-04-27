@@ -20,7 +20,7 @@
 #define JE_WINDOW_START_SCALE 4
 #define JE_WINDOW_START_WIDTH (JE_WINDOW_MIN_WIDTH * JE_WINDOW_START_SCALE)
 #define JE_WINDOW_START_HEIGHT (JE_WINDOW_MIN_HEIGHT * JE_WINDOW_START_SCALE)
-#define JE_WINDOW_START_CAPTION "Spelunking Simulator Pro 2022 (Ludum Dare 48)"
+#define JE_WINDOW_START_CAPTION "j25"
 
 #define JE_GL_MESSAGE_BUFFER_CAPACITY (4 * 1024)
 
@@ -898,9 +898,6 @@ bool jeWindow_step(struct jeWindow* window) {
 					SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)event.caxis.axis),
 					(int)event.caxis.value);
 				break;
-			}
-			case SDL_MOUSEMOTION: {
-
 			}
 			default: {
 				JE_TRACE("unhandled event, event.type=%u", event.type);

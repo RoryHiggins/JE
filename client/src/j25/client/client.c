@@ -571,7 +571,6 @@ int jeLua_drawLine(lua_State* lua) {
 }
 int jeLua_drawTriangle(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
-	// jeBreakpoint();
 	jeLua_drawPrimitiveImpl(lua, JE_PRIMITIVE_TYPE_TRIANGLES);
 	return 0;
 }

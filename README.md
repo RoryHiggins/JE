@@ -1,28 +1,3 @@
-# LD48 - Spelunking Simulator Pro 2022
-Entry to the [48th Ludum Dare](https://ldjam.com/events/ludum-dare/48) game jam.
-
-Short little hover physics platformer where you control a survey drone investigating a cave.
-
-![LD48 example](./example_output.png)
-
-Controls:
-Player: wasd/arrow keys/dpad (game controller) to move.  Moving up will jump, moving down will temporarily stop hovering.  esc to quit.
-Menu: wasd/arrow keys/dpad to navigate.  z/enter to select a menu option.
-The hover physics are a bit unusual.  The goal was to allow very precise horizontal movement, with an emphasis on clinging to walls and ceilings for positioning.  The physics is not very difficult to master but I think it turned out kinda neat.
-
-Map editor controls:
-Middle click to toggle between playing and not playing.  When not in playing mode, up/down to toggle between editor modes (editing, map select, playing).
-In editing mode: left/right/a/d to cycle between selections.  Mouse to move cursor, and z to change brush selection to match what cursor is hovering over.
-In map select mode: left/right to toggle between maps.
-In playing mode: play normally.  Middle click to return to editing mode.
-The map editor automatically saves any changes made.  Note that if you've changed to a built-in level, you will end up permanently editing it.  To restore built-in maps, redownload/re-extract the game and replace the affected .world files in apps/ld48/data/ with the ones from the fresh copy of the game.
-
-Credit:
-Aseprite used for making the "art".
-Music procedurally generated using Abundant Music (https://pernyblom.github.io/abundant-music/index.html) and recorded with airfont 380 sound font.
-Custom Lua/C game engine [j25](https://github.com/RoryHiggins/JE/tree/ld48), uses SDL2, zlib, libpng, libglew, luajit.
-
-
 # J25 game engine
 
 Lua/C game engine for game jams.  Very much WIP, only for personal use.
@@ -56,7 +31,13 @@ Lua/C game engine for game jams.  Very much WIP, only for personal use.
 
 
 ## Games
+[games/example_minimal/](games/example_minimal/README.md) - example game with the minimum code needed to do something interesting with the engine
+
+[games/example_platformer/](games/example_platformer/README.md) - platformer example game built in parallel with the engine
+
 [games/ld48/](games/ld48/README.md) - Ludum Dare 48 entry
+
+![Default game example](./example_output.png)
 
 ## Getting set up
 

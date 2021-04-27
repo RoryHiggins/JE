@@ -15,7 +15,6 @@
 *.lib
 *.gcda
 game_dump.json
-editor.sav
 j25_release_*.tar.gz
 engine_client
 gmon.out

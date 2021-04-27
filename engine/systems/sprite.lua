@@ -31,14 +31,6 @@ end
 function Sprite.draw(_, renderable, sprite, camera)
 	client.drawSprite(renderable, sprite, camera)
 end
-function Sprite:getUniqueId()
-	local constants = self.simulation.constants
-	local id = tostring(constants.nextSpriteId)
-
-	constants.nextSpriteId = constants.nextSpriteId + 1
-
-	return id
-end
 function Sprite:get(spriteId)
 	return self.simulation.constants.sprites[spriteId]
 end
@@ -63,7 +55,6 @@ function Sprite:onInit(simulation)
 	self.cameraSys = self.simulation:addSystem(Camera)
 
 	self.simulation.constants.sprites = {}
-	self.simulation.constants.nextSpriteId = 1
 	self.simulation.constants.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
 	self.simulation.constants.invalidSprite = self:addSprite("invalid", 8, 0, 8, 8)
 end

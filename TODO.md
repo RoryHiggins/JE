@@ -1,9 +1,41 @@
 
+# LD48 -> Master merge
+
+- Address compiler memory leak warnings
+- Cleanup hacky audio code:
+	MVP:
+	- General: rename sound -> audio for consistency
+	- jeAudioMixer: rename to jeAudioDriver
+	- jeAudioDriver: loadAudio(filename) -> audioId
+	- jeAudioDriver: freeAudio(audioId)
+	- jeWindow: getSoundMixer()
+	- jeLua: playSound() updated to only use window audio driver
+	- audio.lua: created
+	- audio.lua: loadAudio(filename) -> audioId
+	- audio.lua: playSound(audioId, looping)
+
+	Proper:
+	- jeAudioDriver: looping support to all devices (not music specific)
+	- jeAudioDriver: add looping support to playSound
+	- jeAudioDriver: track and return soundInstanceId which can be used to stop a sound
+	- jeAudioDriver
+	- jeLua: playSound() 
+	- jeLua: stopSound added
+	- add support for 
+	- cleanup: remove music-specific driver from jeAudioDriver in favor of a single shared pool
+- Remove references to ld48 systems from the engine
+
+Nice to haves:
+- Move background.lua system to engine
+- Move editor.lua system to engine (might spawn more work)
+
 # Asset management at the engine level
 - Level, audio, sprite, spritesheets
 
+
 # World loading logic should be an engine system
 - Lots of decoupling cleanup to do
+- Command-line argument to force starting in a specific level
 
 # Proper rectangle rendering
 
@@ -24,7 +56,8 @@
 # Simplify bulk template instance creation
 - Template inheritance?
 
-# Physics: death is not treated like air for physics
+# Move physics and physics material to engine
+- Death should not be a physics material
 
 Capture stack trace on a lua error
 Dump simulation state + stack trace on a lua error
@@ -155,5 +188,10 @@ Bounding
 
 Rich text support: font loading, unicode, and kerning.  Bring alcohol.
 
+# GUI + basic menu support
+
+CRITICAL prerequisite: rendering at native screen resolution
+
+Button system, color system
 
 # Misc Issues

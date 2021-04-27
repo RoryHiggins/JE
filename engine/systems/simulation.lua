@@ -222,11 +222,15 @@ function Simulation:run(...)
 
 	self.private.args = {...}
 
-	log.pushLogLevel(client.state.logLevel)
+	local targetLogLevel = client.state.logLevel
 
 	if util.tableHasValue(self.private.args, "--debug") then
 		log.enableDebugger()
+		self.constants.developerDebugging = true
+		targetLogLevel = log.LOG_LEVEL_DEBUG
 	end
+
+	log.pushLogLevel(targetLogLevel)
 
 	local function runInternal()
 		self:runTests()
