@@ -104,7 +104,7 @@ function Player:tickEntity(player)
 
 	if shouldJump then
 		log.debug("player jump")
-		client.playSound(client.audioJump)
+		client.playAudio(client.audioJump)
 
 		if constants.physicsGravityX ~= 0 then
 			self.physicsSys:stopX(player)
@@ -169,7 +169,7 @@ function Player:tickEntity(player)
 end
 function Player:die()
 	log.debug("player death")
-	client.playSound(client.audioDeath)
+	client.playAudio(client.audioDeath)
 
 	if self:getCurrentWorld() == "editor" then
 		self.editorSys:setMode(self.editorSys.modeEditing)

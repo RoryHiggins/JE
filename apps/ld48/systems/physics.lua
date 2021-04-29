@@ -69,7 +69,7 @@ function Physics:stopX(entity)
 
 	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
 	if (entity.tags.player ~= nil) and (math.abs(entity.speedX) >= 2.5) then
-		client.playSound(client.audioBump)
+		client.playAudio(client.audioBump)
 	end
 	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
@@ -82,7 +82,7 @@ function Physics:stopY(entity)
 
 	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
 	if (entity.tags.player ~= nil) and (math.abs(entity.speedY) >= 2.5) then
-		client.playSound(client.audioBump)
+		client.playAudio(client.audioBump)
 	end
 	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 

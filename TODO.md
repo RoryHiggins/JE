@@ -1,26 +1,24 @@
 
 # LD48 -> Master merge
 
-- Address compiler memory leak warnings
 - Cleanup hacky audio code:
 	MVP:
-	- General: rename sound -> audio for consistency
 	- jeAudioMixer: rename to jeAudioDriver
 	- jeAudioDriver: loadAudio(filename) -> audioId
 	- jeAudioDriver: freeAudio(audioId)
-	- jeWindow: getSoundMixer()
-	- jeLua: playSound() updated to only use window audio driver
+	- jeWindow: getAudioMixer()
+	- jeLua: playAudio() updated to only use window audio driver
 	- audio.lua: created
 	- audio.lua: loadAudio(filename) -> audioId
-	- audio.lua: playSound(audioId, looping)
+	- audio.lua: playAudio(audioId, looping)
 
 	Proper:
 	- jeAudioDriver: looping support to all devices (not music specific)
-	- jeAudioDriver: add looping support to playSound
-	- jeAudioDriver: track and return soundInstanceId which can be used to stop a sound
+	- jeAudioDriver: add looping support to playAudio
+	- jeAudioDriver: track and return audioPlaybackId which can be used to stop an audio playback
 	- jeAudioDriver
-	- jeLua: playSound() 
-	- jeLua: stopSound added
+	- jeLua: playAudio() 
+	- jeLua: stopAudio added
 	- add support for 
 	- cleanup: remove music-specific driver from jeAudioDriver in favor of a single shared pool
 - Remove references to ld48 systems from the engine
@@ -34,6 +32,7 @@ Nice to haves:
 # Deglobalize client table
 - Pass client table in as an argument rather than as a global
 - Make client a real system
+- HeadlessClient -> BaseClient, and have the provided client _override_ the BaseClient
 - Access client instance through simulation (getSystem())
 
 
@@ -75,7 +74,7 @@ Dump simulation state + stack trace on a lua error
 
 wav loading and playing
 
-proper sound mixing
+proper audio mixing
 
 volume control
 

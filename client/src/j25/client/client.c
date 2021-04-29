@@ -77,7 +77,7 @@ int jeLua_drawTriangle(lua_State* lua);
 int jeLua_drawSprite(lua_State* lua);
 int jeLua_drawText(lua_State* lua);
 int jeLua_drawReset(lua_State* lua);
-int jeLua_playSound(lua_State* lua);
+int jeLua_playAudio(lua_State* lua);
 int jeLua_runTests(lua_State* lua);
 int jeLua_step(lua_State* lua);
 bool jeLua_addBindings(lua_State* lua);
@@ -682,7 +682,7 @@ int jeLua_drawReset(lua_State* lua) {
 
 	return 0;
 }
-int jeLua_playSound(lua_State* lua) {
+int jeLua_playAudio(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
 	bool ok = true;
@@ -713,7 +713,7 @@ int jeLua_playSound(lua_State* lua) {
 	}
 
 	if (ok) {
-		jeAudioMixer_playSound(jeAudioMixer_instance, jeAudio_prebaked[index]);
+		jeAudioMixer_playAudio(jeAudioMixer_instance, jeAudio_prebaked[index]);
 	}
 
 	return 0;
@@ -810,7 +810,7 @@ bool jeLua_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(drawSprite),
 		JE_LUA_CLIENT_BINDING(drawText),
 		JE_LUA_CLIENT_BINDING(drawReset),
-		JE_LUA_CLIENT_BINDING(playSound),
+		JE_LUA_CLIENT_BINDING(playAudio),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),
 		{NULL, NULL} /*sentinel value*/

@@ -22,7 +22,7 @@ struct jeAudio {
 
 struct jeAudioMixer {
 	struct jeAudioDevice* musicDevice;
-	struct jeAudioDevice* soundDevices[JE_AUDIO_MIXER_DEVICES_COUNT];
+	struct jeAudioDevice* audioDevices[JE_AUDIO_MIXER_DEVICES_COUNT];
 	uint32_t next_device;
 	uint32_t num_devices;
 	bool loop_music_device;
@@ -333,8 +333,8 @@ void jeAudioMixer_destroy(struct jeAudioMixer* mixer) {
 		mixer->musicDevice = NULL;
 
 		for (uint32_t i = 0; i < mixer->num_devices; i++) {
-			jeAudioDevice_destroy(mixer->soundDevices[i]);
-			mixer->soundDevices[i] = NULL;
+			jeAudioDevice_destroy(mixer->audioDevices[i]);
+			mixer->audioDevices[i] = NULL;
 		}
 
 		free(mixer);
@@ -366,8 +366,8 @@ struct jeAudioMixer* jeAudioMixer_create(void) {
 
 	if (ok) {
 		for (uint32_t i = 0; i < JE_AUDIO_MIXER_DEVICES_COUNT; i++) {
-			mixer->soundDevices[i] = jeAudioDevice_create();
-			if (mixer->soundDevices[i] == NULL) {
+			mixer->audioDevices[i] = jeAudioDevice_create();
+			if (mixer->audioDevices[i] == NULL) {
 				if (mixer->num_devices == 0) {
 					ok = false;
 				}
@@ -436,7 +436,7 @@ bool jeAudioMixer_loopMusic(struct jeAudioMixer* mixer, const struct jeAudio* au
 
 	return ok;
 }
-struct jeAudioDevice* jeAudioMixer_playSound(struct jeAudioMixer* mixer, const struct jeAudio* audio) {
+struct jeAudioDevice* jeAudioMixer_playAudio(struct jeAudioMixer* mixer, const struct jeAudio* audio) {
 	bool ok = true;
 
 	if (mixer == NULL) {
@@ -447,7 +447,7 @@ struct jeAudioDevice* jeAudioMixer_playSound(struct jeAudioMixer* mixer, const s
 	struct jeAudioDevice* device = NULL;
 
 	if (ok) {
-		device = mixer->soundDevices[mixer->next_device];
+		device = mixer->audioDevices[mixer->next_device];
 		if (device == NULL) {
 			JE_ERROR("device=NULL, index=%u", (unsigned)mixer->next_device);
 			ok = false;
@@ -483,38 +483,15 @@ bool jeAudioMixer_step(struct jeAudioMixer* mixer) {
 void jeAudio_runTests() {
 #if JE_DEBUGGING
 
-	// struct jeAudioDevice* device = jeAudioDevice_create();
-	// JE_ASSERT(device != NULL);
+	struct jeAudioDevice* device = jeAudioDevice_create();
+	JE_ASSERT(device != NULL);
 
-	// struct jeAudio* audioEmpty = jeAudio_create(device);
-	// JE_ASSERT(audioEmpty != NULL);
-	// JE_ASSERT(jeAudio_formatForDevice(audioEmpty, device));
-	// jeAudio_destroy(audioEmpty);
+	struct jeAudioMixer* mixer = jeAudioMixer_create();
+	JE_ASSERT(mixer != NULL);
 
-	// struct jeAudioMixer* mixer = jeAudioMixer_create();
-	// JE_ASSERT(mixer != NULL);
+	jeAudioMixer_destroy(mixer);
 
-	// // JE_WARN("TODO REMOVE: temporary audio testing code");
-	// // {
-	// // 	// struct jeAudio* audio = jeAudio_createFromWavFile(device, "tmp\\test_sound.wav");
-	// // 	struct jeAudio* audio = jeAudio_createFromWavFile(device, "apps/ld48/data/song1.wav");
-	// // 	JE_ASSERT(audio != NULL);
-	// // 	JE_ASSERT(jeAudio_formatForDevice(audio, device));
-	// // 	JE_ASSERT(jeAudioDevice_queue(device, audio));
-	// // 	JE_ASSERT(jeAudioDevice_clear(device));
-
-	// // 	JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-	// // 	SDL_Delay(100);
-	// // 	// JE_ASSERT(jeAudioMixer_playSound(mixer, audio) != NULL);
-	// // 	// SDL_Delay(4000);
-
-	// // 	// disgusting hack: allocate the music and never let it go for the program lifetime!
-	// // 	// jeAudio_destroy(audio);
-	// // }
-
-	// jeAudioMixer_destroy(mixer);
-
-	// jeAudioDevice_destroy(device);
+	jeAudioDevice_destroy(device);
 
 #endif
 }
