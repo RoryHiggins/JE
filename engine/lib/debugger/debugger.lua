@@ -1,3 +1,4 @@
+---@diagnostic disable: lowercase-global, undefined-global
 --[[
 	Copyright (c) 2020 Scott Lembcke and Howling Moon Software
 	

@@ -86,9 +86,9 @@ function ld48:onStart()
 		self.simulation:load(Simulation.SAVE_FILE)
 	end
 end
--- function ld48:onDraw()
--- 	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))
--- end
+function ld48:onDraw()
+	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))
+end
 
 local simulation = Simulation.new()
 simulation:addSystem(ld48)

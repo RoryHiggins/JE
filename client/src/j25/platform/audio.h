@@ -16,7 +16,6 @@ JE_API_PUBLIC bool jeAudioDevice_queue(struct jeAudioDevice* device, const struc
 JE_API_PUBLIC bool jeAudioDevice_clear(const struct jeAudioDevice* device);
 
 JE_API_PUBLIC void jeAudio_destroy(struct jeAudio* audio);
-JE_API_PUBLIC struct jeAudio* jeAudio_create(const struct jeAudioDevice* device);
 JE_API_PUBLIC struct jeAudio* jeAudio_createFromWavFile(const struct jeAudioDevice* device, const char* filename);
 JE_API_PUBLIC bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* device);
 

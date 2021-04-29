@@ -173,8 +173,8 @@ void jeAudio_destroy(struct jeAudio* audio) {
 		audio = NULL;
 	}
 }
-struct jeAudio* jeAudio_create(const struct jeAudioDevice* device) {
-	JE_TRACE("device=%p", (void*)device);
+struct jeAudio* jeAudio_createFromWavFile(const struct jeAudioDevice* device, const char* filename) {
+	JE_TRACE("device=%p, filename=%s", (void*)device, filename ? filename : "<NULL>");
 
 	bool ok = true;
 
@@ -203,15 +203,6 @@ struct jeAudio* jeAudio_create(const struct jeAudioDevice* device) {
 		jeAudio_destroy(audio);
 		audio = NULL;
 	}
-
-	return audio;
-}
-struct jeAudio* jeAudio_createFromWavFile(const struct jeAudioDevice* device, const char* filename) {
-	JE_TRACE("device=%p, filename=%s", (void*)device, filename ? filename : "<NULL>");
-
-	bool ok = true;
-
-	struct jeAudio* audio = jeAudio_create(device);
 
 	if (audio == NULL) {
 		JE_ERROR("audio=NULL");
@@ -267,16 +258,13 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 		ok = false;
 	}
 
-	bool mustConvert = true;
-	if (ok) {
-		mustConvert = mustConvert && (audio->buffer != NULL);
-	}
+	ok = ok && (audio->buffer != NULL);
 
 	SDL_AudioCVT converter;
 	memset((void*)&converter, 0, sizeof(converter));
 	converter.buf = NULL;
 
-	if (ok && mustConvert) {
+	if (ok) {
 		int result = SDL_BuildAudioCVT(&converter,
 			audio->spec.format,
 			audio->spec.channels,
@@ -297,7 +285,7 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 		}
 	}
 
-	if (ok && mustConvert) {
+	if (ok) {
 		converter.len = (int)audio->size;
 		converter.buf = (Uint8*)malloc((size_t)(converter.len * converter.len_mult));
 
@@ -307,8 +295,10 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 		}
 	}
 
-	if (ok && mustConvert) {
-		memcpy(converter.buf, audio->buffer, audio->size);
+	if (ok) {
+		memcpy(converter.buf,
+			audio->buffer,
+			audio->size);
 
 		if (SDL_ConvertAudio(&converter) < 0) {
 			JE_ERROR("SDL_ConvertAudio() failed with error=%s", SDL_GetError());
@@ -316,7 +306,7 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 		}
 	}
 
-	if (ok && mustConvert) {
+	if (ok) {
 		SDL_FreeWAV(audio->buffer);
 		audio->size = (Uint32)converter.len;
 		audio->buffer = converter.buf;

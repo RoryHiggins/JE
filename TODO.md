@@ -29,6 +29,14 @@ Nice to haves:
 - Move background.lua system to engine
 - Move editor.lua system to engine (might spawn more work)
 
+# Sweep to ensure all state is appropriately put in state or constants
+
+# Deglobalize client table
+- Pass client table in as an argument rather than as a global
+- Make client a real system
+- Access client instance through simulation (getSystem())
+
+
 # Asset management at the engine level
 - Level, audio, sprite, spritesheets
 

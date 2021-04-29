@@ -23,3 +23,5 @@ README.html
 
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
+.vscode/

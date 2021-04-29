@@ -1146,8 +1146,8 @@ bool jeWindow_getMousePos(const struct jeWindow* window, int32_t *outX, int32_t*
 	if (ok) {
 		SDL_GetMouseState(&x, &y);
 
-		x /= (jeWindow_getWidth(window) / JE_WINDOW_MIN_WIDTH);
-		y /= (jeWindow_getHeight(window) / JE_WINDOW_MIN_HEIGHT);
+		x /= (int)(jeWindow_getWidth(window) / JE_WINDOW_MIN_WIDTH);
+		y /= (int)(jeWindow_getHeight(window) / JE_WINDOW_MIN_HEIGHT);
 	}
 
 	if (outX != NULL) {

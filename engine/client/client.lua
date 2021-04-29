@@ -24,7 +24,12 @@ headlessClient.state = {
 	["inputB"] = false,
 	["inputX"] = false,
 	["inputY"] = false,
+	["inputMouseLeft"] = false,
+	["inputMouseMiddle"] = false,
+	["inputMouseRight"] = false,
 	["breakpointCount"] = 0,
+	["inputMouseX"] = 0,
+	["inputMouseY"] = 0,
 }
 function headlessClient.writeData(filename, dataStr)
 	return util.writeDataUncompressed(filename, dataStr)

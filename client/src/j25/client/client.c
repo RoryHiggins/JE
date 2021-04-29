@@ -77,6 +77,7 @@ int jeLua_drawTriangle(lua_State* lua);
 int jeLua_drawSprite(lua_State* lua);
 int jeLua_drawText(lua_State* lua);
 int jeLua_drawReset(lua_State* lua);
+int jeLua_playSound(lua_State* lua);
 int jeLua_runTests(lua_State* lua);
 int jeLua_step(lua_State* lua);
 bool jeLua_addBindings(lua_State* lua);
