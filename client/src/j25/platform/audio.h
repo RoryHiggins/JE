@@ -5,26 +5,41 @@
 
 #include <j25/core/common.h>
 
-struct jeAudioDevice;
+#define JE_AUDIO_ID_INVALID (0)
+
+// TODO hide these from header:
+#include <SDL2/SDL.h>
+struct jeAudioDevice {
+	SDL_AudioSpec spec;
+	SDL_AudioDeviceID id;
+};
+
+struct jeAudio {
+	SDL_AudioSpec spec;
+	Uint8* buffer;
+	Uint32 size;
+};
 struct jeAudio;
-struct jeAudioMixer;
 
-JE_API_PUBLIC void jeAudioDevice_destroy(struct jeAudioDevice* device);
-JE_API_PUBLIC struct jeAudioDevice* jeAudioDevice_create(void);
-JE_API_PUBLIC bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused);
-JE_API_PUBLIC bool jeAudioDevice_queue(struct jeAudioDevice* device, const struct jeAudio* audio);
-JE_API_PUBLIC bool jeAudioDevice_clear(const struct jeAudioDevice* device);
+struct jeAudioDriver;
 
+typedef uint32_t jeAudioId;
+
+// TODO hide these from header:
 JE_API_PUBLIC void jeAudio_destroy(struct jeAudio* audio);
-JE_API_PUBLIC struct jeAudio* jeAudio_createFromWavFile(const struct jeAudioDevice* device, const char* filename);
-JE_API_PUBLIC bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* device);
+JE_API_PUBLIC bool jeAudio_createFromWavFile(struct jeAudio* audio, const struct jeAudioDevice* device, const char* filename);
 
-JE_API_PUBLIC void jeAudioMixer_destroy(struct jeAudioMixer* mixer);
-JE_API_PUBLIC struct jeAudioMixer* jeAudioMixer_create(void);
-JE_API_PUBLIC struct jeAudioDevice* jeAudioMixer_getMusicAudioDevice(struct jeAudioMixer* mixer);
-JE_API_PUBLIC bool jeAudioMixer_loopMusic(struct jeAudioMixer* mixer, const struct jeAudio* audio /* MUST OUTLIVE MIXER*/);
-JE_API_PUBLIC struct jeAudioDevice* jeAudioMixer_playAudio(struct jeAudioMixer* mixer, const struct jeAudio* audio);
-JE_API_PUBLIC bool jeAudioMixer_step(struct jeAudioMixer* mixer);
+JE_API_PUBLIC struct jeAudioDriver* jeAudioDriver_getInstance(void);
+JE_API_PUBLIC bool jeAudioDriver_getAudioLoaded(struct jeAudioDriver* driver, jeAudioId audioId);
+JE_API_PUBLIC jeAudioId jeAudioDriver_loadAudioFromWavFile(struct jeAudioDriver* driver, const char* filename);
+JE_API_PUBLIC bool jeAudioDriver_unloadAudio(struct jeAudioDriver* driver, jeAudioId audioId);
+JE_API_PUBLIC bool jeAudioDriver_playAudio(struct jeAudioDriver* driver, jeAudioId audioId);
+JE_API_PUBLIC bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver);
+JE_API_PUBLIC bool jeAudioDriver_pump(struct jeAudioDriver* driver);
+
+// TODO hide/remove from header:
+JE_API_PUBLIC struct jeAudioDevice* jeAudioDriver_getMusicAudioDevice(struct jeAudioDriver* driver);
+JE_API_PUBLIC bool jeAudioDriver_loopMusicRaw(struct jeAudioDriver* driver, const struct jeAudio* audio /* MUST OUTLIVE DRIVER*/);
 
 JE_API_PUBLIC void jeAudio_runTests();
 

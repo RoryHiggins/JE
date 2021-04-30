@@ -113,6 +113,8 @@ void jeLogger_assert(struct jeLogger logger, bool value, const char* expressionS
 	if ((jeLogger_levelOverride <= JE_LOG_LEVEL_ERR) && (!value)) {
 		jeBreakpoint();
 		jeLogger_log(logger, JE_LOG_LEVEL_ERR, "assertion failed, assertion=%s", expressionStr);
+
+		exit(EXIT_FAILURE);
 	}
 }
 

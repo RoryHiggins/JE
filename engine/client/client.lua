@@ -9,6 +9,7 @@ end
 local headlessClient = setmetatable({}, headlessClientMetatable)
 headlessClient.state = {
 	["running"] = false,
+	["headless"] = true,
 	["width"] = 0,
 	["height"] = 0,
 	["fps"] = 0,
@@ -52,15 +53,5 @@ function client.onRunTests()
 	end
 	return numTestSuites
 end
-
-
--- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
--- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/bump.wav");
--- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/jump.wav");
--- jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/death.wav");
-client.audioBump = 0
-client.audioJump = 1
-client.audioDeath = 2
--- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
 return client

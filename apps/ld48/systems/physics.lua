@@ -1,12 +1,14 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
 local client = require("engine/client/client")
+local Audio = require("engine/systems/audio")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
 local Material = require("apps/ld48/systems/material")
 
 local Physics = {}
 Physics.SYSTEM_NAME = "physics"
+Physics.bumpAudio = "apps/ld48/data/bump.wav"
 function Physics:getMaterialPhysics(entity)
 	local constants = self.simulation.constants
 
@@ -69,7 +71,7 @@ function Physics:stopX(entity)
 
 	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
 	if (entity.tags.player ~= nil) and (math.abs(entity.speedX) >= 2.5) then
-		client.playAudio(client.audioBump)
+		self.audioSys:playAudio(self.bumpAudio)
 	end
 	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
@@ -82,7 +84,7 @@ function Physics:stopY(entity)
 
 	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
 	if (entity.tags.player ~= nil) and (math.abs(entity.speedY) >= 2.5) then
-		client.playAudio(client.audioBump)
+		self.audioSys:playAudio(self.bumpAudio)
 	end
 	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
@@ -314,6 +316,7 @@ function Physics:tick(entity)
 end
 function Physics:onInit(simulation)
 	self.simulation = simulation
+	self.audioSys = self.simulation:addSystem(Audio)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
 	self.materialSys = self.simulation:addSystem(Material)

@@ -3,7 +3,6 @@
 
 - Cleanup hacky audio code:
 	MVP:
-	- jeAudioMixer: rename to jeAudioDriver
 	- jeAudioDriver: loadAudio(filename) -> audioId
 	- jeAudioDriver: freeAudio(audioId)
 	- jeWindow: getAudioMixer()
@@ -28,6 +27,9 @@ Nice to haves:
 - Move editor.lua system to engine (might spawn more work)
 
 # Sweep to ensure all state is appropriately put in state or constants
+
+# Add "JE_CHECK()" for release non-fatal asserts
+- Sweep to replace verbose if(blah) {JE_ERR(...); ok = false; }
 
 # Deglobalize client table
 - Pass client table in as an argument rather than as a global

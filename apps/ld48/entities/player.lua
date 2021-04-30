@@ -1,6 +1,7 @@
 local log = require("engine/util/log")
 local util = require("engine/util/util")
 local client = require("engine/client/client")
+local Audio = require("engine/systems/audio")
 local Input = require("engine/systems/input")
 local Entity = require("engine/systems/entity")
 local Sprite = require("engine/systems/sprite")
@@ -15,6 +16,8 @@ local Player = {}
 Player.SYSTEM_NAME = "player"
 Player.UNKNOWN_WORLD_NAME = "<world unset>"
 Player.UNKNOWN_WORLD_ID = 0
+Player.jumpAudio = "apps/ld48/data/jump.wav"
+Player.deathAudio = "apps/ld48/data/death.wav"
 function Player:tickEntity(player)
 	local constants = self.simulation.constants
 
@@ -104,7 +107,7 @@ function Player:tickEntity(player)
 
 	if shouldJump then
 		log.debug("player jump")
-		client.playAudio(client.audioJump)
+		self.audioSys:playAudio(self.jumpAudio)
 
 		if constants.physicsGravityX ~= 0 then
 			self.physicsSys:stopX(player)
@@ -169,7 +172,7 @@ function Player:tickEntity(player)
 end
 function Player:die()
 	log.debug("player death")
-	client.playAudio(client.audioDeath)
+	self.audioSys:playAudio(self.deathAudio)
 
 	if self:getCurrentWorld() == "editor" then
 		self.editorSys:setMode(self.editorSys.modeEditing)
@@ -191,6 +194,7 @@ end
 function Player:onInit(simulation)
 	self.simulation = simulation
 	self.inputSys = self.simulation:addSystem(Input)
+	self.audioSys = self.simulation:addSystem(Audio)
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.textSys = self.simulation:addSystem(Text)

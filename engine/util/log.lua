@@ -19,7 +19,12 @@ local function logImpl(level, format, ...)
 
 
 	local callee_info = debug.getinfo(3, "Sln")
-	print(string.format(format, callee_info.short_src, callee_info.currentline, callee_info.name, ...))
+	print(string.format(format,
+		callee_info.short_src,
+		callee_info.currentline,
+		callee_info.name or "<unnamed>",
+		...
+	))
 	io.flush()
 
 	if log.debugger and level >= log.LOG_LEVEL_WARN then

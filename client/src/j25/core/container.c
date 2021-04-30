@@ -53,7 +53,11 @@ void jeArray_destroy(struct jeArray* array) {
 	JE_TRACE("array=%p", (void*)array);
 
 	if (array != NULL) {
-		free(array->data);
+		if (array->data != NULL) {
+			free(array->data);
+			array->data = NULL;
+		}
+
 		memset((void*)array, 0, sizeof(struct jeArray));
 
 		array = NULL;
@@ -183,6 +187,12 @@ bool jeArray_setCapacity(struct jeArray* array, uint32_t capacity) {
 	}
 
 	if (ok) {
+		uint32_t oldByteCapacity = array->capacity * array->stride;
+		uint32_t newByteCapacity = capacity * array->stride;
+		if (newByteCapacity > oldByteCapacity) {
+			memset(((char*)array->data) + oldByteCapacity, 0, (size_t)(newByteCapacity - oldByteCapacity));
+		}
+
 		array->capacity = capacity;
 
 		if (array->count > array->capacity) {

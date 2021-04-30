@@ -244,6 +244,9 @@ void jeLua_updateStates(lua_State* lua) {
 		lua_pushboolean(lua, (window != NULL) && jeWindow_getIsOpen(window));
 		lua_setfield(lua, stateStackPos, "running");
 
+		lua_pushboolean(lua, false);
+		lua_setfield(lua, stateStackPos, "headless");
+
 		if (window != NULL) {
 
 			lua_pushnumber(lua, (lua_Number)jeWindow_getFps(window));
@@ -304,8 +307,8 @@ void jeLua_updateStates(lua_State* lua) {
 }
 
 // BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
-static struct jeAudioMixer* jeAudioMixer_instance = NULL;
-static struct jeAudio* jeAudio_prebaked[8] = {0};
+struct jeAudioDriver;
+static struct jeAudioDriver* jeAudioDriver_instance = NULL;
 static uint32_t jeAudio_numPrebaked = 0;
 // END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
@@ -682,42 +685,187 @@ int jeLua_drawReset(lua_State* lua) {
 
 	return 0;
 }
-int jeLua_playAudio(lua_State* lua) {
+int jeLua_loadAudio(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
 	bool ok = true;
+	int numResponses = 0;
 
 	if (lua == NULL) {
 		JE_ERROR("lua=NULL");
 		ok = false;
 	}
 
-	if (jeAudioMixer_instance == NULL) {
-		JE_ERROR("jeAudioMixer_instance=NULL");
-		ok = false;
-	}
-
-	uint32_t index = 0;
+	uint32_t filenameLength = 0;
+	const char* filename = NULL;
 	if (ok) {
-		index = (uint32_t)luaL_checknumber(lua, 1);
+		static const int audioIndex = 1;
 
-		if (index > jeAudio_numPrebaked) {
-			JE_ERROR("index > jeAudio_numPrebaked, index=%u", index);
+		luaL_checktype(lua, audioIndex, LUA_TTABLE);
+
+		filename = jeLua_getStringField(lua, audioIndex, "filename", &filenameLength);
+
+		if (filenameLength == 0) {
+			JE_ERROR("filenameLength=0");
+			ok = false;
+		}
+		if (filename == NULL) {
+			JE_ERROR("filename=NULL");
 			ok = false;
 		}
 	}
 
-	if (jeAudio_prebaked[index] == NULL) {
-		JE_ERROR("jeAudio_prebaked[index]=NULL, index=%u", index);
-		ok = false;
+	struct jeAudioDriver* driver = NULL;
+	if (ok) {
+		driver = jeAudioDriver_getInstance();
+		if (driver == NULL) {
+			JE_ERROR("driver=NULL");
+			ok = false;
+		}
 	}
 
 	if (ok) {
-		jeAudioMixer_playAudio(jeAudioMixer_instance, jeAudio_prebaked[index]);
+		JE_TRACE("filename=%s", filename);
 	}
 
-	return 0;
+	jeAudioId audioId = JE_AUDIO_ID_INVALID;
+	if (ok) {
+		audioId = jeAudioDriver_loadAudioFromWavFile(driver, filename);
+	}
+
+	if (lua != NULL) {
+		lua_pushboolean(lua, ok);
+		numResponses++;
+
+		lua_pushnumber(lua, (lua_Number)audioId);
+		numResponses++;
+	}
+
+	return numResponses;
 }
+int jeLua_unloadAudio(lua_State* lua) {
+	JE_TRACE("lua=%p", (void*)lua);
+
+	bool ok = true;
+	int numResponses = 0;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	jeAudioId audioId = 0;
+	if (ok) {
+		static const int audioIndex = 1;
+
+		luaL_checktype(lua, audioIndex, LUA_TTABLE);
+
+		audioId = (jeAudioId)jeLua_getNumberField(lua, audioIndex, "audioId");
+
+		if (audioId == JE_AUDIO_ID_INVALID) {
+			JE_ERROR("audioId=JE_AUDIO_ID_INVALID");
+			ok = false;
+		}
+	}
+
+	struct jeAudioDriver* driver = NULL;
+	if (ok) {
+		driver = jeAudioDriver_getInstance();
+		if (driver == NULL) {
+			JE_ERROR("driver=NULL");
+			ok = false;
+		}
+	}
+
+	ok = ok && jeAudioDriver_getAudioLoaded(driver, audioId);
+
+	ok = ok && jeAudioDriver_unloadAudio(driver, audioId);
+
+	if (ok) {
+		JE_TRACE("filename=%s", filename);
+	}
+
+	if (lua != NULL) {
+		lua_pushboolean(lua, ok);
+		numResponses++;
+	}
+
+	return numResponses;
+}
+int jeLua_playAudio(lua_State* lua) {
+	JE_TRACE("lua=%p", (void*)lua);
+
+	bool ok = true;
+	int numResponses = 0;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	jeAudioId audioId = 0;
+	if (ok) {
+		static const int audioIndex = 1;
+
+		luaL_checktype(lua, audioIndex, LUA_TTABLE);
+		audioId = (jeAudioId)jeLua_getNumberField(lua, audioIndex, "audioId");
+
+		if (audioId == JE_AUDIO_ID_INVALID) {
+			JE_ERROR("audioId > jeAudio_numPrebaked, audioId=%u", audioId);
+			ok = false;
+		}
+	}
+
+	struct jeAudioDriver* driver = NULL;
+	if (ok) {
+		driver = jeAudioDriver_getInstance();
+		if (driver == NULL) {
+			JE_ERROR("driver=NULL");
+			ok = false;
+		}
+	}
+
+	ok = ok && jeAudioDriver_getAudioLoaded(driver, audioId);
+
+	ok = ok && jeAudioDriver_playAudio(driver, audioId);
+
+	if (lua != NULL) {
+		lua_pushboolean(lua, ok);
+		numResponses++;
+	}
+
+	return numResponses;
+}
+int jeLua_clearAudio(lua_State* lua) {
+	JE_TRACE("lua=%p", (void*)lua);
+
+	bool ok = true;
+	int numResponses = 0;
+
+	if (lua == NULL) {
+		JE_ERROR("lua=NULL");
+		ok = false;
+	}
+
+	struct jeAudioDriver* driver = NULL;
+	if (ok) {
+		driver = jeAudioDriver_getInstance();
+		if (driver == NULL) {
+			JE_ERROR("driver=NULL");
+			ok = false;
+		}
+	}
+
+	ok = ok && jeAudioDriver_clearAudio(driver);
+
+	if (lua != NULL) {
+		lua_pushboolean(lua, ok);
+		numResponses++;
+	}
+
+	return numResponses;
+}
+
 int jeLua_runTests(lua_State* lua) {
 	uint32_t numTestSuites = 0;
 
@@ -752,19 +900,15 @@ int jeLua_step(lua_State* lua) {
 	// BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
 	// This is garbage that doesn't clean up after itself.  Gamejam time limits demand it!
 	{
-		if (jeAudioMixer_instance == NULL) {
-			jeAudioMixer_instance = jeAudioMixer_create();
-			struct jeAudioDevice* reference_device = jeAudioMixer_getMusicAudioDevice(jeAudioMixer_instance);
+		if (jeAudioDriver_instance == NULL) {
+			jeAudioDriver_instance = jeAudioDriver_getInstance();
+			struct jeAudioDevice* reference_device = jeAudioDriver_getMusicAudioDevice(jeAudioDriver_instance);
 
-			struct jeAudio* music = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/song1.wav");
-			jeAudioMixer_loopMusic(jeAudioMixer_instance, music);
-
-			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/bump.wav");
-			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/jump.wav");
-			jeAudio_prebaked[jeAudio_numPrebaked++] = jeAudio_createFromWavFile(reference_device, "apps/ld48/data/death.wav");
+			static struct jeAudio music;
+			jeAudio_createFromWavFile(&music, reference_device, "apps/ld48/data/song1.wav");
+			jeAudioDriver_loopMusicRaw(jeAudioDriver_instance, &music);
 		}
-		jeAudioMixer_step(jeAudioMixer_instance);
-
+		jeAudioDriver_pump(jeAudioDriver_instance);
 	}
 	// END LD48 TEMP CODE; TODO CLEANUP/REMOVE
 
@@ -810,7 +954,10 @@ bool jeLua_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(drawSprite),
 		JE_LUA_CLIENT_BINDING(drawText),
 		JE_LUA_CLIENT_BINDING(drawReset),
+		JE_LUA_CLIENT_BINDING(loadAudio),
+		JE_LUA_CLIENT_BINDING(unloadAudio),
 		JE_LUA_CLIENT_BINDING(playAudio),
+		JE_LUA_CLIENT_BINDING(clearAudio),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),
 		{NULL, NULL} /*sentinel value*/
