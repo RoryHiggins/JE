@@ -20,8 +20,6 @@ ld48.SYSTEM_NAME = "ld48"
 ld48.modePlay = "play"
 ld48.modeEditor = "editor"
 ld48.modePlayInEditor = "playInEditor"
-ld48.modePlayTestWorld = "playTestWorld"
-ld48.modeResume = "resume"
 function ld48:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
@@ -43,36 +41,10 @@ function ld48:onInit(simulation)
 
 	self.font = self.textSys:getDefaultFont()
 end
-function ld48:testWorldInit()
-	local playerTemplate = self.templateSys:getByName("player")
-	local wallTemplate = self.templateSys:getByName("wallRock")
-
-	self.simulation.constants.developerDebugging = true
-	self.playerSys:createWorld("test")
-	self.simulation:worldInit()
-
-	self.templateSys:instantiate(playerTemplate, 64, 16)
-
-	-- step floors
-	for i = 1, 7 do
-		local x = 16 + ((i - 1) * 32)
-		local y = 16 + ((i - 1) * 32)
-		self.templateSys:instantiate(wallTemplate, x, y, 8, 8)
-		self.templateSys:instantiate(wallTemplate, x + 8, y, 8, 8)
-		self.templateSys:instantiate(wallTemplate, x + 16, y, 8, 8)
-		self.templateSys:instantiate(wallTemplate, x + 24, y, 8, 8)
-	end
-end
--- function ld48:onWorldInit()
--- end
 function ld48:onStart()
 	self.mode = ld48.modePlay
 	self.simulation.constants.developerDebugging = false
 	local editorWorld = "hell1"
-
-	-- self.mode = ld48.modeEditor
-	-- self.mode = ld48.modePlayInEditor
-	-- self.mode = ld48.modeResume
 
 	if self.mode == ld48.modePlay then
 		self.mainMenuSys:startMainMenu()
@@ -83,9 +55,6 @@ function ld48:onStart()
 	if self.mode == ld48.modePlayInEditor then
 		self.editorSys:startEditor(editorWorld)
 		self.editorSys:setMode(self.editorSys.modePlaying)
-	end
-	if self.mode == ld48.modeResume then
-		self.simulation:load(Simulation.SAVE_FILE)
 	end
 
 	self.audioSys:stopAllAudio()
