@@ -8,7 +8,6 @@ local Material = require("apps/ld48/systems/material")
 
 local Physics = {}
 Physics.SYSTEM_NAME = "physics"
-Physics.bumpAudio = "apps/ld48/data/bump.wav"
 function Physics:getMaterialPhysics(entity)
 	local constants = self.simulation.constants
 
@@ -67,26 +66,14 @@ function Physics:getCarryablesRecursive(entity, outCarryables, recursionDepth)
 	return outCarryables
 end
 function Physics:stopX(entity)
-	log.trace("stopping entity, entityId=%s", entity.id)
-
-	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
-	if (entity.tags.player ~= nil) and (math.abs(entity.speedX) >= 2.5) then
-		self.audioSys:playAudio(self.bumpAudio)
-	end
-	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+	self.simulation:broadcast("onPhysicsEntityStopX", true, entity)
 
 	entity.forceX = 0
 	entity.speedX = 0
 	entity.overflowX = 0
 end
 function Physics:stopY(entity)
-	log.trace("stopping entity, entityId=%s", entity.id)
-
-	-- BEGIN LD48 TEMP CODE; TODO CLEANUP/REMOVE
-	if (entity.tags.player ~= nil) and (math.abs(entity.speedY) >= 2.5) then
-		self.audioSys:playAudio(self.bumpAudio)
-	end
-	-- END LD48 TEMP CODE; TODO CLEANUP/REMOVE
+	self.simulation:broadcast("onPhysicsEntityStopY", true, entity)
 
 	entity.forceY = 0
 	entity.speedY = 0

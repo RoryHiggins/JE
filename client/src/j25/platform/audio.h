@@ -16,7 +16,7 @@ JE_API_PUBLIC bool jeAudioDriver_getAudioLoaded(struct jeAudioDriver* driver, je
 JE_API_PUBLIC jeAudioId jeAudioDriver_loadAudioFromWavFile(struct jeAudioDriver* driver, const char* filename);
 JE_API_PUBLIC bool jeAudioDriver_unloadAudio(struct jeAudioDriver* driver, jeAudioId audioId);
 JE_API_PUBLIC bool jeAudioDriver_playAudio(struct jeAudioDriver* driver, jeAudioId audioId, bool shouldLoop);
-JE_API_PUBLIC bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver);
+JE_API_PUBLIC bool jeAudioDriver_stopAllAudio(struct jeAudioDriver* driver);
 JE_API_PUBLIC bool jeAudioDriver_pump(struct jeAudioDriver* driver);
 
 JE_API_PUBLIC void jeAudio_runTests();

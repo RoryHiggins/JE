@@ -22,10 +22,9 @@ struct jeAudioDriver {
 	struct jeArray audioAllocations;
 
 	struct jeAudioDevice devices[JE_AUDIO_DRIVER_DEVICES_COUNT];
+	const struct jeAudio* deviceAudioLoops[JE_AUDIO_DRIVER_DEVICES_COUNT]; /* must outlive playback */
+	bool deviceLastAudio[JE_AUDIO_DRIVER_DEVICES_COUNT];
 	uint32_t numDevices;
-
-	// must outlive playback
-	const struct jeAudio* deviceAudioLoops[JE_AUDIO_DRIVER_DEVICES_COUNT];
 };
 
 void jeAudio_destroy(struct jeAudio* audio);
@@ -35,7 +34,7 @@ void jeAudioDevice_destroy(struct jeAudioDevice* device);
 bool jeAudioDevice_create(struct jeAudioDevice* device);
 bool jeAudioDevice_formatAudio(const struct jeAudioDevice* device, struct jeAudio* audio);
 bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio* audio);
-bool jeAudioDevice_clearAudio(const struct jeAudioDevice* device);
+bool jeAudioDevice_stopAudio(const struct jeAudioDevice* device);
 bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused);
 
 void jeAudioDriver_destroy(struct jeAudioDriver* driver);
@@ -47,7 +46,7 @@ jeAudioId jeAudioDriver_loadAudioFromWavFile(struct jeAudioDriver* driver, const
 bool jeAudioDriver_unloadAudio(struct jeAudioDriver* driver, jeAudioId audioId);
 bool jeAudioDriver_playAudioRaw(struct jeAudioDriver* driver, const struct jeAudio* audio /* must outlive playback */, bool shouldLoop);
 bool jeAudioDriver_playAudio(struct jeAudioDriver* driver, jeAudioId audioId, bool shouldLoop);
-bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver);
+bool jeAudioDriver_stopAllAudio(struct jeAudioDriver* driver);
 bool jeAudioDriver_pump(struct jeAudioDriver* driver);
 
 void jeAudio_destroy(struct jeAudio* audio) {
@@ -255,7 +254,7 @@ bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio
 		ok = false;
 	}
 
-	ok = ok && jeAudioDevice_clearAudio(device);
+	ok = ok && jeAudioDevice_stopAudio(device);
 
 	bool mustQueue = true;
 
@@ -272,7 +271,7 @@ bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio
 
 	return ok;
 }
-bool jeAudioDevice_clearAudio(const struct jeAudioDevice* device) {
+bool jeAudioDevice_stopAudio(const struct jeAudioDevice* device) {
 	JE_TRACE("device=%p", (void*)device);
 
 	bool ok = true;
@@ -555,7 +554,7 @@ struct jeAudioDevice* jeAudioDriver_allocateBestDevice(struct jeAudioDriver* dri
 		if (deviceIndex != deviceIndexInvalid) {
 			JE_TRACE("using optimal device");
 		} else if (usedDeviceIndex != deviceIndexInvalid) {
-			JE_WARN("fallback: repurposing a used device");
+			JE_INFO("fallback: repurposing a used device");
 			deviceIndex = usedDeviceIndex;
 		} else if (usedLoopingDeviceIndex != deviceIndexInvalid) {
 			JE_WARN("worst-case fallback: repurposing a used device with looping audio");
@@ -576,7 +575,7 @@ struct jeAudioDevice* jeAudioDriver_allocateBestDevice(struct jeAudioDriver* dri
 	if (ok) {
 		driver->deviceAudioLoops[deviceIndex] = NULL;
 
-		if ((device != NULL) && !jeAudioDevice_clearAudio(device)) {
+		if ((device != NULL) && !jeAudioDevice_stopAudio(device)) {
 			ok = false;
 			device = NULL;
 			deviceIndex = 0;
@@ -611,7 +610,7 @@ bool jeAudioDriver_playAudioRaw(struct jeAudioDriver* driver, const struct jeAud
 		}
 	}
 
-	ok = ok && jeAudioDevice_clearAudio(device);
+	ok = ok && jeAudioDevice_stopAudio(device);
 	ok = ok && jeAudioDevice_queueAudio(device, audio);
 
 	if (ok) {
@@ -648,7 +647,7 @@ bool jeAudioDriver_playAudio(struct jeAudioDriver* driver, jeAudioId audioId, bo
 
 	return ok;
 }
-bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver) {
+bool jeAudioDriver_stopAllAudio(struct jeAudioDriver* driver) {
 	bool ok = true;
 
 	if (driver == NULL) {
@@ -665,7 +664,7 @@ bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver) {
 				continue;
 			}
 
-			jeAudioDevice_clearAudio(device);
+			jeAudioDevice_stopAudio(device);
 			driver->deviceAudioLoops[i] = NULL;
 		}
 	}
@@ -718,7 +717,7 @@ void jeAudio_runTests() {
 		JE_ASSERT(jeAudioDevice_setPaused(&device, false));
 		JE_ASSERT(jeAudioDevice_queueAudio(&device, &audio));
 		JE_ASSERT(jeAudioDevice_setPaused(&device, true));
-		JE_ASSERT(jeAudioDevice_clearAudio(&device));
+		JE_ASSERT(jeAudioDevice_stopAudio(&device));
 
 		jeAudio_destroy(&audio);
 		jeAudioDevice_destroy(&device);
@@ -733,10 +732,10 @@ void jeAudio_runTests() {
 
 		JE_ASSERT(jeAudioDriver_playAudio(driver, audioId, /*shouldLoop*/ false));
 		JE_ASSERT(jeAudioDriver_pump(driver));
-		JE_ASSERT(jeAudioDriver_clearAudio(driver));
+		JE_ASSERT(jeAudioDriver_stopAllAudio(driver));
 
 		JE_ASSERT(jeAudioDriver_playAudio(driver, audioId, /*shouldLoop*/ true));
-		JE_ASSERT(jeAudioDriver_clearAudio(driver));
+		JE_ASSERT(jeAudioDriver_stopAllAudio(driver));
 		JE_ASSERT(jeAudioDriver_pump(driver));
 
 		JE_ASSERT(jeAudioDriver_unloadAudio(driver, audioId));

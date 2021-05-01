@@ -88,7 +88,7 @@ function ld48:onStart()
 		self.simulation:load(Simulation.SAVE_FILE)
 	end
 
-	self.audioSys:clearAudio()
+	self.audioSys:stopAllAudio()
 	self.audioSys:playAudio("apps/ld48/data/song1.wav", true)
 end
 function ld48:onDraw()

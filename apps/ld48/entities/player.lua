@@ -18,6 +18,7 @@ Player.UNKNOWN_WORLD_NAME = "<world unset>"
 Player.UNKNOWN_WORLD_ID = 0
 Player.jumpAudio = "apps/ld48/data/jump.wav"
 Player.deathAudio = "apps/ld48/data/death.wav"
+Player.bumpAudio = "apps/ld48/data/bump.wav"
 function Player:tickEntity(player)
 	local constants = self.simulation.constants
 
@@ -186,6 +187,20 @@ function Player:die()
 
 	self.loadFirstWorld()
 end
+function Player:bump()
+	log.debug("player bump")
+	self.audioSys:playAudio(self.bumpAudio)
+end
+function Player:onPhysicsEntityStopX(entity)
+	if (entity.tags.player ~= nil) and (math.abs(entity.speedX) >= 2.5) then
+		self:bump()
+	end
+end
+function Player:onPhysicsEntityStopY(entity)
+	if (entity.tags.player ~= nil) and (math.abs(entity.speedY) >= 2.5) then
+		self:bump()
+	end
+end
 function Player:resetProgress()
 	self.simulation.state.player = {}
 	self.simulation.state.player.worldName = self.UNKNOWN_WORLD_NAME
@@ -206,6 +221,7 @@ function Player:onInit(simulation)
 
 	self.audioSys:loadAudio(self.jumpAudio)
 	self.audioSys:loadAudio(self.deathAudio)
+	self.audioSys:loadAudio(self.bumpAudio)
 
 	for i, dir in ipairs({"Mid", "Left", "Right"}) do
 		local dirU = 16 + ((i - 1) * 3 * 8)

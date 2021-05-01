@@ -67,14 +67,14 @@ function Audio:playAudio(filename, shouldLoop)
         ["shouldLoop"] = shouldLoop,
     })
 end
-function Audio:clearAudio()
+function Audio:stopAllAudio()
     log.trace("")
 
     if client.state.headless then
         return true
     end
 
-    return client.clearAudio()
+    return client.stopAllAudio()
 end
 function Audio:onInit(simulation)
 	self.simulation = simulation
@@ -84,7 +84,7 @@ function Audio:onRunTests()
     log.assert(self:loadAudio(emptyAudio))
     log.assert(self:playAudio(emptyAudio))
     log.assert(self:playAudio(emptyAudio, --[[shouldLoop--]] true))
-    log.assert(self:clearAudio())
+    log.assert(self:stopAllAudio())
     log.assert(self:unloadAudio(emptyAudio))
 end
 

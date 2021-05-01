@@ -839,7 +839,7 @@ int jeLua_playAudio(lua_State* lua) {
 
 	return numResponses;
 }
-int jeLua_clearAudio(lua_State* lua) {
+int jeLua_stopAllAudio(lua_State* lua) {
 	JE_TRACE("lua=%p", (void*)lua);
 
 	bool ok = true;
@@ -859,7 +859,7 @@ int jeLua_clearAudio(lua_State* lua) {
 		}
 	}
 
-	ok = ok && jeAudioDriver_clearAudio(driver);
+	ok = ok && jeAudioDriver_stopAllAudio(driver);
 
 	if (lua != NULL) {
 		lua_pushboolean(lua, ok);
@@ -945,7 +945,7 @@ bool jeLua_addBindings(lua_State* lua) {
 		JE_LUA_CLIENT_BINDING(loadAudio),
 		JE_LUA_CLIENT_BINDING(unloadAudio),
 		JE_LUA_CLIENT_BINDING(playAudio),
-		JE_LUA_CLIENT_BINDING(clearAudio),
+		JE_LUA_CLIENT_BINDING(stopAllAudio),
 		JE_LUA_CLIENT_BINDING(runTests),
 		JE_LUA_CLIENT_BINDING(step),
 		{NULL, NULL} /*sentinel value*/
