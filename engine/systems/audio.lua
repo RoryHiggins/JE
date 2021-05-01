@@ -83,6 +83,7 @@ function Audio:onRunTests()
     local emptyAudio = "client/data/audio_empty.wav"
     log.assert(self:loadAudio(emptyAudio))
     log.assert(self:playAudio(emptyAudio))
+    log.assert(self:playAudio(emptyAudio, --[[shouldLoop--]] true))
     log.assert(self:clearAudio())
     log.assert(self:unloadAudio(emptyAudio))
 end

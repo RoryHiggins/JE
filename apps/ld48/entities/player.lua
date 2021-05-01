@@ -98,7 +98,7 @@ function Player:tickEntity(player)
 	)
 	local rising = risingX or risingY
 	local shouldJump = tryingToJump and onGround
-	local shouldHover = not nearGround and not tryingToFall --[[and (tryingToJump or not rising)--]]
+	local shouldHover = not nearGround and not tryingToFall
 
 	if onGround and (player.playerHoverFramesCur < player.playerHoverFrames) then
 		log.debug("player restore hover")
@@ -203,6 +203,9 @@ function Player:onInit(simulation)
 
 	self.materialSys = self.simulation:addSystem(Material)
 	self.physicsSys = self.simulation:addSystem(Physics)
+
+	self.audioSys:loadAudio(self.jumpAudio)
+	self.audioSys:loadAudio(self.deathAudio)
 
 	for i, dir in ipairs({"Mid", "Left", "Right"}) do
 		local dirU = 16 + ((i - 1) * 3 * 8)

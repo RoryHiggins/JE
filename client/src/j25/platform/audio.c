@@ -9,15 +9,14 @@
 
 #define JE_AUDIO_DRIVER_DEVICES_COUNT 4
 
-struct jeAudioDevice {
-	SDL_AudioSpec spec;
-	SDL_AudioDeviceID id;
-};
-
 struct jeAudio {
 	SDL_AudioSpec spec;
 	Uint8* buffer;
 	Uint32 size;
+};
+struct jeAudioDevice {
+	SDL_AudioSpec spec;
+	SDL_AudioDeviceID id;
 };
 struct jeAudioDriver {
 	struct jeArray audioAllocations;
@@ -29,16 +28,15 @@ struct jeAudioDriver {
 	const struct jeAudio* deviceAudioLoops[JE_AUDIO_DRIVER_DEVICES_COUNT];
 };
 
+void jeAudio_destroy(struct jeAudio* audio);
+bool jeAudio_createFromWavFile(struct jeAudio* audio, const char* filename);
+
 void jeAudioDevice_destroy(struct jeAudioDevice* device);
 bool jeAudioDevice_create(struct jeAudioDevice* device);
-bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused);
+bool jeAudioDevice_formatAudio(const struct jeAudioDevice* device, struct jeAudio* audio);
 bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio* audio);
 bool jeAudioDevice_clearAudio(const struct jeAudioDevice* device);
-
-void jeAudio_destroy(struct jeAudio* audio);
-bool jeAudio_createFromWavFile(struct jeAudio* audio, const struct jeAudioDevice* device, const char* filename);
-// TODO move format function to jeAudioDevice to break circular dependency
-bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* device);
+bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused);
 
 void jeAudioDriver_destroy(struct jeAudioDriver* driver);
 struct jeAudioDriver* jeAudioDriver_create(void);
@@ -51,6 +49,62 @@ bool jeAudioDriver_playAudioRaw(struct jeAudioDriver* driver, const struct jeAud
 bool jeAudioDriver_playAudio(struct jeAudioDriver* driver, jeAudioId audioId, bool shouldLoop);
 bool jeAudioDriver_clearAudio(struct jeAudioDriver* driver);
 bool jeAudioDriver_pump(struct jeAudioDriver* driver);
+
+void jeAudio_destroy(struct jeAudio* audio) {
+	JE_TRACE("audio=%p", (void*)audio);
+
+	if (audio != NULL) {
+		if (audio->buffer != NULL) {
+			SDL_FreeWAV(audio->buffer);
+			audio->buffer = NULL;
+			audio->size = 0;
+		}
+
+		memset(&audio, 0, sizeof(*audio));
+	}
+}
+bool jeAudio_createFromWavFile(struct jeAudio* audio, const char* filename) {
+	JE_TRACE("device=%p, filename=%s", (void*)device, filename ? filename : "<NULL>");
+
+	bool ok = true;
+
+	if (audio == NULL) {
+		JE_ERROR("audio=NULL");
+		ok = false;
+	}
+
+	if (filename == NULL) {
+		JE_ERROR("filename=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		memset((void*)audio, 0, sizeof(*audio));
+		audio->buffer = NULL;
+		audio->size = 0;
+	}
+
+	if (ok) {
+		if (SDL_LoadWAV(filename, &audio->spec, &audio->buffer, &audio->size) == NULL) {
+			JE_ERROR("SDL_LoadWAV() failed with error=%s", SDL_GetError());
+			ok = false;
+		}
+
+		JE_DEBUG(
+			"completed, filename=%s, size=%u, frequency=%u, channels=%u",
+			filename,
+			(Uint32)audio->size,
+			(Uint32)audio->spec.freq,
+			(Uint32)audio->spec.channels
+		);
+	}
+
+	if (!ok) {
+		jeAudio_destroy(audio);
+	}
+
+	return ok;
+}
 
 void jeAudioDevice_destroy(struct jeAudioDevice* device) {
 	JE_TRACE("device=%p", (void*)device);
@@ -108,160 +162,18 @@ bool jeAudioDevice_create(struct jeAudioDevice* device) {
 
 	return ok;
 }
-bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused) {
-	JE_TRACE("device=%p, paused=%u", (void*)device, (unsigned)paused);
-
-	bool ok = true;
-
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
-		ok = false;
-	}
-
-	if (ok) {
-		SDL_PauseAudioDevice(device->id, (int)paused);
-	}
-
-	return ok;
-}
-bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio* audio) {
-	JE_TRACE("device=%p, audio=%p", (void*)device, (void*)audio);
-
-	bool ok = true;
-
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
-		ok = false;
-	}
-
-	if (audio == NULL) {
-		JE_ERROR("audio=NULL");
-		ok = false;
-	}
-
-	ok = ok && jeAudioDevice_clearAudio(device);
-
-	bool mustQueue = true;
-
-	if (ok) {
-		mustQueue = mustQueue && (audio->buffer != NULL);
-	}
-
-	if (ok && mustQueue) {
-		if (SDL_QueueAudio(device->id, audio->buffer, audio->size) < 0) {
-			JE_ERROR("SDL_QueueAudio() failed with error=%s", SDL_GetError());
-			ok = false;
-		}
-	}
-
-	return ok;
-}
-bool jeAudioDevice_clearAudio(const struct jeAudioDevice* device) {
-	JE_TRACE("device=%p", (void*)device);
-
-	bool ok = true;
-
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
-		ok = false;
-	}
-
-	if (ok) {
-		SDL_ClearQueuedAudio(device->id);
-	}
-
-	return ok;
-}
-
-void jeAudio_destroy(struct jeAudio* audio) {
-	JE_TRACE("audio=%p", (void*)audio);
-
-	if (audio != NULL) {
-		if (audio->buffer != NULL) {
-			SDL_FreeWAV(audio->buffer);
-			audio->buffer = NULL;
-			audio->size = 0;
-		}
-
-		memset(&audio, 0, sizeof(*audio));
-	}
-}
-bool jeAudio_createFromWavFile(struct jeAudio* audio, const struct jeAudioDevice* device, const char* filename) {
-	JE_TRACE("device=%p, filename=%s", (void*)device, filename ? filename : "<NULL>");
-
-	bool ok = true;
-
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
-		ok = false;
-	}
-
-	if (audio == NULL) {
-		JE_ERROR("audio=NULL");
-		ok = false;
-	}
-
-	if (ok) {
-		memset((void*)audio, 0, sizeof(*audio));
-		audio->buffer = NULL;
-		audio->size = 0;
-	}
-
-	if (!ok) {
-		jeAudio_destroy(audio);
-		audio = NULL;
-	}
-
-	if (audio == NULL) {
-		JE_ERROR("audio=NULL");
-		ok = false;
-	}
-
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
-		ok = false;
-	}
-
-	if (filename == NULL) {
-		JE_ERROR("filename=NULL");
-		ok = false;
-	}
-
-	if (ok) {
-		if (SDL_LoadWAV(filename, &audio->spec, &audio->buffer, &audio->size) == NULL) {
-			JE_ERROR("SDL_LoadWAV() failed with error=%s", SDL_GetError());
-			ok = false;
-		}
-
-		JE_DEBUG(
-			"completed, filename=%s, size=%u, frequency=%u, channels=%u",
-			filename,
-			(Uint32)audio->size,
-			(Uint32)audio->spec.freq,
-			(Uint32)audio->spec.channels
-		);
-	}
-
-	ok = ok && jeAudio_formatForDevice(audio, device);
-
-	if (!ok) {
-		jeAudio_destroy(audio);
-	}
-
-	return ok;
-}
-bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* device) {
+bool jeAudioDevice_formatAudio(const struct jeAudioDevice* device, struct jeAudio* audio) {
 	JE_TRACE("audio=%p, device=%p", (void*)audio, (void*)device);
 
 	bool ok = true;
 
-	if (audio == NULL) {
-		JE_ERROR("audio=NULL");
+	if (device == NULL) {
+		JE_ERROR("device=NULL");
 		ok = false;
 	}
 
-	if (device == NULL) {
-		JE_ERROR("device=NULL");
+	if (audio == NULL) {
+		JE_ERROR("audio=NULL");
 		ok = false;
 	}
 
@@ -324,6 +236,70 @@ bool jeAudio_formatForDevice(struct jeAudio* audio, const struct jeAudioDevice* 
 
 	if (!ok && (converter.buf != NULL)) {
 		free((void*)converter.buf);
+	}
+
+	return ok;
+}
+bool jeAudioDevice_queueAudio(struct jeAudioDevice* device, const struct jeAudio* audio) {
+	JE_TRACE("device=%p, audio=%p", (void*)device, (void*)audio);
+
+	bool ok = true;
+
+	if (device == NULL) {
+		JE_ERROR("device=NULL");
+		ok = false;
+	}
+
+	if (audio == NULL) {
+		JE_ERROR("audio=NULL");
+		ok = false;
+	}
+
+	ok = ok && jeAudioDevice_clearAudio(device);
+
+	bool mustQueue = true;
+
+	if (ok) {
+		mustQueue = mustQueue && (audio->buffer != NULL);
+	}
+
+	if (ok && mustQueue) {
+		if (SDL_QueueAudio(device->id, audio->buffer, audio->size) < 0) {
+			JE_ERROR("SDL_QueueAudio() failed with error=%s", SDL_GetError());
+			ok = false;
+		}
+	}
+
+	return ok;
+}
+bool jeAudioDevice_clearAudio(const struct jeAudioDevice* device) {
+	JE_TRACE("device=%p", (void*)device);
+
+	bool ok = true;
+
+	if (device == NULL) {
+		JE_ERROR("device=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		SDL_ClearQueuedAudio(device->id);
+	}
+
+	return ok;
+}
+bool jeAudioDevice_setPaused(struct jeAudioDevice* device, bool paused) {
+	JE_TRACE("device=%p, paused=%u", (void*)device, (unsigned)paused);
+
+	bool ok = true;
+
+	if (device == NULL) {
+		JE_ERROR("device=NULL");
+		ok = false;
+	}
+
+	if (ok) {
+		SDL_PauseAudioDevice(device->id, (int)paused);
 	}
 
 	return ok;
@@ -464,7 +440,9 @@ jeAudioId jeAudioDriver_loadAudioFromWavFile(struct jeAudioDriver* driver, const
 	struct jeAudio audio;
 	memset(&audio, 0, sizeof(audio));
 
-	ok = ok && jeAudio_createFromWavFile(&audio, referenceDevice, filename);
+	ok = ok && jeAudio_createFromWavFile(&audio, filename);
+
+	ok = ok && jeAudioDevice_formatAudio(referenceDevice, &audio);
 
 	if (ok) {
 		uint32_t audioCount = jeArray_getCount(&driver->audioAllocations);
@@ -480,6 +458,7 @@ jeAudioId jeAudioDriver_loadAudioFromWavFile(struct jeAudioDriver* driver, const
 	if (ok) {
 		audioId = jeArray_getCount(&driver->audioAllocations);
 	}
+
 	ok = ok && jeArray_push(&driver->audioAllocations, (void*)&audio, 1);
 
 	if (!ok) {
@@ -541,24 +520,57 @@ struct jeAudioDevice* jeAudioDriver_allocateBestDevice(struct jeAudioDriver* dri
 		ok = false;
 	}
 
-	struct jeAudioDevice* device = NULL;
-	uint32_t deviceIndex = 0;
+	const uint32_t deviceIndexInvalid = (uint32_t)-1;
+	uint32_t deviceIndex = deviceIndexInvalid;
+	uint32_t usedDeviceIndex = deviceIndexInvalid;
+	uint32_t usedLoopingDeviceIndex = deviceIndexInvalid;
+
 	if (ok) {
 		for (uint32_t i = 0; i < driver->numDevices; i++) {
+			// if the device is somehow invalid, log an error and continue
 			if (driver->devices[i].id == 0) {
-				JE_ERROR("driver->devices[i].id");
+				JE_ERROR("driver->devices[i] invalid, i=%u", i);
 				ok = false;
 				continue;
 			}
 
-			device = &driver->devices[i];
-			deviceIndex = i;
-
-			// stop searching after we find a device that's not in use (the ideal case)
-			if (SDL_GetQueuedAudioSize(device->id) == 0) {
-				break;
+			// first, prioritize a device that's not in use for looping sound (music usually)
+			if (driver->deviceAudioLoops[i] != NULL) {
+				usedLoopingDeviceIndex = i;
+				continue;
 			}
+
+			// second, prioritize a device that's not in use
+			if (SDL_GetQueuedAudioSize(driver->devices[i].id) > 0) {
+				usedDeviceIndex = i;
+				continue;
+			}
+
+			deviceIndex = i;
+			break;
 		}
+	}
+
+	if (ok) {
+		if (deviceIndex != deviceIndexInvalid) {
+			JE_TRACE("using optimal device");
+		} else if (usedDeviceIndex != deviceIndexInvalid) {
+			JE_WARN("fallback: repurposing a used device");
+			deviceIndex = usedDeviceIndex;
+		} else if (usedLoopingDeviceIndex != deviceIndexInvalid) {
+			JE_WARN("worst-case fallback: repurposing a used device with looping audio");
+			deviceIndex = usedLoopingDeviceIndex;
+		} else {
+			JE_ERROR("No valid device found");
+			ok = false;
+		}
+	}
+
+	struct jeAudioDevice* device = NULL;
+	if (ok) {
+		device = &driver->devices[deviceIndex];
+	
+		JE_DEBUG("deviceIndex=%d", deviceIndex);
 	}
 
 	if (ok) {
@@ -701,7 +713,8 @@ void jeAudio_runTests() {
 		JE_ASSERT(jeAudioDevice_create(&device));
 
 		struct jeAudio audio;
-		JE_ASSERT(jeAudio_createFromWavFile(&audio, &device, emptyAudioFilename));
+		JE_ASSERT(jeAudio_createFromWavFile(&audio, emptyAudioFilename));
+		JE_ASSERT(jeAudioDevice_formatAudio(&device, &audio));
 		JE_ASSERT(jeAudioDevice_setPaused(&device, false));
 		JE_ASSERT(jeAudioDevice_queueAudio(&device, &audio));
 		JE_ASSERT(jeAudioDevice_setPaused(&device, true));
