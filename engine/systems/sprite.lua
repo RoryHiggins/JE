@@ -56,6 +56,7 @@ function Sprite:onInit(simulation)
 
 	self.simulation.constants.sprites = {}
 	self.simulation.constants.untexturedSprite = self:addSprite("flatColor", 0, 0, 0, 0)
+
 	self.simulation.constants.invalidSprite = self:addSprite("invalid", 8, 0, 8, 8)
 end
 function Sprite:onCameraDraw(camera)

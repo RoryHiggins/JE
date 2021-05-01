@@ -120,7 +120,8 @@ function Shape:onRunTests()
 		["b"] = 0,
 		["a"] = 1,
 	}
-	self:drawRect(testRect, screen)
+	self:drawRect(testRect, screen, --[[outline--]] false)
+	self:drawRect(testRect, screen, --[[outline--]] true)
 
 	local testPoint = {
 		["x"] = 8,

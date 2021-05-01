@@ -27,7 +27,7 @@ Nice to haves:
 - Lots of decoupling cleanup to do
 - Command-line argument to force starting in a specific level
 
-# Proper rectangle rendering
+# Proper bordered rectangle rendering
 
 # Draw sprite without attaching one
 
