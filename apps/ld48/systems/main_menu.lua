@@ -7,7 +7,7 @@ local Text = require("engine/systems/text")
 local Shape = require("engine/systems/shape")
 local Template = require("engine/systems/template")
 local Background = require("engine/systems/background")
-local Editor = require("engine/systems/editor")
+local Editor = require("apps/ld48/systems/editor")
 
 local MainMenu = {}
 MainMenu.SYSTEM_NAME = "mainMenu"

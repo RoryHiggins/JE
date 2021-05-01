@@ -7,7 +7,7 @@ local Entity = require("engine/systems/entity")
 local Sprite = require("engine/systems/sprite")
 local Text = require("engine/systems/text")
 local Template = require("engine/systems/template")
-local Editor = require("engine/systems/editor")
+local Editor = require("apps/ld48/systems/editor")
 
 local Material = require("apps/ld48/systems/material")
 local Physics = require("apps/ld48/systems/physics")
