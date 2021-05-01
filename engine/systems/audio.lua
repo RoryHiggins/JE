@@ -3,6 +3,7 @@ local client = require("engine/client/client")
 
 local Audio = {}
 Audio.SYSTEM_NAME = "audio"
+Audio.loadedAudio = {}
 function Audio:loadAudio(filename)
     log.trace("filename=%s", filename)
 
@@ -23,10 +24,10 @@ function Audio:loadAudio(filename)
     log.assert(audioId ~= nil)
     log.assert(audioId ~= 0)
 
-    local audio = {
+    self.loadedAudio[filename] = {
         ["audioId"] = audioId,
+        ["filename"] = filename,
     }
-    self.loadedAudio[filename] = audio
     return true
 end
 function Audio:unloadAudio(filename)
@@ -47,7 +48,7 @@ function Audio:unloadAudio(filename)
     self.loadedAudio[filename] = nil
     return client.unloadAudio({["audioId"] = audio.audioId})
 end
-function Audio:playAudio(filename)
+function Audio:playAudio(filename, shouldLoop)
     log.trace("filename=%s", filename)
 
     if client.state.headless then
@@ -61,7 +62,10 @@ function Audio:playAudio(filename)
     end
     log.assert(audio.audioId ~= nil)
 
-    return client.playAudio({["audioId"] = audio.audioId})
+    return client.playAudio({
+        ["audioId"] = audio.audioId,
+        ["shouldLoop"] = shouldLoop,
+    })
 end
 function Audio:clearAudio()
     log.trace("")
@@ -74,8 +78,6 @@ function Audio:clearAudio()
 end
 function Audio:onInit(simulation)
 	self.simulation = simulation
-
-	self.loadedAudio = {}
 end
 function Audio:onRunTests()
     local emptyAudio = "client/data/audio_empty.wav"

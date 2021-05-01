@@ -1,25 +1,6 @@
 
 # LD48 -> Master merge
 
-- Cleanup hacky audio code:
-	MVP:
-	- jeAudioDriver: loadAudio(filename) -> audioId
-	- jeAudioDriver: freeAudio(audioId)
-	- jeWindow: getAudioMixer()
-	- jeLua: playAudio() updated to only use window audio driver
-	- audio.lua: created
-	- audio.lua: loadAudio(filename) -> audioId
-	- audio.lua: playAudio(audioId, looping)
-
-	Proper:
-	- jeAudioDriver: looping support to all devices (not music specific)
-	- jeAudioDriver: add looping support to playAudio
-	- jeAudioDriver: track and return audioPlaybackId which can be used to stop an audio playback
-	- jeAudioDriver
-	- jeLua: playAudio() 
-	- jeLua: stopAudio added
-	- add support for 
-	- cleanup: remove music-specific driver from jeAudioDriver in favor of a single shared pool
 - Remove references to ld48 systems from the engine
 
 Nice to haves:

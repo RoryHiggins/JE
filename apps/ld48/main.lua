@@ -2,6 +2,7 @@ local util = require("engine/util/util")
 local Simulation = require("engine/systems/simulation")
 local Entity = require("engine/systems/entity")
 local Template = require("engine/systems/template")
+local Audio = require("engine/systems/audio")
 local Sprite = require("engine/systems/sprite")
 local Text = require("engine/systems/text")
 local Shape = require("engine/systems/shape")
@@ -25,6 +26,7 @@ function ld48:onInit(simulation)
 	self.simulation = simulation
 	self.entitySys = self.simulation:addSystem(Entity)
 	self.templateSys = self.simulation:addSystem(Template)
+	self.audioSys = self.simulation:addSystem(Audio)
 	self.spriteSys = self.simulation:addSystem(Sprite)
 	self.textSys = self.simulation:addSystem(Text)
 	self.shapeSys = self.simulation:addSystem(Shape)
@@ -85,6 +87,9 @@ function ld48:onStart()
 	if self.mode == ld48.modeResume then
 		self.simulation:load(Simulation.SAVE_FILE)
 	end
+
+	self.audioSys:clearAudio()
+	self.audioSys:playAudio("apps/ld48/data/song1.wav", true)
 end
 function ld48:onDraw()
 	self.textSys:drawDebugString("fps="..tostring(self.simulation.input.fps))

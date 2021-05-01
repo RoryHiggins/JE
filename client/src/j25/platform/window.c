@@ -2,6 +2,7 @@
 
 #include <j25/core/common.h>
 #include <j25/core/container.h>
+#include <j25/platform/audio.h>
 #include <j25/platform/image.h>
 #include <j25/platform/rendering.h>
 
@@ -810,6 +811,18 @@ bool jeWindow_step(struct jeWindow* window) {
 			JE_ERROR("window->window=NULL");
 			ok = false;
 		}
+	}
+
+	struct jeAudioDriver* audioDriver = NULL;
+	if (ok) {
+		audioDriver = jeAudioDriver_getInstance();
+		if (audioDriver == NULL) {
+			ok = false;
+		}
+	}
+
+	if (ok) {
+		jeAudioDriver_pump(audioDriver);
 	}
 
 	SDL_Event event;
